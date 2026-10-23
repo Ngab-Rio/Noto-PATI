@@ -144,27 +144,16 @@ Pengguna hanya berbicara dengan aplikasi Next.js, yang membaca dan menulis data 
 
 **Ekstraksi APBD.** Skrip terpisah (Python atau Node) membaca PDF lampiran, mengekstrak tabel ke CSV, lalu admin mengunggah dan memverifikasinya lewat halaman impor. Bila PDF berupa hasil pindai, tahap OCR ditambahkan.
 
-**Struktur proyek**
+**Struktur proyek** — Struktur folder lengkap dan final ada di [ARCHITECTURE.md § 8. Struktur Folder](./ARCHITECTURE.md). Ringkasan lapisan `src/`:
 
-```
-noto-pati/
-  app/
-    (publik)/page.tsx                 # landing page
-    (publik)/peta/page.tsx            # peta laporan
-    (publik)/laporan/[id]/page.tsx    # detail dan linimasa
-    (publik)/anggaran/page.tsx        # transparansi anggaran
-    (publik)/peringkat/page.tsx       # papan peringkat
-    (warga)/lapor/baru/page.tsx       # form laporan
-    (admin)/admin/...                 # antrean, anggaran, pengguna
-    (opd)/opd/...                     # dashboard OPD
-    api/ai/analisis-foto/route.ts
-    api/ai/jelaskan-anggaran/route.ts
-    api/cron/sla/route.ts
-  components/                         # ui, peta, laporan, anggaran, gamifikasi
-  lib/                                # db, ai, geo, poin, auth
-  scripts/                            # impor-apbd, seed data demo
-  drizzle/                            # migrasi
-```
+| Lapisan | Folder | Tanggung jawab |
+| --- | --- | --- |
+| Routing | `src/app/` | Tipis — hanya routing, layout, dan komposisi halaman |
+| Fitur | `src/features/` | Komponen, actions, queries, dan schema per fitur |
+| Domain | `src/domain/` | Aturan bisnis murni TypeScript (status, SLA, kategori) |
+| Server | `src/server/` | Infrastruktur server-only (Supabase client, guards, AI, signed URL) |
+| Utilitas | `src/lib/` | Helper yang aman dipakai di sisi klien maupun server |
+| Database | `supabase/migrations/` | Skema, RLS, RPC, trigger, view sebagai migrasi SQL |
 
 ## Rencana pengerjaan
 

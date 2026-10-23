@@ -51,112 +51,19 @@ Integrasi ini **bukan prasyarat untuk menjalankan alur inti MVP**. Tambahkan han
 
 ---
 
-## 2. Struktur repository yang disarankan
+## 2. Struktur repository
 
-Struktur awal berikut menggunakan `src/` dan pemisahan berdasarkan fitur. Direktori dapat berkembang, tetapi tanggung jawabnya perlu dijaga.
-
-```text
-noto-pati/
-├─ public/
-│  ├─ images/
-│  ├─ icons/
-│  └─ demo/                       # aset demo yang aman dan memiliki sumber/lisensi
-├─ src/
-│  ├─ app/
-│  │  ├─ (public)/
-│  │  │  ├─ page.tsx              # landing page
-│  │  │  ├─ peta/page.tsx
-│  │  │  ├─ laporan/[id]/page.tsx # detail laporan publik
-│  │  │  └─ anggaran/page.tsx
-│  │  ├─ (auth)/
-│  │  │  ├─ masuk/page.tsx
-│  │  │  ├─ daftar/page.tsx
-│  │  │  └─ auth/callback/route.ts
-│  │  ├─ (warga)/
-│  │  │  ├─ laporan/baru/page.tsx
-│  │  │  └─ akun/laporan/page.tsx
-│  │  ├─ admin/
-│  │  │  ├─ layout.tsx
-│  │  │  ├─ page.tsx
-│  │  │  └─ laporan/[id]/page.tsx
-│  │  ├─ api/
-│  │  │  └─ health/route.ts        # endpoint health sederhana jika diperlukan
-│  │  ├─ globals.css
-│  │  └─ layout.tsx
-│  ├─ components/
-│  │  ├─ ui/                       # komponen shadcn/ui
-│  │  ├─ layout/                   # header, footer, navigasi
-│  │  └─ shared/                   # komponen presentasi lintas fitur
-│  ├─ features/
-│  │  ├─ auth/
-│  │  │  ├─ components/
-│  │  │  ├─ schemas/
-│  │  │  └─ server/
-│  │  ├─ reports/
-│  │  │  ├─ components/
-│  │  │  ├─ schemas/
-│  │  │  ├─ actions.ts             # mutasi dari UI jika menggunakan Server Actions
-│  │  │  ├─ constants.ts           # status dan aturan statis laporan
-│  │  │  ├─ server/                # use case/service khusus server
-│  │  │  └─ types.ts
-│  │  ├─ map/
-│  │  │  ├─ components/            # komponen Leaflet client-side
-│  │  │  └─ types.ts
-│  │  ├─ budget/
-│  │  │  ├─ components/
-│  │  │  ├─ schemas/
-│  │  │  └─ types.ts
-│  │  └─ admin/
-│  │     ├─ components/
-│  │     └─ server/
-│  ├─ lib/
-│  │  ├─ supabase/
-│  │  │  ├─ client.ts              # browser client
-│  │  │  ├─ server.ts              # server/cookie client
-│  │  │  └─ admin.ts               # hanya jika benar-benar diperlukan; server-only
-│  │  ├─ env.ts                    # pembacaan/validasi environment
-│  │  ├─ errors/                   # tipe dan utilitas error aplikasi
-│  │  ├─ geo/                      # helper non-rahasia; query spasial tepercaya tetap di server/DB
-│  │  └─ utils.ts
-│  ├─ schemas/                     # schema validasi yang benar-benar lintas fitur
-│  ├─ types/
-│  │  └─ database.types.ts         # tipe hasil generate dari schema Supabase
-│  └─ config/
-│     ├─ report-categories.ts
-│     └─ app.ts
-├─ supabase/
-│  ├─ migrations/                  # perubahan schema, policy, function, dan indeks SQL
-│  ├─ seed.sql                     # hanya data development/demo yang aman
-│  └─ config.toml                  # konfigurasi Supabase CLI jika digunakan
-├─ scripts/
-│  ├─ import-budget-csv.ts         # alat impor terkontrol, jika dibutuhkan
-│  └─ validate-budget-data.ts      # pemeriksaan data anggaran sebelum ditinjau Admin
-├─ data/
-│  └─ reference/                   # data batas wilayah/sumber publik dengan asal dan lisensi terdokumentasi
-├─ tests/
-│  ├─ unit/
-│  ├─ integration/
-│  └─ e2e/
-├─ .env.example
-├─ .gitignore
-├─ DEVELOPMENT.md
-├─ PRD.md
-├─ package.json
-├─ package-lock.json
-├─ tsconfig.json
-└─ README.md
-```
+Struktur folder lengkap dan final ada di [ARCHITECTURE.md § 8. Struktur Folder](./ARCHITECTURE.md). Dokumen ini hanya mencatat aturan implementasi yang perlu diperhatikan saat menulis kode.
 
 ### Aturan struktur
 
-- `src/app/` menangani routing, metadata, komposisi halaman, dan batas layout. Simpan business logic yang kompleks di `src/features/` atau `src/lib/`, bukan menumpuk di `page.tsx`.
-- `src/features/<fitur>/` menyimpan komponen, schema, tipe, dan service terkait fitur agar kode mudah ditelusuri.
-- `src/components/ui/` hanya untuk komponen UI umum yang dihasilkan atau disesuaikan dari shadcn/ui; komponen spesifik laporan diletakkan di fitur laporan.
-- `src/lib/supabase/client.ts` hanya untuk pemakaian browser. `src/lib/supabase/server.ts` dipakai di Server Components, Server Actions, dan Route Handlers.
-- File `admin.ts` tidak wajib dibuat. Bila diperlukan untuk operasi dengan secret key, pastikan hanya dapat diimpor di server dan setiap operasi tetap dilindungi otorisasi yang eksplisit.
-- Semua perubahan schema database dibuat sebagai migration SQL di `supabase/migrations/`. Jangan hanya mengubah schema lewat Dashboard tanpa menangkap perubahan tersebut ke migrasi.
-- `scripts/` berisi alat pemeliharaan data yang dapat dijalankan secara terpisah, bukan logic request web. Scraping APBD otomatis dan OCR tidak masuk pekerjaan MVP.
-- Jangan menaruh foto pengguna, kredensial, dump database, atau data pribadi nyata di `public/`, `data/`, maupun repository.
+- **`src/app/` harus tipis.** Business logic yang kompleks disimpan di `src/features/` atau `src/lib/`, bukan menumpuk di `page.tsx`. Lihat panduan lengkap di [ARCHITECTURE.md § 8.1 Konvensi](./ARCHITECTURE.md).
+- **`src/server/`** berisi seluruh infrastruktur server-only: Supabase server client, auth guards, signed URL, AI adapter. Semua file di dalamnya wajib memuat `import "server-only"` agar tidak bisa diimpor dari bundle browser.
+- **`src/server/supabase/admin.ts`** hanya dibuat jika benar-benar diperlukan untuk operasi service role. Pastikan hanya dapat diimpor di server dan setiap operasi tetap dilindungi otorisasi yang eksplisit — jangan gunakan untuk operasi yang bisa dilakukan dengan user-scoped client.
+- **`src/lib/supabase/browser.ts`** hanya untuk pemakaian browser. Jangan impor ini dari Server Components, Server Actions, atau Route Handlers.
+- **Semua perubahan schema database** dibuat sebagai migrasi SQL di `supabase/migrations/`. Jangan mengubah schema lewat Dashboard Supabase tanpa menangkap perubahan tersebut ke file migrasi.
+- **`scripts/`** berisi alat pemeliharaan data yang dijalankan manual atau CI, bukan logic request web. Tidak boleh diimpor dari `src/` (kecuali `src/domain/`).
+- **Jangan** menaruh foto pengguna, kredensial, dump database, atau data pribadi nyata di `public/`, `supabase/data/`, maupun repository.
 
 ---
 
