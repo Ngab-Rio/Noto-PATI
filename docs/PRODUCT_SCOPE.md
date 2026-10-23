@@ -188,3 +188,4 @@ Sebuah permintaan fitur baru atau perluasan fitur lama hanya boleh masuk jika:
 | Tanggal | Perubahan | Alasan | Dikorbankan/ditunda | Disetujui oleh |
 |---|---|---|---|---|
 | 23 Okt 2026 | Dokumen dibuat dari PRD v1.0 | Baseline scope | - | RADITYA |
+| 23 Okt 2026 | Gamifikasi (GM-01, GM-02, GM-03, GM-04) dipindahkan ke P2 | Fokus ke alur pelaporan inti dan halaman Anggaran; gamifikasi dikerjakan setelah semua P0 stabil | Poin, lencana, papan peringkat kecamatan ditunda | RADITYA |
