@@ -4,7 +4,7 @@ Oct 22, 2026 · @RADITYA
 
 ## Ringkasan produk
 
-Noto PATI adalah web pelaporan infrastruktur untuk warga Kabupaten Pati yang menghubungkan laporan warga dengan anggaran daerah (APBD 2025). Warga melapor jalan rusak, drainase tersumbat, atau lampu jalan mati lewat foto dan lokasi. AI membantu mengklasifikasi laporan dan menandai laporan ganda. OPD menindaklanjuti dalam batas waktu (SLA) yang terlihat publik. Halaman Anggaran menjelaskan APBD dengan bahasa warga. Gamifikasi mendorong partisipasi yang berkualitas.
+Noto PATI adalah web pelaporan infrastruktur untuk warga Kabupaten Pati yang menghubungkan laporan warga dengan anggaran daerah (APBD 2025). Warga melapor jalan rusak, drainase tersumbat, atau lampu jalan mati lewat foto dan lokasi. AI membantu mengklasifikasi laporan dan menandai laporan ganda. OPD menindaklanjuti dalam batas waktu (SLA) yang terlihat publik. Halaman Anggaran menjelaskan APBD dengan bahasa warga.
 
 - **Nama:** Noto PATI. "Noto" dalam bahasa Jawa berarti menata.
 - **Wilayah:** Kabupaten Pati saja.
@@ -50,7 +50,7 @@ Pada prototipe lomba, akun petugas OPD dan admin disimulasikan oleh tim dengan d
 
 ## Ruang lingkup
 
-MVP lomba memuat alur laporan dari awal sampai selesai, satu halaman Anggaran yang kuat, dan gamifikasi dasar. Fitur lain ditunda agar dua halaman wajib untuk proposal (landing page dan satu halaman lain) cepat jadi.
+MVP lomba memuat alur laporan dari awal sampai selesai, satu halaman Anggaran yang kuat. Fitur lain ditunda agar dua halaman wajib untuk proposal (landing page dan satu halaman lain) cepat jadi.
 
 | Kelompok | Isi |
 | --- | --- |
@@ -101,7 +101,7 @@ Prioritas: **P0** wajib ada di MVP, **P1** sebaiknya ada, **P2** dikerjakan bila
 
 ## Alur pengguna dan model data
 
-Flowchart (alur laporan, alur anggaran, status laporan) dan empat ERD ada di halaman [Diagram Noto PATI](https://claude.ai/artifact/8P6yWMnQCNmwADCtkPqZvu). Model data terdiri dari 21 tabel: 12 tabel pelaporan, 3 tabel anggaran, dan 6 tabel gamifikasi.
+Flowchart (alur laporan, alur anggaran, status laporan) dan empat ERD ada di halaman [Diagram Noto PATI](https://claude.ai/artifact/8P6yWMnQCNmwADCtkPqZvu). Model data terdiri dari 21 tabel: 12 tabel pelaporan, 3 tabel anggaran.
 
 **Status laporan:** Diterima, Digabung, Ditolak, Diverifikasi, Diproses, Selesai, Dibuka Kembali, Ditutup.
 
@@ -160,7 +160,7 @@ noto-pati/
     api/ai/analisis-foto/route.ts
     api/ai/jelaskan-anggaran/route.ts
     api/cron/sla/route.ts
-  components/                         # ui, peta, laporan, anggaran, gamifikasi
+  components/                         # ui, peta, laporan, anggaran
   lib/                                # db, ai, geo, poin, auth
   scripts/                            # impor-apbd, seed data demo
   drizzle/                            # migrasi
@@ -177,8 +177,7 @@ Jadwal di bawah memakai urutan minggu relatif, karena tanggal batas pengumpulan 
 | 3. Alur tindak lanjut (minggu 2 sampai 3) | Dashboard admin dan OPD; perubahan status; SLA | Alur Diterima sampai Selesai berjalan ujung ke ujung |
 | 4. AI pelaporan (minggu 3) | Klasifikasi foto; deteksi ganda; skor urgensi | 80% atau lebih benar pada 30 foto uji |
 | 5. Anggaran (minggu 3 sampai 4, paralel) | Ekstraksi dan impor; halaman Anggaran; penjelas AI | Total hasil impor cocok dengan total di dokumen |
-| 6. Gamifikasi (minggu 4 sampai 5) | Buku poin; lencana; peringkat kecamatan; kuis bila sempat | Poin dan peringkat berubah sesuai aturan saat laporan diverifikasi dan selesai |
-| 7. Polesan dan demo (minggu 5 sampai 6) | Data demo yang realistis; perbaikan UI; pengujian dengan penguji; dokumen proposal | Demo berjalan tanpa galat dua kali berturut-turut |
+| 6. Polesan dan demo (minggu 5 sampai 6) | Data demo yang realistis; perbaikan UI; pengujian dengan penguji; dokumen proposal | Demo berjalan tanpa galat dua kali berturut-turut |
 
 ## Risiko dan asumsi
 
@@ -216,4 +215,3 @@ Risiko terbesar ada di data anggaran, karena lampiran rincian APBD berupa PDF da
 - Dokumen APBD: [Perda Pati 12/2024](https://jdih.patikab.go.id/asset/files/0d933b64f7af66e50355e7b66938095d.pdf), [Perda Pati 2/2025](https://peraturan.bpk.go.id/Details/330078), [Perbup Pati 37/2025](https://peraturan.bpk.go.id/Details/332947)
 - [Monitoring SP4N-LAPOR oleh Ombudsman Kepri](https://ombudsman.go.id/news/download/pwksiaran--monitoring-laporan-sp4n-lapor-ombudsman-kepri-menilai-pemda-belum-maksimal-lakukan-evaluasi)
 - [Sanksi JAKI untuk aduan tak direspons](https://rm.id/baca-berita/megapolitan/267503/pns-dki-terancam-potong-tkd-jika-abaikan-laporan-warga-di-aplikasi-jaki)
-- [Gamifikasi dalam partisipasi warga (Citizen Lab)](https://www.citizenlab.co/blog/civic-engagement/gamification-in-citizen-participation)
