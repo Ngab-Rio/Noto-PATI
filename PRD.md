@@ -31,7 +31,7 @@ Tujuan produk: warga Pati bisa melapor dengan mudah, melihat kepastian tindak la
 | AI berguna | Kategori foto yang benar pada 30 foto uji | 80% atau lebih |
 | Tindak lanjut jelas | Laporan dengan status dan SLA yang tampil | 100% |
 | Anggaran bisa dipercaya | Angka anggaran yang menyertakan dokumen dan halaman sumber | 100% |
-| Partisipasi | Penguji yang menyelesaikan satu Misi Cek Anggaran | 50% atau lebih |
+| Partisipasi | Penguji yang mengisi setidaknya satu laporan sampai dikirim | 70% atau lebih |
 
 **Keterkaitan SDGs** (pemetaan penulis, cek ke dokumen Bappenas sebelum masuk proposal): SDG 16 (institusi yang transparan, akuntabel, dan partisipatif), SDG 11 (permukiman yang berkelanjutan), SDG 9 (infrastruktur), dan SDG 17 (kolaborasi warga dan pemerintah).
 
@@ -42,7 +42,7 @@ Empat peran memakai Noto PATI. Hak akses dikendalikan lewat peran akun.
 | Peran | Siapa | Kebutuhan utama | Akses |
 | --- | --- | --- | --- |
 | Pengunjung | Siapa pun tanpa akun | Melihat peta laporan, status, dan halaman Anggaran | Baca saja |
-| Warga | Penduduk Pati dengan akun | Melapor cepat, memantau laporannya, mendukung laporan lain, ikut misi dan peringkat | Buat laporan, dukung, beri rating |
+| Warga | Penduduk Pati dengan akun | Melapor cepat, memantau laporannya, mendukung laporan lain, memberi rating setelah laporan selesai | Buat laporan, dukung, beri rating |
 | Petugas OPD | Staf dinas terkait (misalnya PUPR, Perkim, Dishub) | Antrean laporan untuk dinasnya, batas waktu, tempat mengunggah bukti perbaikan | Ubah status laporan OPD-nya |
 | Admin | Tim pengelola Noto PATI | Memverifikasi laporan, menyetujui penjelasan anggaran dari AI, mengelola data | Akses penuh |
 
@@ -54,7 +54,7 @@ MVP lomba memuat alur laporan dari awal sampai selesai, satu halaman Anggaran ya
 
 | Kelompok | Isi |
 | --- | --- |
-| **MVP (P0 dan P1)** | Akun dan peran; buat laporan dengan foto dan lokasi; peta laporan publik; klasifikasi foto dan deteksi laporan ganda oleh AI; status dan SLA; dashboard admin dan OPD sederhana; halaman Anggaran APBD Pati 2025 untuk belanja infrastruktur dengan penjelasan AI berkutipan; kaitan laporan dan anggaran per kategori di tingkat kabupaten; poin, lencana, dan papan peringkat kecamatan |
+| **MVP (P0 dan P1)** | Akun dan peran; buat laporan dengan foto dan lokasi; peta laporan publik; klasifikasi foto dan deteksi laporan ganda oleh AI; status dan SLA; dashboard admin dan OPD sederhana; halaman Anggaran APBD Pati 2025 untuk belanja infrastruktur dengan penjelasan AI berkutipan; kaitan laporan dan anggaran per kategori di tingkat kabupaten |
 | **Tahap lanjut** | Skor akuntabilitas OPD otomatis lengkap; Misi Cek Anggaran (kuis); notifikasi WhatsApp atau email; prediksi titik rawan; PWA dengan mode offline; kaitan anggaran dan laporan per kecamatan |
 | **Di luar lingkup** | Integrasi resmi dengan sistem pemerintah (SP4N-LAPOR, SIPD); data bansos atau data pribadi penerima; pembayaran; aplikasi native |
 
@@ -80,12 +80,10 @@ Prioritas: **P0** wajib ada di MVP, **P1** sebaiknya ada, **P2** dikerjakan bila
 | BG-02 | Belanja per OPD dan program | Tabel dan grafik untuk belanja infrastruktur; filter OPD dan jenis belanja | P0 |
 | BG-03 | Kaitan anggaran dan laporan | Jumlah laporan satu kategori ditampilkan berdampingan dengan pagu kategori terkait; per kecamatan bila data lokasi tersedia, jika tidak per kabupaten | P1 |
 | BG-04 | Impor dan verifikasi data anggaran | Admin mengunggah hasil ekstraksi; total hasil impor harus cocok dengan total di batang tubuh dokumen sebelum dipublikasikan | P0 |
-| GM-01 | Poin | Poin dicatat di buku poin; poin laporan baru cair setelah diverifikasi | P1 |
-| GM-02 | Lencana | Lencana per bidang (jalan, drainase, penerangan, anggaran) dengan syarat yang jelas | P1 |
-| GM-03 | Papan peringkat | Peringkat kecamatan untuk semua; peringkat individu hanya bagi yang memilih ikut, dengan alias | P1 |
+| GM-01 | Poin | Poin dicatat di buku poin; poin laporan baru cair setelah diverifikasi | P2 |
+| GM-02 | Lencana | Lencana per bidang (jalan, drainase, penerangan, anggaran) dengan syarat yang jelas | P2 |
+| GM-03 | Papan peringkat | Peringkat kecamatan untuk semua; peringkat individu hanya bagi yang memilih ikut, dengan alias | P2 |
 | GM-04 | Misi Cek Anggaran | Warga membaca penjelasan anggaran lalu menjawab kuis singkat untuk mendapat poin | P2 |
-
-**Aturan poin awal (usulan, diuji lalu disetel):** laporan lengkap dan terverifikasi +20; laporan sampai Selesai +30; konfirmasi perbaikan oleh warga +10; dukungan +2 (maksimal 5 per hari); kuis anggaran +10; laporan palsu atau duplikat yang disengaja -20.
 
 ## Kebutuhan non-fungsional
 
@@ -101,7 +99,7 @@ Prioritas: **P0** wajib ada di MVP, **P1** sebaiknya ada, **P2** dikerjakan bila
 
 ## Alur pengguna dan model data
 
-Flowchart (alur laporan, alur anggaran, status laporan) dan empat ERD ada di halaman [Diagram Noto PATI](https://claude.ai/artifact/8P6yWMnQCNmwADCtkPqZvu). Model data terdiri dari 21 tabel: 12 tabel pelaporan, 3 tabel anggaran.
+Flowchart (alur laporan, alur anggaran, status laporan) dan empat ERD ada di halaman [Diagram Noto PATI](https://claude.ai/artifact/8P6yWMnQCNmwADCtkPqZvu). Model data terdiri dari 15 tabel: 12 tabel pelaporan, 3 tabel anggaran.
 
 **Status laporan:** Diterima, Digabung, Ditolak, Diverifikasi, Diproses, Selesai, Dibuka Kembali, Ditutup.
 
@@ -114,7 +112,7 @@ Flowchart (alur laporan, alur anggaran, status laporan) dan empat ERD ada di hal
 | Verifikasi | Laporan baru diteruskan ke OPD setelah admin menyatakan valid; yang ditolak wajib beralasan |
 | SLA | Setiap kategori punya batas waktu respons; yang melewatinya dieskalasi dan ditandai publik |
 | Penutupan | Laporan Selesai menunggu konfirmasi warga; bila warga tidak puas, laporan dibuka kembali |
-| Poin | Poin laporan cair setelah verifikasi; laporan palsu atau duplikat yang disengaja dikenai penalti |
+| Laporan palsu | Laporan yang terbukti palsu atau duplikat disengaja dikenai peringatan; admin menutup laporan |
 | Anggaran | Yang ditampilkan adalah pagu; realisasi hanya bila datanya ada; penjelasan AI baru publik setelah disetujui admin |
 
 ## Arsitektur dan tech stack
@@ -177,7 +175,7 @@ Risiko terbesar ada di data anggaran, karena lampiran rincian APBD berupa PDF da
 | Lampiran APBD berupa hasil pindai atau tabel sulit diekstrak | Angka anggaran salah atau tidak lengkap | Lakukan gerbang cek data di minggu 1; wajib mencocokkan total; mulai dari subset belanja infrastruktur; bila gagal, tampilkan ringkasan dari batang tubuh (total pendapatan, belanja, defisit) |
 | Yang tersedia hanya pagu, bukan realisasi | Kesimpulan menyesatkan | Beri label "pagu, bukan realisasi"; gunakan bahasa netral dan jangan menyebut boros atau korupsi |
 | Foto gelap atau buram membuat AI salah kategori | Laporan salah rute | Warga bisa mengubah kategori; tampilkan tingkat keyakinan; admin memverifikasi |
-| Laporan palsu, spam, atau memburu poin | Data kotor dan peringkat tidak adil | Poin cair setelah verifikasi; batas harian; hash foto untuk mendeteksi foto yang sama; penalti; rate limit |
+| Laporan palsu atau spam | Data kotor | Hash foto untuk mendeteksi foto yang sama; rate limit; admin menutup dengan alasan |
 | Foto memuat wajah, plat nomor, atau lokasi rumah | Pelanggaran privasi | Hapus EXIF; peringatan di form; pelapor anonim opsional; blur otomatis bila sempat |
 | Kuota dan biaya layanan (AI, basis data, hosting) habis saat demo | Demo terhenti | Simpan hasil AI; batasi panggilan per pengguna; siapkan data demo; cek kuota paket gratis lebih awal |
 | Tidak ada OPD sungguhan yang memakai sistem | Tindak lanjut hanya simulasi | Jelaskan sebagai prototipe; tandai data demo dengan jelas |
