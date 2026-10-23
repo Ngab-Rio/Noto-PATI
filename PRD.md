@@ -146,7 +146,6 @@ Pengguna hanya berbicara dengan aplikasi Next.js, yang membaca dan menulis data 
 
 **Struktur proyek** — Struktur folder lengkap dan final ada di [ARCHITECTURE.md § 8. Struktur Folder](./ARCHITECTURE.md). Ringkasan lapisan `src/`:
 
-<<<<<<< HEAD
 | Lapisan | Folder | Tanggung jawab |
 | --- | --- | --- |
 | Routing | `src/app/` | Tipis — hanya routing, layout, dan komposisi halaman |
@@ -155,27 +154,6 @@ Pengguna hanya berbicara dengan aplikasi Next.js, yang membaca dan menulis data 
 | Server | `src/server/` | Infrastruktur server-only (Supabase client, guards, AI, signed URL) |
 | Utilitas | `src/lib/` | Helper yang aman dipakai di sisi klien maupun server |
 | Database | `supabase/migrations/` | Skema, RLS, RPC, trigger, view sebagai migrasi SQL |
-=======
-```
-noto-pati/
-  app/
-    (publik)/page.tsx                 # landing page
-    (publik)/peta/page.tsx            # peta laporan
-    (publik)/laporan/[id]/page.tsx    # detail dan linimasa
-    (publik)/anggaran/page.tsx        # transparansi anggaran
-    (publik)/peringkat/page.tsx       # papan peringkat
-    (warga)/lapor/baru/page.tsx       # form laporan
-    (admin)/admin/...                 # antrean, anggaran, pengguna
-    (opd)/opd/...                     # dashboard OPD
-    api/ai/analisis-foto/route.ts
-    api/ai/jelaskan-anggaran/route.ts
-    api/cron/sla/route.ts
-  components/                         # ui, peta, laporan, anggaran
-  lib/                                # db, ai, geo, poin, auth
-  scripts/                            # impor-apbd, seed data demo
-  drizzle/                            # migrasi
-```
->>>>>>> bf5ea038f5a36cdfbf6d0f8b5b326d28f14a3dba
 
 ## Rencana pengerjaan
 
