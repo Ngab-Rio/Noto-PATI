@@ -128,3 +128,44 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .landing-shell, .page-shell { min-height: 100%; padding: 4rem 6vw 5rem; }
+  .hero-section { align-items: center; display: grid; gap: 8vw; grid-template-columns: minmax(0, 1fr) 280px; margin: 6vh auto 10vh; max-width: 1180px; }
+  .hero-copy { max-width: 700px; }
+  .eyebrow { color: #e56f3d; font-family: var(--font-geist-sans), sans-serif; font-size: .7rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+  .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(3rem, 7vw, 6.9rem); font-weight: 400; letter-spacing: -.035em; line-height: .95; margin: 1.4rem 0; }
+  .hero-copy p, .page-heading p, .page-shell > p { color: var(--muted-foreground); font-family: var(--font-geist-sans), sans-serif; font-size: 1rem; line-height: 1.7; max-width: 550px; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
+  .button { align-items: center; border: 1px solid transparent; cursor: pointer; display: inline-flex; font-family: var(--font-geist-sans), sans-serif; font-size: .82rem; justify-content: center; min-height: 2.9rem; padding: 0 1.25rem; }
+  .button-primary { background: var(--primary); color: var(--primary-foreground); }
+  .button-secondary { background: transparent; border-color: var(--border); }
+  .hero-mark { border: 1px solid var(--foreground); display: flex; flex-direction: column; height: 280px; justify-content: space-between; padding: 1.4rem; transform: rotate(5deg); }
+  .hero-mark strong { font-size: 3.3rem; font-weight: 400; line-height: .84; }
+  .public-strip { border-top: 1px solid var(--border); display: grid; gap: 2rem; grid-template-columns: 1fr 1fr; margin: 0 auto; max-width: 1180px; padding-top: 1.5rem; }
+  .public-strip h2 { font-size: clamp(1.5rem, 3vw, 2.6rem); font-weight: 400; line-height: 1; margin: 1rem 0 0; max-width: 560px; }
+  .public-strip p { color: var(--muted-foreground); font-family: var(--font-geist-sans), sans-serif; line-height: 1.6; margin: 0; max-width: 360px; }
+  .auth-shell, .narrow-shell { margin: 5vh auto 0; max-width: 560px; }
+  .auth-form, .profile-form { display: grid; gap: 1.1rem; margin-top: 2rem; }
+  .auth-form label, .profile-form label { display: grid; font-family: var(--font-geist-sans), sans-serif; font-size: .8rem; gap: .5rem; }
+  .auth-form input, .profile-form input { min-height: 3rem; padding: 0 .8rem; }
+  .auth-form .button, .profile-form .button { width: 100%; }
+  .auth-switch { color: var(--muted-foreground); font-family: var(--font-geist-sans), sans-serif; font-size: .83rem; margin-top: 1.5rem; }
+  .auth-switch a { color: #e56f3d; }
+  .form-error, .form-success { font-family: var(--font-geist-sans), sans-serif; font-size: .8rem; line-height: 1.5; margin: 0; }
+  .form-error { color: #ad3d2d; } .form-success { color: #2c7357; }
+  .page-heading { border-bottom: 1px solid var(--border); padding-bottom: 2rem; }
+  .surface { background: var(--card); border: 1px solid var(--border); padding: 1.75rem; }
+  .profile-surface { margin: 1.6rem 0 1rem; }
+  .field-caption, .muted { color: var(--muted-foreground); font-family: var(--font-geist-sans), sans-serif; font-size: .74rem; }
+  .email-value { font-family: var(--font-geist-sans), sans-serif; margin: .3rem 0 1.75rem; }
+}
+
+@media (max-width: 700px) {
+  .landing-shell, .page-shell { padding: 2.5rem 6vw 3rem; }
+  .hero-section { gap: 3rem; grid-template-columns: 1fr; margin: 5vh auto 7vh; }
+  .hero-mark { height: 190px; justify-self: end; width: 190px; }
+  .hero-mark strong { font-size: 2.3rem; }
+  .public-strip { grid-template-columns: 1fr; }
+  .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(3rem, 15vw, 5rem); }
+}
