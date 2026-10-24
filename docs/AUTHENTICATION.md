@@ -170,3 +170,28 @@ Catatan:
 - Pelaporan tanpa akun (guest report).
 - Manajemen role lewat UI oleh pengguna biasa.
 - Multi-factor authentication khusus (dapat dipertimbangkan sebagai perubahan scope; tidak diwajibkan PRD).
+
+## 10. Konfigurasi implementasi Noto PATI
+
+Set environment berikut pada `.env.local` dan deployment:
+
+```dotenv
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=https://<project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable-key>
+```
+
+Di Supabase Auth, aktifkan Email provider dan atur Site URL ke `NEXT_PUBLIC_APP_URL`. Tambahkan redirect URL berikut:
+
+- `http://localhost:3000/auth/callback`
+- URL callback deployment yang sesuai
+
+Google OAuth menggunakan callback yang sama dan hanya berjalan jika provider Google telah dikonfigurasi di Supabase serta Google Cloud. Role `admin` tidak memiliki form web; tetapkan secara terkontrol pada database:
+
+```sql
+update public.user_roles
+set role = 'admin'
+where user_id = '<auth-user-uuid>';
+```
+
+Jalankan SQL tersebut hanya melalui akses administratif tepercaya. Publishable key boleh berada di browser karena seluruh tabel terkait dilindungi RLS; service role key tidak diperlukan oleh aplikasi web ini.
