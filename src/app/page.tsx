@@ -1,23 +1,12 @@
 import Link from "next/link";
 
-import { logout } from "@/app/auth/actions";
-import { getCurrentRole, getCurrentUser } from "@/lib/auth/guards";
+import { getCurrentUser } from "@/lib/auth/guards";
 
 export default async function Home() {
   const { user } = await getCurrentUser();
-  const role = user ? await getCurrentRole(user.id) : null;
 
   return (
     <main className="landing-shell">
-      <nav className="site-nav">
-        <Link className="brand" href="/">Noto <span>PATI</span></Link>
-        <div className="nav-links">
-          <Link href="/">Laporan publik</Link>
-          {user ? <Link href="/profile">Profil</Link> : <Link href="/login">Masuk</Link>}
-          {role === "admin" && <Link href="/admin">Admin</Link>}
-          {user && <form action={logout}><button className="text-button" type="submit">Keluar</button></form>}
-        </div>
-      </nav>
       <section className="hero-section">
         <div className="hero-copy">
           <span className="eyebrow">Portal warga Kabupaten Pati</span>
