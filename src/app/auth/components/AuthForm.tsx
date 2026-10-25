@@ -53,6 +53,21 @@ export function AuthForm({ mode, next }: { mode: "login" | "register"; next: str
           Password
           <input autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={8} name="password" required type="password" />
         </label>
+        {mode === "register" && (
+          <label className="flex items-start gap-2 text-sm cursor-pointer">
+            <input type="checkbox" required className="mt-0.5" />
+            <span className="text-text-muted">
+              Saya menyetujui{" "}
+              <Link href="/kebijakan-privasi" target="_blank" className="text-primary hover:underline">
+                Kebijakan Privasi
+              </Link>{" "}
+              dan{" "}
+              <Link href="/syarat-ketentuan" target="_blank" className="text-primary hover:underline">
+                Syarat & Ketentuan
+              </Link>
+            </span>
+          </label>
+        )}
         {state.error && <p className="form-error" role="alert">{state.error}</p>}
         {state.message && <p className="form-success" role="status">{state.message}</p>}
         <SubmitButton label={mode === "login" ? "Masuk" : "Daftar"} />
