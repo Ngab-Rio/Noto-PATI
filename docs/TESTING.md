@@ -56,8 +56,20 @@ npm run test:e2e
 # Menjalankan pengujian E2E dengan UI interaktif
 npx playwright test --ui
 
-# Menjalankan pengujian khusus alur pelaporan
-npx playwright test e2e/report-flow.spec.ts
+# Menjalankan pengujian khusus file
+npx playwright test e2e/landing-page.spec.ts
+npx playwright test e2e/navigation.spec.ts
+npx playwright test e2e/auth-flow.spec.ts
+
+# Menjalankan dengan browser tertentu
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+
+# Mode debug (step-by-step)
+npx playwright test --debug
+
+# Install browsers (pertama kali)
+npx playwright install
 ```
 
 ### Database Testing (pgTAP & Supabase CLI)
@@ -99,9 +111,27 @@ Sesuai dengan arsitektur 4 lapisan Noto PATI, setiap lapisan memiliki pendekatan
 ### 3.4 Lapisan 4: Pengujian Lintas Lapisan (E2E Playwright)
 * **Karakteristik:** Menguji alur pengguna di lingkungan browser nyata.
 * **Alat:** `Playwright` di folder `e2e/`.
+* **Fokus Uji:**
+  - **Landing Page (`e2e/landing-page.spec.ts`):**
+    - Hero section dengan CTAs auth-aware
+    - "How to Report" section (5 langkah)
+    - Status badges showcase dengan badge "Data Simulasi"
+    - Featured reports dengan mock data indicator
+    - Footer dengan disclaimers
+  - **Public Navigation (`e2e/navigation.spec.ts`):**
+    - Navigasi guest user (/, /map, /budget)
+    - Navigasi authenticated user (profile, report/new)
+    - Admin dashboard access (/admin)
+    - Responsive mobile menu
+  - **Auth Flow (`e2e/auth-flow.spec.ts`):**
+    - Login/register pages
+    - Form validation
+    - Redirect preservation (?next parameter)
+    - Unauthorized access handling
 * **Mocking Wajib di Browser:**
   1. **Geolocation API:** Harus di-mock ke titik koordinat valid di Kabupaten Pati (misalnya alun-alun Pati: `-6.7554, 111.0378`).
   2. **Camera (`getUserMedia`):** Di-mock menggunakan gambar dummy statis agar tidak memblokir perizinan hardware di server CI.
+* **Helper Utilities:** `e2e/helpers/auth.ts` menyediakan fungsi `loginUser()`, `logoutUser()`, `isAuthenticated()` untuk setup test authentication.
 
 ---
 
@@ -110,8 +140,9 @@ Sesuai dengan arsitektur 4 lapisan Noto PATI, setiap lapisan memiliki pendekatan
 1. **Unit test domain/fitur:** Ditempatkan berdampingan (*co-located*) dengan file implementasi menggunakan ekstensi `.test.ts`.  
    *Contoh:* `src/domain/sla.ts` diuji oleh `src/domain/sla.test.ts`.
 2. **E2E test:** Ditempatkan di dalam direktori `e2e/` dengan ekstensi `.spec.ts`.  
-   *Contoh:* `e2e/report-submission.spec.ts`.
-3. **Database test:** Ditempatkan di `supabase/tests/` dengan ekstensi `.sql`.
+   *Contoh:* `e2e/landing-page.spec.ts`, `e2e/navigation.spec.ts`, `e2e/auth-flow.spec.ts`.
+3. **E2E helpers:** Utilitas reusable di `e2e/helpers/` untuk authentication, page objects, dan mocking.
+4. **Database test:** Ditempatkan di `supabase/tests/` dengan ekstensi `.sql`.
 
 ---
 
@@ -121,7 +152,10 @@ Gunakan checklist ini sebelum mengajukan Pull Request:
 
 - [ ] **Type Check:** `npx tsc --noEmit` lolos tanpa error.
 - [ ] **Linting:** `npm run lint` lolos tanpa pelanggaran aturan.
-- [ ] **Unit Tests:** Semua pengujian domain lulus.
+- [ ] **Unit Tests:** Semua pengujian domain lulus (`npm run test`).
+- [ ] **E2E Tests:** Playwright tests untuk critical paths lulus (`npm run test:e2e`).
 - [ ] **Batas Server/Klien:** File di `src/server/` memuat `import "server-only"`.
 - [ ] **Data Demo & Mock:** Tidak menggunakan kredensial/API key nyata atau data pribadi warga dalam pengujian.
-- [ ] **Label Prototipe:** Komponen UI yang baru tetap menyertakan disclaimer prototipe jika memuat simulasi data.
+- [ ] **Data Simulasi Label:** Mock data ditandai dengan badge "Data Simulasi" sesuai `DISCLAIMERS.dataSimulation`.
+- [ ] **Error Boundaries:** Halaman baru memiliki `error.tsx` untuk graceful error handling.
+- [ ] **Loading States:** Async pages memiliki `loading.tsx` untuk UX yang lebih baik.

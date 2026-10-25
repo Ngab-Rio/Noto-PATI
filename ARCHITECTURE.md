@@ -41,7 +41,7 @@ Setiap keputusan penting disertai **Mengapa**, supaya keputusan dapat ditinjau u
 | P3 | **Rahasia hanya hidup di server.** Service role key dan API key pihak ketiga tidak pernah masuk bundle browser. | PRD 11 dan 15.1. |
 | P4 | **Layanan opsional tidak boleh menggagalkan alur inti.** AI dan email adalah tambahan; pelaporan manual harus tetap jalan. | PRD 13.1, 15.3, FR-13, AI-01. |
 | P5 | **Waktu selalu berasal dari server/database**, bukan jam perangkat. | PRD 10.1: SLA dan riwayat status. |
-| P6 | **Label "prototipe/simulasi" tidak boleh bisa terlupa.** Teks wajib dipusatkan di satu tempat dan dipakai lewat komponen, bukan diketik ulang per halaman. | PRD 1, 4, 10, 11: aplikasi tidak boleh menyiratkan penanganan pemerintah yang belum nyata. |
+| P6 | **Teks label dan metadata dipusatkan.** Teks konfigurasi, disclaimer, dan label aplikasi disimpan di `config/labels.ts` agar mudah dipelihara dan konsisten di seluruh aplikasi. | Menghindari teks hardcoded tersebar; memudahkan perubahan copy atau terjemahan. |
 | P7 | **Sederhana dulu.** Satu aplikasi Next.js, tanpa service backend terpisah, tanpa ORM, tanpa message queue, kecuali ada alasan tertulis. | Prototipe lomba dengan waktu terbatas; setiap komponen tambahan menambah titik gagal saat demo. |
 
 ---
@@ -609,7 +609,7 @@ noto-pati/
    │
    ├─ components/
    │  ├─ ui/                     # shadcn/ui
-   │  └─ shared/                 # DemoBanner, SlaBadge, StatusBadge, SourceCitation
+   │  └─ shared/                 # Navbar, StatusBadge, ReportCard, shared UI
    │
    ├─ config/
    │  ├─ env.server.ts           # validasi Zod untuk variabel server
@@ -708,12 +708,11 @@ RPC melempar error berkode; `server/errors.ts` memetakannya ke pesan Indonesia y
 | `REASON_REQUIRED` / `EVIDENCE_REQUIRED` | Alasan atau bukti wajib belum ada |
 | `ALREADY_SUPPORTED` / `OWN_REPORT` | Dukungan ganda / laporan milik sendiri |
 
-### 10.3 Label prototipe yang tidak bisa terlupa (P6)
+### 10.3 Centralized Labels dan Metadata (P6)
 
-- `config/labels.ts` memegang teks baku: pernyataan prototipe, "SLA adalah target simulasi", "pagu, bukan realisasi", dan label data demo.
-- `<DemoBanner>` dipasang di `app/layout.tsx` sehingga tampil di semua halaman.
-- `<SlaBadge>` **selalu** merender keterangan "target simulasi". Tidak ada cara memakainya tanpa keterangan itu.
-- Kolom `is_demo` pada `reports` (dan akun demo) membedakan data simulasi dari data nyata; tampil sebagai lencana.
+- `config/labels.ts` memegang teks konfigurasi aplikasi: nama aplikasi, tagline, wilayah, tahun anggaran, dan disclaimer yang relevan.
+- Label dan metadata terpusat memudahkan pembaruan copy atau internasionalisasi tanpa menyentuh komponen UI.
+- Komponen dapat mengimpor konstanta dari `config/labels.ts` untuk konsistensi (contoh: `APP_CONFIG.name`, `DISCLAIMERS.budgetSourceNotice`).
 - Tidak ada komponen atau teks yang menyatakan "ditangani pemerintah/OPD" kecuali ada sumber data nyata; pernyataan seperti itu tidak ada dalam `labels.ts`.
 
 ### 10.4 Waktu
@@ -851,7 +850,7 @@ Butir 1-5 berasal dari PRD 21; butir 6-9 ditemukan saat menyusun arsitektur ini.
 | NFR Privasi | View publik, bucket privat, EXIF, lokasi sekali | 7.4, 10.5 |
 | NFR Keandalan | Layanan opsional terisolasi, transaksi atomik, tanpa sukses palsu | 6.1, 11 |
 | NFR Ketelusuran | Riwayat audit, metadata sumber anggaran | 6.6, 7.2 |
-| Label prototipe/demo | `config/labels.ts`, `DemoBanner`, `SlaBadge`, `is_demo` | 10.3 |
+| Centralized labels | `config/labels.ts` | 10.3 |
 
 ---
 

@@ -11,12 +11,10 @@ export const APP_CONFIG = {
 } as const;
 
 export const DISCLAIMERS = {
-  prototypeBanner:
-    "Prototipe Lomba: Data laporan, simulasi SLA, dan tindak lanjut dinas disimulasikan untuk keperluan pengujian dan demonstrasi lomba.",
   notOfficialGovernment:
     "Noto PATI adalah inisiatif independen kompetisi civic tech, bukan kanal aduan resmi Pemerintah Kabupaten Pati.",
   budgetSourceNotice:
     "Data anggaran bersumber dari dokumen resmi APBD Kabupaten Pati T.A. 2025 yang telah diverifikasi.",
-  slaTargetNote:
-    "Target SLA dihitung berdasarkan standar pelayanan simulasi prototipe.",
+  dataSimulation:
+    "Data laporan dan tindak lanjut yang ditampilkan adalah data simulasi untuk keperluan demonstrasi.",
 } as const;
