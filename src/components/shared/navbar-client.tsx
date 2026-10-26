@@ -10,6 +10,7 @@ import type { AppRole } from "@/lib/auth/guards";
 
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
+  { href: "/reports", label: "Laporan", icon: PlusCircle },
   { href: "/map", label: "Peta Laporan", icon: MapPin },
   { href: "/budget", label: "Anggaran APBD", icon: BarChart3 },
 ];

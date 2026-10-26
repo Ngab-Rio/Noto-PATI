@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { updateProfile, type ProfileActionState } from "@/app/profile/actions";
+import { updateProfile, type ProfileActionState } from "./actions";
 
 function SaveButton() {
   const { pending } = useFormStatus();
