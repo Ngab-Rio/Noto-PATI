@@ -58,21 +58,13 @@ export default async function Home() {
             dan dapat ditindaklanjuti secara transparan. <span className="text-xs text-text-muted italic">(Platform prototipe untuk demonstrasi konsep)</span>
           </p>
           <div className="hero-actions">
-            {user ? (
-              <Link href="/report/new">
-                <Button size="lg" variant="default" className="gap-2">
-                  <PlusCircle className="h-4 w-4" />
-                  <span>Buat Laporan Baru</span>
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/login?next=/report/new">
-                <Button size="lg" variant="default" className="gap-2">
-                  <span>Mulai Lapor Masalah</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            <Link href="/report/new">
+              <Button size="lg" variant="default" className="gap-2">
+                <PlusCircle className="h-4 w-4" />
+                <span>{user ? "Buat Laporan Baru" : "Mulai Lapor Masalah"}</span>
+                {!user && <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </Link>
             <Link href="/map">
               <Button size="lg" variant="outline" className="gap-2">
                 <MapPin className="h-4 w-4" />

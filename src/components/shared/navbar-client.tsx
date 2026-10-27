@@ -128,7 +128,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                 Masuk
               </Link>
               <Link
-                href="/login?next=/report/new"
+                href="/report/new"
                 className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-text-on-primary text-sm font-medium px-4 py-2 rounded-lg shadow-xs transition-colors"
               >
                 <PlusCircle className="h-4 w-4" />
@@ -141,7 +141,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
         {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center gap-2">
           <Link
-            href={user ? "/report/new" : "/login?next=/report/new"}
+            href="/report/new"
             className="flex items-center gap-1 bg-primary text-text-on-primary text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-xs"
           >
             <PlusCircle className="h-3.5 w-3.5" />
