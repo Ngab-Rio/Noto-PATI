@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { IconPlusCircle, IconSparkle } from "@/components/shared/icons";
 import { TipsCard } from "./components/TipsCard";
+import { createReport } from "./actions";
 
 interface ReportFormData {
   photos: File[];
@@ -25,6 +26,10 @@ interface ReportFormData {
   category: string;
   description: string;
   agreedToTerms: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  locationAccuracyM: number | null;
+  locationCapturedAt: string | null;
 }
 
 const CATEGORIES = [
@@ -39,11 +44,75 @@ const CATEGORIES = [
 ];
 
 const MAX_PHOTOS = 3;
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SOURCE_FILE_SIZE = 20 * 1024 * 1024;
+const MAX_UPLOAD_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_COMPRESSED_DIMENSION = 1920;
+const JPEG_QUALITY = 0.82;
+const SUBMISSION_TIMEOUT_MS = 45000;
+
+function compressPhoto(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const image = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      const scale = Math.min(
+        1,
+        MAX_COMPRESSED_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
+      );
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        reject(new Error("Canvas tidak tersedia di perangkat ini."));
+        return;
+      }
+
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Foto tidak dapat dikompres."));
+            return;
+          }
+
+          const baseName = file.name.replace(/\.[^/.]+$/, "") || "foto-laporan";
+          resolve(new File([blob], `${baseName}.jpg`, { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        JPEG_QUALITY,
+      );
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Foto tidak dapat dibaca oleh perangkat ini."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function createClientRequestId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const randomValue = Math.random() * 16 | 0;
+    const value = character === "x" ? randomValue : (randomValue & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
 
 export function ReportForm() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const clientRequestIdRef = useRef<string>(createClientRequestId());
+  const submitLockRef = useRef(false);
   
   const [formData, setFormData] = useState<ReportFormData>({
     photos: [],
@@ -53,14 +122,20 @@ export function ReportForm() {
     category: "",
     description: "",
     agreedToTerms: false,
+    latitude: null,
+    longitude: null,
+    locationAccuracyM: null,
+    locationCapturedAt: null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   // Photo upload handler
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newErrors = { ...errors };
     delete newErrors.photos;
@@ -71,8 +146,8 @@ export function ReportForm() {
     }
 
     for (const file of files) {
-      if (file.size > MAX_FILE_SIZE) {
-        setErrors({ ...newErrors, photos: "Ukuran file maksimal 5MB per foto" });
+      if (file.size > MAX_SOURCE_FILE_SIZE) {
+        setErrors({ ...newErrors, photos: "Ukuran foto asli maksimal 20MB per foto" });
         return;
       }
       if (!file.type.startsWith("image/")) {
@@ -81,16 +156,31 @@ export function ReportForm() {
       }
     }
 
-    const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
-    setFormData({
-      ...formData,
-      photos: [...formData.photos, ...files],
-      photoPreviewUrls: [...formData.photoPreviewUrls, ...newPreviewUrls],
-    });
-    setErrors(newErrors);
+    setIsCompressing(true);
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    try {
+      const compressedFiles = await Promise.all(files.map(compressPhoto));
+      if (compressedFiles.some((file) => file.size > MAX_UPLOAD_FILE_SIZE)) {
+        setErrors({ ...newErrors, photos: "Foto masih terlalu besar setelah dikompres. Ambil foto dengan jarak atau pencahayaan yang lebih baik." });
+        return;
+      }
+
+      const newPreviewUrls = compressedFiles.map((file) => URL.createObjectURL(file));
+
+      setFormData((currentFormData) => ({
+        ...currentFormData,
+        photos: [...currentFormData.photos, ...compressedFiles],
+        photoPreviewUrls: [...currentFormData.photoPreviewUrls, ...newPreviewUrls],
+      }));
+      setErrors(newErrors);
+    } catch (error) {
+      console.error("Photo compression error:", error);
+      setErrors({ ...newErrors, photos: "Foto tidak dapat diproses di perangkat ini." });
+    } finally {
+      setIsCompressing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -116,6 +206,9 @@ export function ReportForm() {
     if (formData.detailLocation.trim().length < 20) {
       newErrors.detailLocation = "Detail lokasi minimal 20 karakter untuk kejelasan";
     }
+    if (formData.latitude === null || formData.longitude === null) {
+      newErrors.location = "Ambil lokasi perangkat sebelum mengirim laporan";
+    }
     if (!formData.title.trim() || formData.title.trim().length < 10) {
       newErrors.title = "Judul minimal 10 karakter";
     }
@@ -133,9 +226,83 @@ export function ReportForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const requestCapturePermissions = async (event: React.MouseEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+
+    if (isRequestingPermissions || isCompressing) {
+      return;
+    }
+
+    setIsRequestingPermissions(true);
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors };
+      delete nextErrors.photos;
+      delete nextErrors.location;
+      return nextErrors;
+    });
+
+    try {
+      if (!window.isSecureContext) {
+        throw new Error("SECURE_CONTEXT_REQUIRED");
+      }
+
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("CAMERA_UNSUPPORTED");
+      }
+
+      const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      cameraStream.getTracks().forEach((track) => track.stop());
+
+      if (!navigator.geolocation) {
+        throw new Error("LOCATION_UNSUPPORTED");
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            setFormData((currentFormData) => ({
+              ...currentFormData,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              locationAccuracyM: Number.isFinite(position.coords.accuracy)
+                ? position.coords.accuracy
+                : null,
+              locationCapturedAt: new Date(position.timestamp).toISOString(),
+            }));
+            resolve();
+          },
+          reject,
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+        );
+      });
+
+      fileInputRef.current?.click();
+    } catch (error) {
+      const message = error instanceof Error && error.message === "CAMERA_UNSUPPORTED"
+        ? "Perangkat atau browser tidak mendukung kamera."
+        : error instanceof Error && error.message === "LOCATION_UNSUPPORTED"
+          ? "Perangkat atau browser tidak mendukung lokasi."
+          : error instanceof Error && error.message === "SECURE_CONTEXT_REQUIRED"
+            ? "Akses kamera dan lokasi membutuhkan HTTPS. Gunakan localhost atau buka aplikasi melalui URL HTTPS."
+          : "Izin kamera dan lokasi wajib diaktifkan untuk mengambil foto laporan.";
+
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        photos: message,
+        location: "Izin kamera dan lokasi diperlukan sebelum foto dapat diambil.",
+      }));
+    } finally {
+      setIsRequestingPermissions(false);
+    }
+  };
+
   // Submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (submitLockRef.current || isSubmitting || isCompressing) {
+      return;
+    }
     
     if (!validateForm()) {
       // Scroll to first error
@@ -144,24 +311,46 @@ export function ReportForm() {
       return;
     }
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
 
     try {
-      // TODO: Implement actual submission to Supabase
-      console.log("Submitting report:", formData);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      // Generate ticket number
-      const ticketNumber = `NP-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`;
-      
-      // Redirect to success page (or show success modal)
-      router.push(`/report/success?ticket=${ticketNumber}`);
+      const result = await Promise.race([
+        createReport({
+        clientRequestId: clientRequestIdRef.current,
+        category: formData.category,
+        title: formData.title,
+        description: formData.description,
+        detailLocation: formData.detailLocation,
+        photos: formData.photos,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        locationAccuracyM: formData.locationAccuracyM,
+        locationCapturedAt: formData.locationCapturedAt,
+        }),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(
+            () => reject(new Error("SUBMISSION_TIMEOUT")),
+            SUBMISSION_TIMEOUT_MS,
+          );
+        }),
+      ]);
+
+      if (!result.ok) {
+        setErrors({ submit: result.message });
+        return;
+      }
+
+      router.push(`/reports/${result.reportId}`);
     } catch (error) {
       console.error("Submission error:", error);
-      setErrors({ submit: "Terjadi kesalahan saat mengirim laporan. Silakan coba lagi." });
+      setErrors({
+        submit: error instanceof Error && error.message === "SUBMISSION_TIMEOUT"
+          ? "Koneksi terlalu lama. Data form tetap tersimpan, silakan coba kirim lagi."
+          : "Terjadi kesalahan saat mengirim laporan. Data form tetap tersimpan, silakan coba lagi.",
+      });
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -232,6 +421,13 @@ export function ReportForm() {
               <div className="rounded-lg bg-surface border border-border p-4 text-sm">
                 <span className="text-text-muted">Detail Lokasi:</span>
                 <p className="font-medium text-text mt-1 leading-relaxed">{formData.detailLocation}</p>
+                <span className="text-text-muted block mt-3">Koordinat perangkat:</span>
+                <p className="font-medium text-text mt-1">
+                  {formData.latitude}, {formData.longitude}
+                  {formData.locationAccuracyM !== null && (
+                    <span className="text-text-muted font-normal"> (akurasi ±{Math.round(formData.locationAccuracyM)} m)</span>
+                  )}
+                </p>
               </div>
             </div>
 
@@ -274,9 +470,15 @@ export function ReportForm() {
                 <span>Edit Laporan</span>
               </Button>
 
+              {errors.submit && (
+                <p data-error className="text-sm text-red-600" role="alert">
+                  {errors.submit}
+                </p>
+              )}
+
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isCompressing}
                 variant="default"
                 size="lg"
                 className="gap-2 w-full sm:w-auto"
@@ -289,7 +491,7 @@ export function ReportForm() {
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    <span>Kirim Laporan</span>
+                    <span>{errors.submit ? "Coba Lagi" : "Kirim Laporan"}</span>
                   </>
                 )}
               </Button>
@@ -335,13 +537,15 @@ export function ReportForm() {
             </p>
 
             {formData.photos.length === 0 ? (
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
+              <label onClick={requestCapturePermissions} className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
                   <Upload className="h-10 w-10 text-text-muted mb-3" />
                   <p className="mb-2 text-sm text-text">
-                    <span className="font-semibold">Klik untuk upload</span> atau drag & drop
+                    <span className="font-semibold">
+                      {isRequestingPermissions ? "Meminta izin kamera dan lokasi..." : "Ambil foto dengan kamera"}
+                    </span>
                   </p>
-                  <p className="text-xs text-text-muted">PNG, JPG, JPEG (Max 5MB, maks 3 foto)</p>
+                  <p className="text-xs text-text-muted">Foto akan dikompres otomatis, maksimal 3 foto</p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -350,6 +554,7 @@ export function ReportForm() {
                   accept="image/*"
                   capture="environment"
                   multiple
+                  onClick={(event) => event.stopPropagation()}
                   onChange={handleFileSelect}
                 />
               </label>
@@ -380,7 +585,7 @@ export function ReportForm() {
                 </div>
 
                 {formData.photos.length < MAX_PHOTOS && (
-                  <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface/50 transition-colors bg-background">
+                  <label onClick={requestCapturePermissions} className="flex items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface/50 transition-colors bg-background">
                     <div className="flex items-center gap-2 text-sm text-text-muted">
                       <Upload className="h-4 w-4" />
                       <span>Tambah foto ({formData.photos.length}/{MAX_PHOTOS})</span>
@@ -392,11 +597,16 @@ export function ReportForm() {
                       accept="image/*"
                       capture="environment"
                       multiple
+                      onClick={(event) => event.stopPropagation()}
                       onChange={handleFileSelect}
                     />
                   </label>
                 )}
               </div>
+            )}
+
+            {isCompressing && (
+              <p className="text-sm text-text-muted">Memproses foto...</p>
             )}
 
             {errors.photos && (
@@ -586,6 +796,7 @@ export function ReportForm() {
               <Button
                 type="button"
                 variant="outline"
+                disabled={isCompressing}
                 onClick={() => {
                   if (validateForm()) {
                     setShowPreview(true);
@@ -599,7 +810,7 @@ export function ReportForm() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isCompressing}
                 variant="default"
                 className="gap-2 flex-1 sm:flex-none"
               >
@@ -611,7 +822,7 @@ export function ReportForm() {
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    <span>Kirim Laporan</span>
+                    <span>{errors.submit ? "Coba Lagi" : "Kirim Laporan"}</span>
                   </>
                 )}
               </Button>

@@ -41,8 +41,9 @@ Empat peran memakai Noto PATI. Hak akses dikendalikan lewat peran akun.
 
 | Peran | Siapa | Kebutuhan utama | Akses |
 | --- | --- | --- | --- |
-| Pengunjung | Siapa pun tanpa akun | Melihat peta laporan, status, dan halaman Anggaran | Baca saja |
-| Warga | Penduduk Pati dengan akun | Melapor cepat, memantau laporannya, mendukung laporan lain, memberi rating setelah laporan selesai | Buat laporan, dukung, beri rating |
+| Pengunjung | Siapa pun tanpa akun | Melihat daftar/detail laporan publik dan halaman Anggaran | Baca data publik saja |
+| Pelapor anonim | Pengunjung tanpa akun | Membuat laporan dengan foto dan lokasi; menyimpan nomor tiket untuk pelacakan publik | Membuat laporan, tanpa riwayat akun |
+| Warga | Penduduk Pati dengan akun | Membuat laporan, melihat riwayat laporan sendiri, mendukung laporan lain, memberi rating setelah laporan selesai | Membuat laporan, riwayat sendiri, dukung, beri rating |
 | Petugas OPD | Staf dinas terkait (misalnya PUPR, Perkim, Dishub) | Antrean laporan untuk dinasnya, batas waktu, tempat mengunggah bukti perbaikan | Ubah status laporan OPD-nya |
 | Admin | Tim pengelola Noto PATI | Memverifikasi laporan, menyetujui penjelasan anggaran dari AI, mengelola data | Akses penuh |
 
@@ -54,7 +55,7 @@ MVP lomba memuat alur laporan dari awal sampai selesai, satu halaman Anggaran ya
 
 | Kelompok | Isi |
 | --- | --- |
-| **MVP (P0 dan P1)** | Akun dan peran; buat laporan dengan foto dan lokasi; peta laporan publik; klasifikasi foto dan deteksi laporan ganda oleh AI; status dan SLA; dashboard admin dan OPD sederhana; halaman Anggaran APBD Pati 2025 untuk belanja infrastruktur dengan penjelasan AI berkutipan; kaitan laporan dan anggaran per kategori di tingkat kabupaten |
+| **MVP (P0 dan P1)** | Akun dan peran; laporan anonim atau authenticated dengan foto kamera dan lokasi; daftar/detail laporan publik; riwayat laporan authenticated; status dan SLA; halaman Anggaran APBD Pati 2025 untuk belanja infrastruktur; validasi wilayah setelah polygon resmi tersedia |
 | **Tahap lanjut** | Skor akuntabilitas OPD otomatis lengkap; Misi Cek Anggaran (kuis); notifikasi WhatsApp atau email; prediksi titik rawan; PWA dengan mode offline; kaitan anggaran dan laporan per kecamatan |
 | **Di luar lingkup** | Integrasi resmi dengan sistem pemerintah (SP4N-LAPOR, SIPD); data bansos atau data pribadi penerima; pembayaran; aplikasi native |
 
@@ -65,15 +66,15 @@ Prioritas: **P0** wajib ada di MVP, **P1** sebaiknya ada, **P2** dikerjakan bila
 | ID | Kebutuhan | Kriteria penerimaan | Prioritas |
 | --- | --- | --- | --- |
 | FR-01 | Warga mendaftar dan masuk | Masuk dengan email atau akun Google; sesi bertahan; peran tersimpan di akun | P0 |
-| FR-02 | Warga membuat laporan | Maksimal 3 foto; pin lokasi GPS yang bisa digeser; kategori dan deskripsi; lokasi harus di dalam batas Kabupaten Pati; status awal Diterima | P0 |
+| FR-02 | Pengunjung atau Warga membuat laporan | Maksimal 3 foto kamera; koordinat, akurasi, dan waktu lokasi; kategori, judul, deskripsi; lokasi harus di dalam batas Kabupaten Pati saat polygon resmi tersedia; status awal Diterima | P0 |
 | FR-03 | Peta laporan publik | Penanda berwarna menurut status; filter kategori, kecamatan, dan status; penanda berdekatan dikelompokkan | P0 |
-| FR-04 | Detail dan pelacakan laporan | Linimasa status, foto sebelum dan sesudah, sisa waktu SLA, jumlah pendukung | P0 |
+| FR-04 | Detail dan pelacakan laporan publik | Detail laporan, linimasa status, foto melalui signed URL private, dan nomor tiket; identitas pelapor tidak ditampilkan | P0 |
 | FR-05 | Warga mendukung laporan | Satu dukungan per akun per laporan | P1 |
 | FR-06 | Dashboard admin dan OPD | Antrean laporan; admin memverifikasi atau menolak dengan alasan; OPD menugaskan petugas, mengubah status, dan mengunggah foto bukti; setiap perubahan tercatat di riwayat | P0 |
 | FR-07 | SLA dan eskalasi | Batas waktu per kategori; laporan yang melewatinya ditandai di halaman publik | P1 |
 | FR-08 | Rating dan buka kembali | Warga memberi rating 1 sampai 5 setelah Selesai, atau membuka kembali laporan yang belum beres | P1 |
-| AI-01 | Klasifikasi foto | AI mengusulkan kategori dan tingkat kerusakan beserta tingkat keyakinan; warga bisa mengubahnya; bila AI gagal, form manual tetap berjalan | P0 |
-| AI-02 | Deteksi laporan ganda | Sistem mencari laporan serupa dalam radius tertentu dan menyarankan penggabungan; warga yang memutuskan | P0 |
+| AI-01 | Klasifikasi foto | Ditunda; form manual tetap menjadi jalur utama dan tidak bergantung pada AI | P1 |
+| AI-02 | Deteksi laporan ganda | Ditunda; idempotency retry teknis sudah diterapkan, tetapi bukan deteksi laporan serupa | P2 |
 | AI-03 | Skor urgensi | Skor 0 sampai 100 dengan alasan singkat (misalnya dekat sekolah); admin bisa menimpa | P1 |
 | AI-04 | Penjelas anggaran | Setiap angka menyertakan nama dokumen dan halaman; ada label "pagu, bukan realisasi"; penjelasan baru tampil publik setelah disetujui admin | P0 |
 | BG-01 | Ringkasan APBD Pati 2025 | Menampilkan versi murni dan perubahan berdampingan, dengan total yang cocok dengan dokumen | P0 |

@@ -25,14 +25,14 @@ Noto PATI adalah web mobile-first untuk melaporkan kerusakan infrastruktur publi
 
 | Jenis pengguna | Akun | Yang boleh dilakukan |
 |---|---|---|
-| **Pengunjung** | Tidak perlu | Melihat peta, daftar/detail laporan publik, linimasa publik, dan halaman Anggaran |
-| **Warga** | Wajib (email/Google via Supabase Auth) | Membuat laporan, melihat laporan sendiri; (P1) mendukung laporan, memberi rating, mengajukan buka kembali |
+| **Pengunjung** | Tidak perlu | Membuat laporan anonim; melihat daftar/detail laporan publik, linimasa publik, dan halaman Anggaran |
+| **Warga** | Opsional (email/Google via Supabase Auth) | Membuat laporan, melihat laporan sendiri; (P1) mendukung laporan, memberi rating, mengajukan buka kembali |
 | **Admin** | Role khusus, ditetapkan lewat proses administratif aman | Verifikasi, tolak (dengan alasan), gabung duplikat, ubah status, unggah bukti tindak lanjut |
 
 **Ketentuan pengguna:**
 - Hanya ada dua role terautentikasi: `Warga` dan `Admin`. **OPD bukan role** pada MVP.
 - Role Admin tidak bisa dipilih atau diubah sendiri oleh pengguna dari browser.
-- Pelaporan **wajib akun**. "Anonim" hanya berarti identitas pelapor tidak tampil ke publik.
+- Pelaporan dapat dilakukan tanpa akun. Pelapor anonim melacak laporan melalui nomor tiket/detail publik; Warga authenticated mendapat riwayat laporan berdasarkan akunnya.
 - Konteks pengguna: mayoritas akses dari ponsel dengan koneksi seluler.
 
 ---
@@ -42,11 +42,11 @@ Noto PATI adalah web mobile-first untuk melaporkan kerusakan infrastruktur publi
 | # | Fitur | Ref PRD |
 |---|---|---|
 | 1 | Landing page yang menjelaskan fungsi dan batasan prototipe | 5.1 |
-| 2 | Autentikasi Warga (email/Google) via Supabase Auth, role aman | FR-01 |
-| 3 | Form laporan: judul, kategori, deskripsi, **foto kamera langsung maks. 3**, lokasi perangkat | FR-02, FR-03 |
-| 4 | Validasi koordinat di **server** terhadap polygon Kabupaten Pati yang terverifikasi (PostGIS `ST_Covers`) | FR-04 |
-| 5 | Peta publik: marker per status, filter kategori/status, clustering marker | FR-05 |
-| 6 | Detail laporan: status, linimasa publik, indikator SLA, foto aman ditampilkan; identitas pelapor disembunyikan | FR-06 |
+| 2 | Autentikasi Warga (email/Google) via Supabase Auth, role aman, dan riwayat laporan sendiri | FR-01 |
+| 3 | Form laporan anonymous/authenticated: judul, kategori, deskripsi, **foto kamera langsung maks. 3**, lokasi perangkat | FR-02, FR-03 |
+| 4 | Validasi koordinat di **server** terhadap polygon Kabupaten Pati terverifikasi (PostGIS `ST_Covers`), setelah sumber polygon dikunci | FR-04 |
+| 5 | Daftar/detail laporan publik dari anonymous dan authenticated, filter kategori/status/search | FR-05 |
+| 6 | Detail laporan: status, linimasa publik, foto melalui signed URL private; identitas pelapor disembunyikan | FR-06 |
 | 7 | Dashboard Admin: antrean, verifikasi, tolak + alasan, gabung duplikat, ubah status, unggah bukti tindak lanjut | FR-07 |
 | 8 | Riwayat status (append-only dari sisi aplikasi): status lama/baru, waktu server, pelaku, catatan | FR-08 |
 | 9 | SLA simulasi: hitung dari waktu server, tampil sisa waktu/terlambat, tanda di dashboard | FR-09 |
@@ -123,14 +123,14 @@ P1 **bukan syarat demo inti**. Dikerjakan hanya jika waktu tersisa, dan tidak bo
 
 ### 6.1 Kriteria selesai MVP (demo layak jika semua lulus)
 1. Warga dapat daftar/masuk; pengguna tak berwenang tidak dapat mengakses dashboard Admin.
-2. Warga dapat membuat laporan dengan kamera langsung (maks. 3 foto), kategori, judul, deskripsi, dan lokasi valid.
+2. Pengunjung atau Warga dapat membuat laporan dengan kamera langsung (maks. 3 foto), kategori, judul, deskripsi, dan lokasi.
 3. Sistem menolak laporan tanpa data wajib, foto yang gagal diunggah, atau koordinat di luar Kabupaten Pati.
 4. Penolakan izin kamera/lokasi menghasilkan pesan jelas dan tidak membuat laporan sukses palsu.
 5. Peta menampilkan laporan publik dari database; filter kategori/status berfungsi.
 6. Admin dapat verifikasi, tolak dengan alasan, gabung duplikat, ubah status sesuai transisi, dan unggah bukti tindak lanjut.
 7. Perubahan status terekam di riwayat dengan waktu server dan pelaku.
 8. SLA dihitung dari waktu server; status terlambat konsisten di detail laporan dan dashboard Admin.
-9. Pengunjung tidak dapat melihat info privat pelapor atau foto yang dibatasi akses.
+9. Pengunjung tidak dapat melihat info privat pelapor; foto publik hanya disajikan melalui signed URL dari bucket private.
 10. Halaman Anggaran hanya menampilkan data terverifikasi, dengan label jenis angka dan sumber dokumen yang dapat dibuka.
 11. Pelaporan tetap berjalan ketika AI tidak aktif atau gagal.
 12. Semua data simulasi ditandai demo dan tidak menimbulkan kesan penanganan pemerintah yang belum terjadi.

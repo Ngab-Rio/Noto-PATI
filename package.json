@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seed:region": "node --env-file-if-exists=.env scripts/seed-pati-region.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
