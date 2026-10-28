@@ -2,39 +2,43 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Public Navigation - Guest User', () => {
   test('should navigate between public pages without login', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
     // Navigate to Map
-    await page.getByRole('link', { name: /Peta Laporan/i }).first().click();
+    const navigation = page.getByRole('navigation');
+    await navigation.getByRole('link', { name: 'Peta Laporan', exact: true }).click();
     await expect(page).toHaveURL(/\/map/);
     
     // Navigate to Budget (APBD)
-    await page.getByRole('link', { name: /Anggaran APBD/i }).first().click();
+    await navigation.getByRole('link', { name: 'Anggaran APBD', exact: true }).click();
     await expect(page).toHaveURL(/\/budget/);
     
     // Navigate back to Home
-    await page.getByRole('link', { name: /Beranda/i }).first().click();
+    await navigation.getByRole('link', { name: 'Beranda', exact: true }).click();
     await expect(page).toHaveURL('/');
   });
 
-  test('should show "Masuk" link for guest users in navbar', async ({ page }) => {
+  test('should show the guest sign-in link in the desktop navbar', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
-    // Check "Masuk" link is visible
-    await expect(page.getByRole('link', { name: /^Masuk$/i })).toBeVisible();
+    await expect(page.getByRole('banner').getByRole('link', { name: 'Masuk', exact: true })).toBeVisible();
   });
 
-  test('should redirect to login when guest clicks "Lapor Masalah"', async ({ page }) => {
+  test('should allow guests to open the report form', async ({ page }) => {
     await page.goto('/');
 
     // Click "Lapor Masalah" CTA
     await page.getByRole('link', { name: /Mulai Lapor Masalah/i }).click();
     
-    // Should redirect to login with next parameter
-    await expect(page).toHaveURL(/\/login/);
+    await expect(page).toHaveURL(/\/report\/new/);
+    await expect(page.getByRole('heading', { name: /Sampaikan Laporan Fasilitas Publik/i })).toBeVisible();
   });
 
-  test('should be responsive on mobile', async ({ page }) => {
+  test('should be responsive on mobile', async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith('Mobile'), 'Run mobile navigation on mobile device projects');
+
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
@@ -47,8 +51,12 @@ test.describe('Public Navigation - Guest User', () => {
     await menuButton.click();
     
     // Check navigation links in mobile menu
-    await expect(page.getByRole('link', { name: /Beranda/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Peta Laporan/i })).toBeVisible();
+    const mobileHeader = page.getByRole('banner');
+    await expect(mobileHeader.getByRole('link', { name: 'Beranda', exact: true })).toBeVisible();
+    await expect(mobileHeader.getByRole('link', { name: 'Peta Laporan', exact: true })).toBeVisible();
+    await expect(mobileHeader.getByRole('link', { name: 'Masuk ke Akun', exact: true })).toBeVisible();
+    await mobileHeader.getByRole('link', { name: 'Peta Laporan', exact: true }).click();
+    await expect(page).toHaveURL(/\/map/);
   });
 });
 

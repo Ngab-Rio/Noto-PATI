@@ -1,5 +1,3 @@
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth/guards";
 import { ProfileSidebar } from "./components/ProfileSidebar";
 
 export default async function ProfileLayout({
@@ -7,9 +5,6 @@ export default async function ProfileLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Require authentication for all profile routes
-  const user = await requireUser("/login");
-
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
