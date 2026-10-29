@@ -1,8 +1,7 @@
-import { logout } from "@/app/auth/actions";
 import { ProfileForm } from "./ProfileForm";
 import { requireUser } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
-import { User, Mail, Phone } from "lucide-react";
+import { User, Mail } from "lucide-react";
 
 export default async function ProfilePage() {
   const user = await requireUser("/profile");

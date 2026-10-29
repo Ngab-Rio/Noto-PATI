@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default async function SettingsPage() {
-  const user = await requireUser("/profile/settings");
+  // Require authentication
+  await requireUser("/profile/settings");
 
   return (
     <div className="space-y-6">
