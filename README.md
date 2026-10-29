@@ -80,6 +80,16 @@ Aplikasi divalidasi saat startup oleh `src/config/env.client.ts` dan `src/config
 | `NEXT_PUBLIC_ENABLE_MOCK_LOCATION` | Client | Opsional | Aktifkan simulasi titik koordinat Pati untuk pengujian | `true` atau `false` |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Server Only** | Opsional | Kunci admin untuk skrip operasional data (Rahasia) | `eyJhbGci...` |
 | `CRON_SECRET` | **Server Only** | Opsional | Token otorisasi endpoint cron internal | `secret-token` |
+| `AI_VISION_BASE_URL` | **Server Only** | Opsional | Base URL OpenAI-compatible vision API (tanpa /chat/completions) | `https://api.openai.com/v1` |
+| `AI_VISION_API_KEY` | **Server Only** | Opsional | API key untuk vision provider (Rahasia) | `sk-...` atau `gsk_...` |
+| `AI_VISION_MODEL` | **Server Only** | Opsional | Model name untuk vision analysis | `gpt-4-vision-preview` |
+| `AI_ANALYSIS_ALLOWED_ORIGINS` | **Server Only** | ⚠️ **TEMPORARY** | **Dev-only:** Origins tambahan untuk tunnel testing (akan dihapus di production) | `https://tunnel.example` |
+
+> ⚠️ **Catatan Penting:**  
+> - **`AI_ANALYSIS_ALLOWED_ORIGINS`** adalah variable **SEMENTARA** hanya untuk development dengan tunnel (ngrok, VS Code dev tunnels).  
+> - Variable ini **HARUS DIHAPUS** saat deploy ke production.  
+> - Production hanya akan menggunakan `NEXT_PUBLIC_APP_URL` sebagai allowed origin.  
+> - Lihat `docs/AI_PHOTO_ANALYSIS.md` untuk detail lengkap.
 
 ---
 
