@@ -138,15 +138,16 @@ export function MapPageClient() {
       </div>
 
       {/* Map Container */}
-      <div className="h-[calc(100vh-280px)] min-h-[500px]">
-        <PublicReportsMap
-          filters={{
-            statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
-          }}
-          onMarkerClick={(reportId) => {
-            console.log("Marker clicked:", reportId);
-          }}
-        />
+      <div className="bg-background px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
+          <div className="h-[calc(100vh-340px)] min-h-[500px]">
+            <PublicReportsMap
+              filters={{
+                statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Map Legend */}
