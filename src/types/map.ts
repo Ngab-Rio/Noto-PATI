@@ -37,6 +37,7 @@ export interface ReportFeature {
     title: string;
     category: ReportCategory;
     status: ReportStatus;
+    detailLocation: string;
     createdAt: string;
     photoUrl?: string;
   };
