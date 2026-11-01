@@ -11,6 +11,7 @@ import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
 
@@ -26,38 +27,42 @@ export default async function ReportDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: report, error: reportError } = await supabase
-    .from("reports")
-    .select("id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m")
-    .eq("id", id)
-    .maybeSingle();
+  const admin = createAdminClient();
+
+  // Ketiga query hanya butuh `id`, jadi dijalankan paralel (hemat 2 roundtrip).
+  const [{ data: report, error: reportError }, { data: history }, { data: photos }] = await Promise.all([
+    supabase
+      .from("reports")
+      .select("id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("report_status_history")
+      .select("status, note, created_at")
+      .eq("report_id", id)
+      .order("created_at", { ascending: true }),
+    admin
+      .from("report_photos")
+      .select("id, storage_path, sort_order")
+      .eq("report_id", id)
+      .order("sort_order", { ascending: true }),
+  ]);
 
   if (reportError || !report) {
     notFound();
   }
 
-  const { data: history } = await supabase
-    .from("report_status_history")
-    .select("status, note, created_at")
-    .eq("report_id", report.id)
-    .order("created_at", { ascending: true });
+  let signedPhotos: { id: string; signedUrl: string }[] = [];
+  if (photos && photos.length > 0) {
+    const signedUrlByPath = await getSignedPhotoUrls(photos.map((p) => p.storage_path));
 
-  const admin = createAdminClient();
-  const { data: photos } = await admin
-    .from("report_photos")
-    .select("id, storage_path, sort_order")
-    .eq("report_id", report.id)
-    .order("sort_order", { ascending: true });
-
-  const signedPhotos = await Promise.all(
-    (photos ?? []).map(async (photo) => {
-      const { data } = await admin.storage
-        .from("report-photos")
-        .createSignedUrl(photo.storage_path, 60 * 10);
-
-      return data?.signedUrl ? { id: photo.id, signedUrl: data.signedUrl } : null;
-    }),
-  );
+    signedPhotos = photos
+      .map((p) => {
+        const url = signedUrlByPath.get(p.storage_path);
+        return url ? { id: p.id, signedUrl: url } : null;
+      })
+      .filter((p): p is { id: string; signedUrl: string } => p !== null);
+  }
 
   return (
     <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
   CATEGORY_LABELS,
   PUBLIC_STATUSES,
-  filterPublicReports,
   getPublicReports,
   toReportItem,
 } from "@/lib/reports/public";
@@ -23,10 +22,25 @@ export default async function ReportsListPage({
   const status = params.status ?? "";
   const search = params.search ?? "";
   const requestedPage = Number.parseInt(params.page ?? "1", 10);
-  const reports = filterPublicReports(await getPublicReports(), category, status, search);
-  const totalPages = Math.max(1, Math.ceil(reports.length / PAGE_SIZE));
-  const page = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
-  const visibleReports = reports.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const loadPage = (pageNumber: number) =>
+    getPublicReports({
+      category,
+      status,
+      search,
+      limit: PAGE_SIZE,
+      offset: (pageNumber - 1) * PAGE_SIZE,
+    });
+
+  let page = Number.isFinite(requestedPage) ? Math.max(requestedPage, 1) : 1;
+  let { reports: visibleReports, total } = await loadPage(page);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // Halaman di luar rentang (mis. hasil filter menyusut) → tampilkan halaman terakhir.
+  if (page > totalPages && total > 0) {
+    page = totalPages;
+    ({ reports: visibleReports, total } = await loadPage(page));
+  }
   const query = (nextPage: number) => {
     const values = new URLSearchParams();
     if (search) values.set("search", search);
@@ -48,7 +62,7 @@ export default async function ReportsListPage({
                 <span>Semua Laporan</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-text">Daftar Laporan Infrastruktur</h1>
-              <p className="text-sm text-text-muted mt-1.5">{reports.length} laporan sesuai filter</p>
+              <p className="text-sm text-text-muted mt-1.5">{total} laporan sesuai filter</p>
             </div>
             <Link href="/report/new">
               <Button size="lg" className="gap-2 w-full sm:w-auto"><Plus className="h-4 w-4" />Buat Laporan Baru</Button>

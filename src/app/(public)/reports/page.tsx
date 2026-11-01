@@ -3,13 +3,15 @@ import { FileText, Layers, MapPin, Plus } from "lucide-react";
 
 import { ReportCard } from "@/components/shared/report-card";
 import { Button } from "@/components/ui/button";
-import { getPublicReports, toReportItem } from "@/lib/reports/public";
+import { getPublicReportStats, getPublicReports, toReportItem } from "@/lib/reports/public";
+
+const LATEST_REPORT_COUNT = 6;
 
 export default async function ReportsPage() {
-  const reports = await getPublicReports();
-  const latestReports = reports.slice(0, 6);
-  const processingCount = reports.filter((report) => report.status === "diproses").length;
-  const completedCount = reports.filter((report) => report.status === "selesai").length;
+  const [{ reports: latestReports, total }, stats] = await Promise.all([
+    getPublicReports({ limit: LATEST_REPORT_COUNT }),
+    getPublicReportStats(),
+  ]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,10 +38,10 @@ export default async function ReportsPage() {
         </header>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <StatCard icon={<FileText className="h-4 w-4 text-blue-600" />} value={reports.length} label="Total Laporan" />
-          <StatCard icon={<Layers className="h-4 w-4 text-yellow-600" />} value={processingCount} label="Sedang Diproses" />
-          <StatCard icon={<FileText className="h-4 w-4 text-green-600" />} value={completedCount} label="Selesai" />
-          <StatCard icon={<MapPin className="h-4 w-4 text-primary" />} value={new Set(reports.map((report) => report.detail_location)).size} label="Lokasi" />
+          <StatCard icon={<FileText className="h-4 w-4 text-blue-600" />} value={stats.total} label="Total Laporan" />
+          <StatCard icon={<Layers className="h-4 w-4 text-yellow-600" />} value={stats.diproses} label="Sedang Diproses" />
+          <StatCard icon={<FileText className="h-4 w-4 text-green-600" />} value={stats.selesai} label="Selesai" />
+          <StatCard icon={<MapPin className="h-4 w-4 text-primary" />} value={stats.lokasi} label="Lokasi" />
         </div>
 
         {latestReports.length > 0 ? (
@@ -54,7 +56,7 @@ export default async function ReportsPage() {
           </div>
         )}
 
-        {reports.length > 6 && (
+        {total > LATEST_REPORT_COUNT && (
           <div className="mt-8 flex justify-center">
             <Link href="/reports/list">
               <Button variant="outline" size="lg">Lihat lebih banyak laporan</Button>
