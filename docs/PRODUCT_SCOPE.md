@@ -121,6 +121,11 @@ P1 **bukan syarat demo inti**. Dikerjakan hanya jika waktu tersisa, dan tidak bo
 
 ## 6. Kriteria Penerimaan
 
+> **Status implementasi saat ini:** alur laporan anonim/authenticated, upload foto privat,
+> geolokasi, reverse geocoding, signed URL, peta publik, dan analisis foto AI opsional sudah
+> tersedia. Dashboard admin, transisi status lengkap, SLA, dukungan, rating, reopen, dan
+> anggaran berbasis database belum selesai.
+
 ### 6.1 Kriteria selesai MVP (demo layak jika semua lulus)
 1. Warga dapat daftar/masuk; pengguna tak berwenang tidak dapat mengakses dashboard Admin.
 2. Pengunjung atau Warga dapat membuat laporan dengan kamera langsung (maks. 3 foto), kategori, judul, deskripsi, dan lokasi.

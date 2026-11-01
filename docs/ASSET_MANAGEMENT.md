@@ -29,7 +29,7 @@ import Image from 'next/image';
 
 // Illustration
 <Image 
-  src="/images/illustrations/pati-map.svg" 
+  src="/images/illustrations/map_pati.svg"
   alt="Peta Kabupaten Pati" 
   width={800} 
   height={600} 
@@ -37,14 +37,25 @@ import Image from 'next/image';
 
 // Photo
 <Image 
-  src="/images/photos/hero-bg.avif" 
-  alt="Background" 
-  width={1920} 
-  height={1080}
+  src="/images/photos/pati_bandeng_state.avif"
+  alt="Patung bandeng Pati"
+  width={800}
+  height={600}
   quality={85}
   priority
 />
 ```
+
+### Asset brand yang tersedia
+
+- `images/icons/noto-pati-monogram.svg` — favicon dan Apple Touch Icon monogram NP.
+- `images/icons/pati-bandeng.svg` — ikon fallback berbasis ilustrasi bandeng.
+- `images/photos/pati_bandeng_state.avif` — foto patung bandeng Pati.
+- `images/illustrations/map_pati.svg` — ilustrasi peta Kabupaten Pati.
+- `src/components/shared/pati-hero-visual.tsx` — ilustrasi SVG isometrik untuk hero,
+  dirender sebagai komponen React karena menyertakan label dan elemen dekoratif.
+
+Favicon saat ini menggunakan `noto-pati-monogram.svg`; foto bandeng bukan favicon utama.
 
 ## Format Guidelines
 
