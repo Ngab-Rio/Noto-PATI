@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
 import type {
   ReportFeatureCollection,
   ReportFeature,
@@ -120,42 +121,23 @@ export async function GET(request: NextRequest) {
     if (reportIds.length > 0) {
       try {
         const admin = createAdminClient();
+        // Foto pertama selalu sort_order = 0 (unique per report, maksimal 3 foto).
         const { data: photos } = await admin
           .from("report_photos")
-          .select("report_id, storage_path, sort_order")
+          .select("report_id, storage_path")
           .in("report_id", reportIds)
-          .order("sort_order", { ascending: true });
+          .eq("sort_order", 0);
 
-        if (photos && photos.length > 0) {
-          // Group by report_id, take only the first photo
-          const seenReports = new Set<string>();
-          const photosToSign: { report_id: string; storage_path: string }[] = [];
+        const pathByReport = new Map<string, string>();
+        for (const photo of photos ?? []) {
+          pathByReport.set(photo.report_id, photo.storage_path);
+        }
 
-          for (const photo of photos) {
-            if (!seenReports.has(photo.report_id)) {
-              seenReports.add(photo.report_id);
-              photosToSign.push(photo);
-            }
-          }
+        const signedUrls = await getSignedPhotoUrls([...pathByReport.values()]);
 
-          // Batch sign URLs
-          const signResults = await Promise.all(
-            photosToSign.map(async (photo) => {
-              const { data: signed } = await admin.storage
-                .from("report-photos")
-                .createSignedUrl(photo.storage_path, 60 * 30); // 30 min expiry
-              return {
-                reportId: photo.report_id,
-                url: signed?.signedUrl ?? null,
-              };
-            })
-          );
-
-          for (const result of signResults) {
-            if (result.url) {
-              firstPhotoByReport.set(result.reportId, result.url);
-            }
-          }
+        for (const [reportId, path] of pathByReport) {
+          const url = signedUrls.get(path);
+          if (url) firstPhotoByReport.set(reportId, url);
         }
       } catch (photoError) {
         // Non-fatal: continue without photos
@@ -203,7 +185,12 @@ export async function GET(request: NextRequest) {
       features,
     };
 
-    return NextResponse.json(featureCollection);
+    return NextResponse.json(featureCollection, {
+      // Marker publik boleh di-cache singkat: hemat query DB saat banyak warga membuka peta.
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    });
   } catch (error) {
     console.error("[Map API] Unexpected error:", error);
     return NextResponse.json(
