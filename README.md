@@ -85,7 +85,7 @@ Aplikasi divalidasi saat startup oleh `src/config/env.client.ts` dan `src/config
 | `AI_VISION_MODEL` | **Server Only** | Opsional | Model name untuk vision analysis | `gpt-4-vision-preview` |
 | `AI_ANALYSIS_ALLOWED_ORIGINS` | **Server Only** | ⚠️ **TEMPORARY** | **Dev-only:** Origins tambahan untuk tunnel testing (akan dihapus di production) | `https://tunnel.example` |
 
-> ⚠️ **Catatan Penting:**  
+>  **Catatan Penting:**  
 > - **`AI_ANALYSIS_ALLOWED_ORIGINS`** adalah variable **SEMENTARA** hanya untuk development dengan tunnel (ngrok, VS Code dev tunnels).  
 > - Variable ini **HARUS DIHAPUS** saat deploy ke production.  
 > - Production hanya akan menggunakan `NEXT_PUBLIC_APP_URL` sebagai allowed origin.  

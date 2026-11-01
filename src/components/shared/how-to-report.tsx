@@ -72,21 +72,21 @@ export function HowToReport() {
             number={2}
             icon={<MapPin className="h-8 w-8" />}
             title="Tandai Lokasi"
-            description="Sistem otomatis mendeteksi koordinat GPS lokasi Anda saat ini."
+            description="Sistem mendeteksi koordinat GPS perangkat dan mengubahnya menjadi alamat otomatis melalui OpenStreetMap. Anda dapat mengedit alamat sebelum mengirim."
           />
 
           <StepCard
             number={3}
             icon={<FileText className="h-8 w-8" />}
             title="Isi Detail"
-            description="Pilih kategori kerusakan dan tulis deskripsi singkat masalah yang terjadi."
+            description="Pilih kategori kerusakan dan tulis deskripsi singkat masalah yang terjadi. Foto pertama akan dianalisis AI untuk mengisi form otomatis."
           />
 
           <StepCard
             number={4}
             icon={<Send className="h-8 w-8" />}
             title="Kirim Laporan"
-            description="Sistem memverifikasi lokasi untuk pemetaan publik. (Dalam prototipe, tidak terhubung langsung dengan dinas pemerintah)"
+            description="Sistem memvalidasi data dan lokasi, lalu menyimpan laporan untuk pemetaan publik dan monitoring transparan."
           />
 
           <StepCard
@@ -99,24 +99,10 @@ export function HowToReport() {
 
         {/* Additional Info */}
         <div className="rounded-xl bg-primary-soft/50 border border-primary/20 p-6 text-center">
-          <p className="text-sm text-text-muted mb-3">
+          <p className="text-sm text-text-muted">
             <span className="font-semibold text-text">Catatan Penting:</span> Pastikan foto tidak
             mengandung wajah, plat nomor kendaraan, atau informasi pribadi lainnya untuk menjaga privasi.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-text-muted">
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Gratis & Transparan
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-blue-500" />
-              Tanpa Biaya Administrasi
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-500" />
-              Status Terlacak
-            </span>
-          </div>
         </div>
       </div>
     </section>

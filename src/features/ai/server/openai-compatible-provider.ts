@@ -93,7 +93,7 @@ export function createOpenAICompatibleProvider(): ReportPhotoAnalyzer | null {
             ],
           }),
           cache: "no-store",
-          timeout: 30000, // 30 seconds timeout for AI vision analysis
+          timeout: 30000, 
         });
 
         if (response.status === 429) {

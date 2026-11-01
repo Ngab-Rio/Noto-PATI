@@ -13,10 +13,12 @@ export interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> 
 }
 
 /**
- * StatusBadge · Noto PATI Design System
+ * StatusBadge · Noto PATI Design System (Server Component)
  * Memenuhi standar WCAG AA (kontras minimal 4.5:1) sesuai spesifikasi PDF Style Guide.
  * Mendukung status utama (Diterima, Diverifikasi, Diproses, Selesai)
  * dan status lainnya (Dibuka Kembali, Ditolak, Digabung, Ditutup).
+ * 
+ * Note: For version with Phosphor icons, use StatusBadgeClient
  */
 export function StatusBadge({
   status,
