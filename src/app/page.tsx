@@ -5,6 +5,7 @@ import { ReportCard, type ReportItemData } from "@/components/shared/report-card
 import { StatusBadge } from "@/components/shared/status-badge";
 import { HowToReport } from "@/components/shared/how-to-report";
 import { DataSimulationBadge } from "@/components/shared/data-simulation-badge";
+import { PatiHeroVisual } from "@/components/shared/pati-hero-visual";
 import { Button } from "@/components/ui/button";
 
 const FEATURED_REPORTS: ReportItemData[] = [
@@ -74,22 +75,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="hero-mark" aria-hidden="true">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs uppercase tracking-wider text-text-muted">
-              Kab. Pati · 2025
-            </span>
-            <span className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
-          </div>
-          <strong>
-            Noto
-            <br />
-            PATI
-          </strong>
-          <span className="text-xs text-text-muted font-medium">
-            Desain Sistem & Transparansi APBD
-          </span>
-        </div>
+        <PatiHeroVisual />
       </section>
 
       {/* How to Report Section - NEW */}

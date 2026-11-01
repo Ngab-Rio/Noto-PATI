@@ -214,7 +214,7 @@
 
 @layer components {
   .landing-shell, .page-shell { min-height: 100%; padding: 4rem 6vw 5rem; }
-  .hero-section { align-items: center; display: grid; gap: 8vw; grid-template-columns: minmax(0, 1fr) 280px; margin: 6vh auto 10vh; max-width: 1180px; }
+  .hero-section { align-items: center; display: grid; gap: 8vw; grid-template-columns: minmax(0, 1fr) 380px; margin: 6vh auto 10vh; max-width: 1180px; }
   .hero-copy { max-width: 700px; }
   .eyebrow { color: var(--accent); font-family: var(--font-sans), sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
   .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(2.5rem, 6vw, 5.5rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.05; margin: 1.4rem 0; color: var(--text); }
@@ -225,9 +225,353 @@
   .button-primary:hover { background: var(--primary-dark); }
   .button-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
   .button-secondary:hover { background: var(--primary-soft); color: var(--primary-dark); }
-  .hero-mark { border: 2px solid var(--primary); border-radius: 1rem; background: var(--surface); box-shadow: 0 10px 30px -10px rgba(59, 110, 165, 0.2); display: flex; flex-direction: column; height: 280px; justify-content: space-between; padding: 1.6rem; transform: rotate(3deg); transition: transform 0.3s ease; }
-  .hero-mark:hover { transform: rotate(0deg) scale(1.02); }
-  .hero-mark strong { font-size: 3.3rem; font-weight: 700; line-height: .9; color: var(--primary); }
+  
+  /* ── 3D Pati Hero Visual ── */
+  .pati-hero-visual-3d { 
+    --mouse-x: 0deg; 
+    --mouse-y: 0deg; 
+    isolation: isolate; 
+    min-height: 420px; 
+    overflow: visible; 
+    perspective: 1200px; 
+    position: relative; 
+    transition: transform 0.3s ease-out;
+  }
+  
+  /* Background orbs */
+  .pati-3d-orb { 
+    border-radius: 999px; 
+    filter: blur(40px); 
+    opacity: 0.6; 
+    position: absolute; 
+    z-index: -1; 
+    animation: float 8s ease-in-out infinite;
+  }
+  .pati-3d-orb-one { 
+    background: linear-gradient(135deg, var(--accent-soft) 0%, var(--primary-soft) 100%); 
+    height: 180px; 
+    right: 5%; 
+    top: -5%; 
+    width: 180px;
+    animation-delay: 0s;
+  }
+  .pati-3d-orb-two { 
+    background: linear-gradient(225deg, var(--primary-soft) 0%, var(--accent-soft) 100%); 
+    bottom: -10%; 
+    height: 220px; 
+    left: -5%; 
+    width: 220px;
+    animation-delay: 2s;
+  }
+  .pati-3d-orb-three { 
+    background: radial-gradient(circle, var(--primary-soft) 0%, transparent 70%); 
+    height: 300px; 
+    left: 50%; 
+    top: 50%; 
+    transform: translate(-50%, -50%); 
+    width: 300px;
+    animation-delay: 4s;
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-20px) scale(1.05); }
+  }
+  
+  /* 3D Scene */
+  .pati-3d-scene { 
+    height: 100%; 
+    left: 50%; 
+    position: absolute; 
+    top: 50%; 
+    transform: translate(-50%, -50%) rotateX(var(--mouse-y, 0deg)) rotateY(var(--mouse-x, 0deg)); 
+    transform-style: preserve-3d; 
+    transition: transform 0.1s ease-out; 
+    width: 100%;
+  }
+  
+  /* Platform base */
+  .pati-3d-platform { 
+    height: 280px; 
+    left: 50%; 
+    position: absolute; 
+    top: 50%; 
+    transform: translate(-50%, -50%) rotateX(60deg) rotateZ(-45deg); 
+    transform-style: preserve-3d; 
+    width: 280px;
+  }
+  
+  .pati-3d-grid { 
+    background-image: 
+      linear-gradient(rgba(59, 110, 165, .12) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 110, 165, .12) 1px, transparent 1px); 
+    background-size: 30px 30px; 
+    border: 2px solid rgba(59, 110, 165, .2); 
+    border-radius: 20px; 
+    bottom: 0; 
+    height: 100%; 
+    left: 0; 
+    position: absolute; 
+    right: 0; 
+    top: 0; 
+    transform: translateZ(-10px); 
+    width: 100%;
+  }
+  
+  /* Land mass */
+  .pati-3d-land { 
+    background: linear-gradient(135deg, #E3EEF8 0%, #B9D2E8 100%); 
+    border: 3px solid var(--primary); 
+    border-radius: 50% 48% 45% 52% / 48% 50% 45% 52%; 
+    box-shadow: 
+      0 20px 40px rgba(47, 95, 149, 0.3),
+      inset 0 -2px 10px rgba(47, 95, 149, 0.2); 
+    height: 240px; 
+    left: 50%; 
+    position: absolute; 
+    top: 50%; 
+    transform: translate(-50%, -50%) translateZ(5px); 
+    width: 240px;
+  }
+  
+  /* Rice fields */
+  .pati-rice-field { 
+    background: linear-gradient(135deg, #B7D99A 0%, #A4CB86 100%); 
+    border: 2px solid rgba(133, 183, 110, 0.6); 
+    border-radius: 8px; 
+    box-shadow: inset 0 2px 8px rgba(133, 183, 110, 0.3); 
+    height: 45px; 
+    position: absolute; 
+    transform: translateZ(8px); 
+    width: 45px;
+  }
+  .pati-rice-1 { left: 15%; top: 20%; }
+  .pati-rice-2 { right: 15%; top: 25%; }
+  .pati-rice-3 { left: 20%; bottom: 25%; }
+  .pati-rice-4 { right: 18%; bottom: 20%; }
+  
+  /* Roads */
+  .pati-3d-road { 
+    background: linear-gradient(90deg, #8FA2B6 0%, #DCE5EE 50%, #8FA2B6 100%); 
+    position: absolute; 
+    transform: translateZ(10px);
+  }
+  .pati-road-h { 
+    height: 12px; 
+    left: 10%; 
+    top: 50%; 
+    transform: translateY(-50%) translateZ(10px); 
+    width: 80%;
+  }
+  .pati-road-v { 
+    height: 80%; 
+    left: 50%; 
+    top: 10%; 
+    transform: translateX(-50%) translateZ(10px); 
+    width: 12px;
+  }
+  
+  /* Buildings */
+  .pati-3d-building { 
+    align-items: center; 
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); 
+    border: 2px solid var(--primary-dark); 
+    border-radius: 4px; 
+    box-shadow: 
+      0 10px 20px rgba(47, 95, 149, 0.4),
+      inset 0 -2px 5px rgba(0, 0, 0, 0.2); 
+    display: flex; 
+    height: 40px; 
+    justify-content: center; 
+    position: absolute; 
+    transform: translateZ(30px); 
+    width: 35px;
+    animation: buildingFloat 4s ease-in-out infinite;
+  }
+  .pati-building-icon { 
+    color: white; 
+    height: 20px; 
+    width: 20px;
+  }
+  .pati-building-1 { left: 25%; top: 30%; animation-delay: 0s; }
+  .pati-building-2 { right: 30%; top: 35%; animation-delay: 1s; }
+  .pati-building-3 { left: 35%; bottom: 28%; animation-delay: 2s; }
+  
+  @keyframes buildingFloat {
+    0%, 100% { transform: translateZ(30px) translateY(0); }
+    50% { transform: translateZ(35px) translateY(-5px); }
+  }
+  
+  /* Trees */
+  .pati-3d-tree { 
+    align-items: center; 
+    display: flex; 
+    filter: drop-shadow(0 5px 10px rgba(46, 107, 69, 0.3)); 
+    height: 30px; 
+    justify-content: center; 
+    position: absolute; 
+    transform: translateZ(15px); 
+    width: 30px;
+    animation: treeWave 3s ease-in-out infinite;
+  }
+  .pati-tree-icon { 
+    color: #2E6B45; 
+    height: 24px; 
+    width: 24px;
+  }
+  .pati-tree-1 { left: 10%; top: 15%; animation-delay: 0s; }
+  .pati-tree-2 { right: 12%; top: 12%; animation-delay: 0.5s; }
+  .pati-tree-3 { left: 15%; bottom: 15%; animation-delay: 1s; }
+  
+  @keyframes treeWave {
+    0%, 100% { transform: translateZ(15px) rotate(-2deg); }
+    50% { transform: translateZ(15px) rotate(2deg); }
+  }
+  
+  /* Report markers */
+  .pati-3d-marker { 
+    height: 30px; 
+    position: absolute; 
+    transform: translateZ(40px); 
+    width: 30px;
+  }
+  .pati-marker-pin { 
+    background: var(--accent); 
+    border: 3px solid white; 
+    border-radius: 50% 50% 50% 0; 
+    box-shadow: 0 8px 16px rgba(168, 83, 46, 0.4); 
+    height: 24px; 
+    left: 50%; 
+    position: absolute; 
+    top: 0; 
+    transform: translateX(-50%) rotate(-45deg); 
+    width: 24px;
+    animation: markerBounce 2s ease-in-out infinite;
+  }
+  .pati-marker-pulse { 
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; 
+    background: var(--accent); 
+    border-radius: 50%; 
+    height: 30px; 
+    left: 50%; 
+    opacity: 0.4; 
+    position: absolute; 
+    top: 0; 
+    transform: translate(-50%, -50%); 
+    width: 30px;
+  }
+  .pati-marker-1 { right: 25%; top: 20%; animation-delay: 0s; }
+  .pati-marker-2 { left: 28%; top: 40%; animation-delay: 0.7s; }
+  .pati-marker-3 { right: 30%; bottom: 22%; animation-delay: 1.4s; }
+  
+  @keyframes markerBounce {
+    0%, 100% { transform: translateX(-50%) rotate(-45deg) translateY(0); }
+    50% { transform: translateX(-50%) rotate(-45deg) translateY(-8px); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+  }
+  
+  /* Floating info labels */
+  .pati-3d-label { 
+    align-items: center; 
+    backdrop-filter: blur(12px); 
+    background: rgba(255, 255, 255, 0.92); 
+    border: 2px solid rgba(59, 110, 165, 0.2); 
+    border-radius: 12px; 
+    box-shadow: 0 10px 30px rgba(31, 45, 61, 0.15); 
+    display: flex; 
+    gap: 10px; 
+    padding: 10px 14px; 
+    position: absolute; 
+    transform: translateZ(100px); 
+    animation: labelFloat 4s ease-in-out infinite;
+  }
+  .pati-label-icon { 
+    align-items: center; 
+    background: var(--accent-soft); 
+    border-radius: 8px; 
+    color: var(--accent); 
+    display: flex; 
+    height: 32px; 
+    justify-content: center; 
+    width: 32px;
+  }
+  .pati-label-content { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 2px;
+  }
+  .pati-label-title { 
+    color: var(--text); 
+    font-size: 0.875rem; 
+    font-weight: 700; 
+    line-height: 1;
+  }
+  .pati-label-subtitle { 
+    color: var(--text-muted); 
+    font-size: 0.625rem; 
+    font-weight: 600; 
+    line-height: 1; 
+    text-transform: uppercase;
+  }
+  .pati-label-reports { 
+    right: -5%; 
+    top: 18%; 
+    transform: rotate(3deg); 
+    animation-delay: 0s;
+  }
+  .pati-label-budget { 
+    left: -8%; 
+    top: 50%; 
+    transform: rotate(-4deg); 
+    animation-delay: 1.5s;
+  }
+  .pati-label-location { 
+    bottom: 15%; 
+    right: 0; 
+    transform: rotate(2deg); 
+    animation-delay: 3s;
+  }
+  
+  @keyframes labelFloat {
+    0%, 100% { transform: rotate(var(--rotate, 0deg)) translateY(0); }
+    50% { transform: rotate(var(--rotate, 0deg)) translateY(-10px); }
+  }
+  
+  .pati-label-reports { --rotate: 3deg; }
+  .pati-label-budget { --rotate: -4deg; }
+  .pati-label-location { --rotate: 2deg; }
+  
+  /* Caption */
+  .pati-3d-caption { 
+    align-items: center; 
+    bottom: -8px; 
+    color: var(--text-muted); 
+    display: flex; 
+    font-family: var(--font-sans), sans-serif; 
+    font-size: 0.7rem; 
+    font-weight: 600; 
+    gap: 8px; 
+    left: 50%; 
+    position: absolute; 
+    transform: translateX(-50%);
+  }
+  .pati-caption-dot { 
+    animation: dotPulse 2s ease-in-out infinite; 
+    background: var(--accent); 
+    border-radius: 999px; 
+    box-shadow: 0 0 0 0 var(--accent-soft); 
+    height: 8px; 
+    width: 8px;
+  }
+  
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); }
+    50% { box-shadow: 0 0 0 8px var(--accent-soft); }
+  }
   .public-strip { border-top: 1px solid var(--border); display: grid; gap: 2rem; grid-template-columns: 1fr 1fr; margin: 0 auto; max-width: 1180px; padding-top: 2.5rem; }
   .public-strip h2 { font-size: clamp(1.5rem, 3vw, 2.4rem); font-weight: 600; line-height: 1.15; margin: 0.75rem 0 0; max-width: 560px; color: var(--text); }
   .public-strip p { color: var(--text-muted); font-family: var(--font-sans), sans-serif; line-height: 1.6; margin: 0; max-width: 420px; }
@@ -250,8 +594,59 @@
 @media (max-width: 700px) {
   .landing-shell, .page-shell { padding: 2.5rem 6vw 3rem; }
   .hero-section { gap: 3rem; grid-template-columns: 1fr; margin: 5vh auto 7vh; }
-  .hero-mark { height: 190px; justify-self: end; width: 190px; }
-  .hero-mark strong { font-size: 2.3rem; }
+  .pati-hero-visual-3d { 
+    min-height: 350px; 
+    margin: -1rem auto 0; 
+    max-width: 100%; 
+    width: 100%;
+  }
+  .pati-3d-platform { 
+    height: 220px; 
+    width: 220px;
+  }
+  .pati-3d-land { 
+    height: 190px; 
+    width: 190px;
+  }
+  .pati-3d-building { 
+    height: 32px; 
+    width: 28px;
+  }
+  .pati-building-icon { 
+    height: 16px; 
+    width: 16px;
+  }
+  .pati-3d-label { 
+    font-size: 0.65rem; 
+    gap: 6px; 
+    padding: 8px 10px;
+  }
+  .pati-label-icon { 
+    height: 24px; 
+    width: 24px;
+  }
+  .pati-label-icon svg { 
+    height: 12px; 
+    width: 12px;
+  }
+  .pati-label-title { 
+    font-size: 0.75rem;
+  }
+  .pati-label-subtitle { 
+    font-size: 0.55rem;
+  }
+  .pati-label-reports { 
+    right: -2%; 
+    top: 15%;
+  }
+  .pati-label-budget { 
+    left: -5%; 
+    top: 50%;
+  }
+  .pati-label-location { 
+    bottom: 12%; 
+    right: -2%;
+  }
   .public-strip { grid-template-columns: 1fr; }
   .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(2.5rem, 12vw, 3.8rem); }
 }
