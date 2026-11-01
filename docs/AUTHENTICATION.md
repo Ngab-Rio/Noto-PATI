@@ -11,7 +11,9 @@
 - Autentikasi memakai **Supabase Auth** (email atau Google). Sesi dikelola oleh Supabase.
 - Ada dua role terautentikasi: **`Warga`** dan **`Admin`**. Pengunjung tanpa akun bukan role.
 - **OPD bukan role** pada MVP.
-- Pelaporan **wajib akun**. "Anonim" hanya berarti identitas pelapor tidak tampil ke publik.
+- Pelaporan dapat dilakukan **tanpa akun**. Pelapor anonim tidak memiliki riwayat akun,
+  tetapi tetap mendapat nomor tiket dan dapat melihat detail laporan publik.
+- Warga yang login dapat melihat riwayat laporan yang terkait dengan akunnya.
 - Otorisasi berlapis: **RLS PostgreSQL** + **pemeriksaan otorisasi di server Next.js**.
 
 ---
@@ -22,7 +24,7 @@
 |---|:-:|:-:|:-:|
 | Lihat peta, daftar/detail laporan publik, linimasa | ✅ | ✅ | ✅ |
 | Lihat halaman Anggaran | ✅ | ✅ | ✅ |
-| Buat laporan | ❌ | ✅ | ❌* |
+| Buat laporan | ✅ (anonim) | ✅ | ✅ (belum dibatasi terpisah) |
 | Lihat laporan milik sendiri (termasuk yang belum publik) | ❌ | ✅ | ✅ (semua) |
 | Lihat identitas pelapor | ❌ | ❌ (kecuali dirinya sendiri) | ✅ |
 | Dukung laporan orang lain (P1) | ❌ | ✅ (1x per laporan) | ❌ |
@@ -36,7 +38,8 @@
 | Akses log audit internal | ❌ | ❌ | ✅ |
 | Akses dashboard Admin | ❌ | ❌ | ✅ |
 
-\* PRD tidak mengizinkan Admin membuat laporan secara eksplisit. Jika tim ingin mengizinkannya, catat sebagai perubahan scope di `productscope.md`.
+> **Status implementasi:** dashboard Admin masih berupa placeholder. Pembatasan role untuk
+> operasi admin belum dapat dianggap selesai sampai Server Action/RPC admin tersedia.
 
 ---
 
@@ -55,7 +58,8 @@
 
 ### 3.3 Akses halaman terlindungi
 - Rute `/admin/*` diperiksa di server (middleware dan di tiap Server Action/Route Handler). Pengguna tanpa sesi diarahkan ke login; pengguna ber-role `warga` mendapat penolakan (403), bukan sekadar disembunyikan.
-- Rute pembuatan laporan membutuhkan sesi valid.
+- Rute pembuatan laporan tidak membutuhkan sesi. Jika ada sesi, laporan dikaitkan dengan
+  `auth.uid()` dan muncul di riwayat Warga.
 - Halaman publik (peta, detail laporan, Anggaran) tidak membutuhkan sesi.
 
 ---
@@ -64,7 +68,7 @@
 
 ### 4.1 Pemeriksaan di server (wajib)
 Setiap operasi berikut **harus** memverifikasi sesi dan role di server, tidak boleh bergantung pada UI:
-- Membuat laporan (sesi valid + validasi data + validasi polygon).
+- Membuat laporan (sesi opsional + validasi data + validasi polygon).
 - Verifikasi, penolakan, penggabungan, perubahan status, unggah bukti tindak lanjut.
 - Publikasi atau perubahan data anggaran.
 - Keputusan buka kembali.
@@ -130,7 +134,7 @@ Catatan:
 
 | Situasi | Perilaku |
 |---|---|
-| Pengguna belum login membuka form laporan | Diarahkan ke login, tidak ada laporan dibuat |
+| Pengguna belum login membuka form laporan | Form dapat digunakan sebagai laporan anonim |
 | Warga mengakses `/admin` | Ditolak (403) di server |
 | Warga mengirim `role: 'admin'` pada request | Diabaikan/ditolak, role tidak berubah |
 | Sesi kedaluwarsa saat mengirim laporan | Pesan jelas, data form dipertahankan jika memungkinkan, tidak ada sukses palsu |
@@ -144,7 +148,7 @@ Catatan:
 ## 8. Kriteria Penerimaan
 
 1. Warga dapat mendaftar dan masuk dengan email atau Google; sesi bertahan dan dapat dikeluarkan (logout).
-2. Pengguna tanpa sesi tidak dapat membuat laporan.
+2. Pengguna tanpa sesi dapat membuat laporan anonim dengan foto, lokasi, dan nomor tiket.
 3. Pengguna `Warga` dan Pengunjung tidak dapat mengakses dashboard Admin maupun endpoint Admin (diuji lewat UI **dan** request langsung).
 4. Pengguna tidak dapat mengubah role sendiri lewat browser, request manual, atau pemanggilan Supabase client.
 5. Role `Admin` hanya dapat ditetapkan lewat proses administratif yang terdokumentasi.

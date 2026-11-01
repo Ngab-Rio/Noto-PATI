@@ -7,6 +7,12 @@
 
 Dokumen ini menjawab **"siapa bertanggung jawab atas apa, dan di mana batasnya"**. Dokumen ini tidak menggantikan PRD: kebutuhan fungsional, aturan status, dan kriteria penerimaan tetap bersumber dari PRD. Bila keduanya bertentangan, PRD menang dan dokumen ini diperbaiki.
 
+> **Catatan kesesuaian implementasi:** Dokumen ini memuat target arsitektur MVP sekaligus
+> kondisi kode saat ini. Struktur aktual menggunakan `src/lib/` untuk infrastruktur server-only
+> dan belum memiliki seluruh modul domain, SLA, transisi admin, serta anggaran database yang
+> digambarkan di bawah. Bagian yang belum tersedia harus diperlakukan sebagai target, bukan
+> fitur selesai.
+
 Setiap keputusan penting disertai **Mengapa**, supaya keputusan dapat ditinjau ulang, bukan hanya diikuti. Bagian yang bertanda **[Keputusan terbuka]** belum dikunci di PRD dan perlu disepakati tim (daftar lengkap di Bagian 14).
 
 ---
@@ -55,7 +61,7 @@ flowchart LR
   subgraph Browser["Browser - mobile-first"]
     UI["React UI<br/>Client Components"]
     CAM["Kamera dan Geolocation<br/>hanya di klien"]
-    MAP["Peta Leaflet<br/>hanya di klien"]
+    MAP["Peta MapLibre<br/>hanya di klien"]
     SBC["Supabase browser client<br/>sesi pengguna + RLS"]
   end
 
@@ -93,7 +99,7 @@ flowchart LR
 
 | Komponen | Bertanggung jawab atas | **Bukan** tanggung jawabnya |
 |---|---|---|
-| **Browser (Client Components)** | Interaksi dan tampilan; akses kamera dan geolokasi; kompresi foto dan pembuangan EXIF; peta Leaflet; validasi form untuk kenyamanan; upload foto ke Storage atas nama sesi pengguna | Memutuskan hak akses; menentukan status; menghitung SLA; memvalidasi wilayah sebagai keputusan final; memegang rahasia |
+| **Browser (Client Components)** | Interaksi dan tampilan; akses kamera dan geolokasi; kompresi foto; peta MapLibre; validasi form untuk kenyamanan; upload foto ke Storage | Memutuskan hak akses; menentukan status; menghitung SLA; memvalidasi wilayah sebagai keputusan final; memegang rahasia |
 | **Next.js: Server Components** | Merender halaman publik, detail laporan, dashboard; membaca data lewat lapisan `queries`; membuat signed URL foto | Mutasi data (gunakan Server Action) |
 | **Next.js: Server Actions** | Mutasi dari form: kirim laporan, ubah status, gabungkan, tolak, dukung, rating, ajukan buka kembali. Setiap action: autentikasi, parse Zod, otorisasi, panggil fungsi database, kembalikan hasil | Aturan bisnis yang harus atomik (itu milik fungsi database); pembacaan data untuk fetch dari klien |
 | **Next.js: Route Handlers** | Endpoint yang dipanggil klien lewat HTTP: `GET` marker peta, analisis foto AI (P1), cron pembersihan, callback OAuth, webhook | Menjadi tempat utama logika bisnis |
@@ -126,7 +132,7 @@ flowchart LR
 │    Aturan murni TypeScript: status, SLA, label, tipe geo.    │
 │    TIDAK mengimpor Next.js, React, atau Supabase             │
 ├──────────────────────────────────────────────────────────────┤
-│ 4. INFRASTRUKTUR   src/server, src/lib/supabase/browser.ts   │
+│ 4. INFRASTRUKTUR   src/lib (server-only dan Supabase client)  │
 │    Klien Supabase, storage, adapter AI/email, rate limit,    │
 │    guard autentikasi, peta error database                    │
 └──────────────────────────────────────────────────────────────┘
@@ -136,9 +142,9 @@ flowchart LR
 
 | Lapisan | Boleh mengimpor | Dilarang mengimpor |
 |---|---|---|
-| Presentasi | Aplikasi (actions, queries), Domain, `components/ui` | `src/server/*` langsung; klien Supabase `admin` dalam kondisi apa pun |
+| Presentasi | Aplikasi (actions, queries), Domain, `components/ui` | Infrastruktur `src/lib/*` langsung bila tidak diperlukan; klien Supabase `admin` dalam kondisi apa pun |
 | Aplikasi | Domain, Infrastruktur | Komponen React |
-| Domain | Hanya TypeScript standar dan sesama `domain` | `next/*`, `react`, `@supabase/*`, `src/server/*`, `src/features/*` |
+| Domain | Hanya TypeScript standar dan sesama `domain` | `next/*`, `react`, `@supabase/*`, `src/lib/*`, `src/features/*` |
 | Infrastruktur | Domain, tipe | Komponen, `features/*` |
 
 Arah panah selalu ke dalam (Presentasi → Aplikasi → Domain; Aplikasi → Infrastruktur). **Domain tidak tahu apa-apa tentang dunia luar.**
@@ -147,7 +153,7 @@ Arah panah selalu ke dalam (Presentasi → Aplikasi → Domain; Aplikasi → Inf
 
 ### 3.3 Cara aturan ditegakkan (bukan hanya diharapkan)
 
-1. **`server-only`**: setiap file di `src/server/**` dan `features/*/queries.ts` dimulai dengan `import "server-only"`. Bila file itu tanpa sengaja ditarik ke Client Component, **build gagal**, bukan bocor diam-diam. Ini penegak terpenting untuk P3.
+1. **`server-only`**: file server-only di `src/lib/**` dan adapter AI dimulai dengan `import "server-only"`. Bila file itu tanpa sengaja ditarik ke Client Component, **build gagal**, bukan bocor diam-diam. Ini penegak terpenting untuk P3.
 2. **ESLint `no-restricted-imports`** untuk kemurnian domain (cuplikan):
 
    ```js
@@ -203,8 +209,8 @@ PRD 12.1 mengizinkan "operasi sederhana yang diizinkan" langsung dari browser. A
 | Klien | File | Berjalan di | Identitas | RLS | Dipakai untuk |
 |---|---|---|---|---|---|
 | **Browser** | `src/lib/supabase/browser.ts` | Browser | Sesi pengguna | Berlaku | Auth UI, upload foto |
-| **Server (user-scoped)** | `src/server/supabase/server.ts` | Server (baca cookie sesi) | Sesi pengguna | **Berlaku** | **Default** untuk semua query dan RPC di server |
-| **Admin (service role)** | `src/server/supabase/admin.ts` | Server saja (`server-only`) | Tanpa batas | **Dilewati** | Hanya daftar pengecualian di bawah |
+| **Server (user-scoped)** | `src/lib/supabase/server.ts` | Server (baca cookie sesi) | Sesi pengguna | **Berlaku** | **Default** untuk semua query dan RPC di server |
+| **Admin (service role)** | `src/lib/supabase/admin.ts` | Server saja (`server-only`) | Tanpa batas | **Dilewati** | Hanya daftar pengecualian di bawah |
 
 **Aturan emas: default ke klien server user-scoped.** Dengan begitu RLS tetap menjadi jaring pengaman walau kode aplikasi salah. Service role melewati RLS, sehingga setiap pemakaiannya adalah keputusan yang disengaja.
 
@@ -212,7 +218,7 @@ PRD 12.1 mengizinkan "operasi sederhana yang diizinkan" langsung dari browser. A
 
 | Kegunaan | Lokasi |
 |---|---|
-| Membuat signed URL untuk foto yang **sudah diputuskan aman ditampilkan publik** | `src/server/storage/signed-urls.ts` |
+| Membuat signed URL untuk foto yang **sudah diputuskan aman ditampilkan publik** | `src/lib/reports/signed-urls.ts` |
 | Cron pembersihan foto draf yatim (upload yang tidak pernah menjadi laporan) | `app/api/cron/cleanup-drafts/route.ts` |
 | Skrip operasional di luar aplikasi web: penetapan role Admin, impor anggaran terkontrol | `scripts/*` |
 
@@ -374,7 +380,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   autonumber
-  participant B as Browser (Leaflet)
+  participant B as Browser (MapLibre)
   participant RH as GET /api/reports/map
   participant DB as PostgreSQL
 
@@ -387,7 +393,7 @@ sequenceDiagram
 ```
 
 - Untuk dataset prototipe, **ambil semua marker publik sekali**, lalu filter dan kelompokkan di klien. Kontrak `getPublicMarkers(filter)` dibuat terpisah agar kelak dapat diganti ke bounding box/viewport tanpa mengubah komponen peta.
-- Leaflet memakai `window`, jadi komponen peta harus **client-only**: `next/dynamic(..., { ssr: false })` **di dalam Client Component** (Server Component tidak boleh memakai opsi `ssr: false`).
+- MapLibre memakai API browser, jadi komponen peta harus **client-only**.
 - Atribusi OpenStreetMap wajib tampil. Tile server publik OSM punya kebijakan penggunaan; cukup untuk prototipe, tinjau bila trafik membesar.
 
 ### 6.4 Halaman detail laporan publik (FR-06)
@@ -677,7 +683,9 @@ export async function submitReport(
 | `/my-reports` | Dinamis, privat | Laporan milik sendiri | `no-store` | Data pribadi |
 | `/admin/**` | Dinamis, privat | Semua data admin | `no-store`, `noindex` | Data sensitif; jangan ter-cache atau terindeks |
 
-Mekanisme cache Next.js berubah antarversi. **Seluruh pemanggilan API cache dibungkus di `src/server/cache.ts`** sehingga perubahan versi cukup diperbaiki di satu file.
+Mekanisme cache Next.js berubah antarversi. Jika cache aplikasi ditambahkan, bungkus
+aksesnya pada helper infrastruktur di `src/lib/` sehingga perubahan versi cukup diperbaiki
+di satu file.
 
 ---
 
@@ -753,7 +761,7 @@ Komponen `components/ui` (shadcn) dipakai sebagai dasar; setiap form memiliki la
 Semua layanan eksternal diakses lewat **antarmuka kecil milik kita**, dengan adapter per penyedia.
 
 ```ts
-// src/server/ai/types.ts (sketsa)
+// src/features/ai/server/contracts.ts (implementasi kontrak AI)
 export interface PhotoAnalyzer {
   analyze(input: { imageUrl: string; signal: AbortSignal }): Promise<PhotoAnalysis | null>;
 }
@@ -763,7 +771,7 @@ export interface PhotoAnalyzer {
 |---|---|---|---|
 | **Analisis foto AI** | P1 | Antarmuka `PhotoAnalyzer`; adapter per penyedia; output divalidasi Zod; *feature flag* `FEATURE_AI_PHOTO`; timeout ketat | Kembalikan `null` → form manual tetap jalan |
 | **Email notifikasi** | P1 | Antarmuka `Mailer`; dikirim setelah transaksi selesai lewat `after()` dari `next/server` | Dicatat dan diabaikan; laporan tetap tersimpan (FR-13) |
-| **Ubin peta OSM** | P0 | Dipakai langsung oleh Leaflet di klien; atribusi wajib | Peta kosong tanpa ubin, marker/daftar tetap berfungsi |
+| **Ubin peta OSM** | P0 | Dipakai oleh MapLibre di klien; atribusi wajib | Peta kosong tanpa ubin, marker/daftar tetap berfungsi |
 | **Penyedia AI final** | - | **Belum dipilih** sampai evaluasi kualitas, privasi, biaya, dan retensi data selesai (PRD 12.2, 13.3) | - |
 
 **Mengapa antarmuka dan adapter?** Pemilihan penyedia AI belum final (PRD 21). Dengan antarmuka, mengganti Roboflow ke model lain, atau mematikan fitur, tidak menyentuh route handler maupun UI. Bila perlu menjamin pengiriman email lebih kuat, tingkatkan ke pola *outbox* (tabel antrean + cron) tanpa mengubah pemanggil.

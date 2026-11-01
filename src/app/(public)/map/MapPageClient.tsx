@@ -51,7 +51,7 @@ export function MapPageClient() {
 
             <div className="flex items-center gap-2.5">
               <Link href="/report/new">
-                <Button variant="accent" className="gap-2">
+                <Button variant="default" className="gap-2">
                   <IconPlusCircle className="h-4 w-4" />
                   <span>Buat Laporan Baru</span>
                 </Button>

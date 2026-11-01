@@ -27,6 +27,7 @@ The Public Map is an interactive visualization that allows citizens to explore a
 
 2. **Report Markers**
    - Circle markers for each report
+   - Native MapLibre clustering untuk laporan yang berdekatan
    - Color-coded by status:
      - 🔵 Blue: `diterima` (Received)
      - 🟣 Purple: `diverifikasi` (Verified)
@@ -120,6 +121,11 @@ interface PublicReportsMapProps {
 - Reset view button
 - Report count display
 
+> **Catatan implementasi:** filter status sudah tersedia pada halaman peta dan filter
+> kategori/tanggal tersedia pada API. Filter `kecamatan` sudah menjadi parameter kontrak,
+> tetapi belum diterapkan sebagai kondisi query sampai data kecamatan tersimpan secara
+> konsisten pada laporan.
+
 ### `MapPageClient`
 
 Client-side page component with filter controls.
@@ -167,33 +173,28 @@ The map only displays **public-safe** report information:
 
 ### 🚧 Phase 2: Advanced Features (Not Yet Implemented)
 
-1. **Marker Clustering**
-   - Automatic grouping of nearby reports
-   - Cluster size indicators
-   - Progressive zoom expansion
-
-2. **Heatmap Visualization**
+1. **Heatmap Visualization**
    - Density-based coloring
    - Toggle between markers and heatmap
    - Intensity adjustment
 
-3. **Advanced Filters**
+2. **Advanced Filters**
    - Category multi-select
    - Date range picker
    - District/kecamatan filter
    - Search by location
 
-4. **Report List View**
+3. **Report List View**
    - Alternative to map visualization
    - Pagination
    - Sorting options
 
-5. **Map Statistics**
+4. **Map Statistics**
    - Total reports by status
    - Reports by category
    - Hot spots identification
 
-6. **Viewport-based Loading**
+5. **Viewport-based Loading**
    - Load reports within visible area
    - Dynamic loading on pan/zoom
    - PostGIS spatial queries

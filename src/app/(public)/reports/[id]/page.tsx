@@ -7,7 +7,7 @@ import {
   IconThumbsUp,
   IconBuildings,
 } from "@/components/shared/icons";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -84,7 +84,7 @@ export default async function ReportDetailPage({
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
             <div className="flex items-center gap-2.5">
-              <StatusBadge status={normalizeReportStatus(report.status)} size="md" />
+              <StatusBadgeClient status={normalizeReportStatus(report.status)} size="md" showIcon={true} />
               <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-soft text-primary-dark">
                 {report.category}
               </span>
@@ -134,7 +134,7 @@ export default async function ReportDetailPage({
               {(history ?? []).map((item) => (
                 <div key={`${item.status}-${item.created_at}`} className="flex items-start justify-between gap-4 rounded-lg border border-border p-3 text-sm">
                   <div>
-                    <StatusBadge status={normalizeReportStatus(item.status)} size="sm" />
+                    <StatusBadgeClient status={normalizeReportStatus(item.status)} size="sm" showIcon={true} />
                     {item.note && <p className="mt-1 text-text-muted">{item.note}</p>}
                   </div>
                   <time className="text-xs text-text-muted whitespace-nowrap">

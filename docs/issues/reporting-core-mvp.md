@@ -55,7 +55,8 @@ Validasi polygon Kabupaten Pati menggunakan sumber polygon resmi dan PostGIS men
 - [x] Filter publik kategori, status, dan pencarian judul/lokasi berfungsi.
 - [x] Retry teknis tidak membuat laporan atau foto duplikat.
 - [x] Timeout dan kegagalan upload menampilkan error tanpa menghapus state form.
-- [ ] Koordinat divalidasi terhadap polygon resmi Kabupaten Pati menggunakan PostGIS.
+- [x] Koordinat divalidasi terhadap polygon Kabupaten Pati menggunakan PostGIS `ST_Covers`
+  setelah region di-seed melalui script operasional.
 - [ ] Automated test untuk alur sukses, kegagalan, retry, RLS, dan validasi wilayah.
 
 ## Catatan Tambahan
@@ -65,4 +66,5 @@ Validasi polygon Kabupaten Pati menggunakan sumber polygon resmi dan PostGIS men
 - Automatic duplicate detection berbasis kemiripan foto/teks dan AI auto-fill berada di luar scope core MVP.
 - Dukungan laporan, rating, notifikasi, dashboard admin/OPD, dan peta marker/clustering mengikuti scope issue terpisah.
 - Acceptance criteria "hanya pengguna authenticated yang dapat mengirim laporan" diganti karena keputusan produk terbaru mengizinkan anonymous reporting.
-- Polygon resmi Kabupaten Pati belum tersedia di repository dan tidak boleh digantikan dengan bounding box perkiraan.
+- Data region Kabupaten Pati tersedia melalui `pati.geojson` dan script
+  `scripts/seed-pati-region.mjs`; validasi memakai PostGIS `ST_Covers`, bukan bounding box.

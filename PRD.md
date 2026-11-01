@@ -128,7 +128,7 @@ Pengguna hanya berbicara dengan aplikasi Next.js, yang membaca dan menulis data 
 | --- | --- | --- |
 | Framework | Next.js (App Router) dengan TypeScript. Pasang versi stabil terbaru dan kunci di package.json | Server Components untuk halaman publik yang cepat; Route Handlers dan Server Actions untuk API dan aksi form |
 | Tampilan | Tailwind CSS dan shadcn/ui | Komponen aksesibel siap pakai, cepat dirakit |
-| Peta | Leaflet (react-leaflet) dengan ubin OpenStreetMap | Gratis, sederhana, mendukung pengelompokan penanda |
+| Peta | MapLibre GL JS dengan sumber GeoJSON dan ubin OpenStreetMap | Client-side rendering, kontrol layer, dan pengelompokan penanda |
 | Grafik | Recharts | Grafik anggaran yang cukup untuk MVP |
 | Basis data | PostgreSQL dengan ekstensi PostGIS (radius dan batas wilayah) dan pgvector (kemiripan laporan) | Satu basis data untuk data, geospasial, dan embedding |
 | Layanan terkelola | Supabase (Postgres, Auth, Storage) atau Neon dengan Auth.js; pilih salah satu | Mengurangi pekerjaan infrastruktur; cek kuota paket gratis sebelum memutuskan |
@@ -150,7 +150,7 @@ Pengguna hanya berbicara dengan aplikasi Next.js, yang membaca dan menulis data 
 | Routing | `src/app/` | Tipis — hanya routing, layout, dan komposisi halaman |
 | Fitur | `src/features/` | Komponen, actions, queries, dan schema per fitur |
 | Domain | `src/domain/` | Aturan bisnis murni TypeScript (status, SLA, kategori) |
-| Server | `src/server/` | Infrastruktur server-only (Supabase client, guards, AI, signed URL) |
+| Server | `src/lib/` | Infrastruktur server-only aktual (Supabase client, guards, AI, signed URL) |
 | Utilitas | `src/lib/` | Helper yang aman dipakai di sisi klien maupun server |
 | Database | `supabase/migrations/` | Skema, RLS, RPC, trigger, view sebagai migrasi SQL |
 
