@@ -46,7 +46,12 @@ Script `seed_admin.sql` sekarang bisa **langsung create user admin** tanpa perlu
 
    **Via CLI (Local Development):**
    ```bash
-   npx supabase db execute -f supabase/seed_admin.sql
+   npx supabase db query -f supabase/seed_admin.sql
+   ```
+   
+   **Atau untuk remote/cloud:**
+   ```bash
+   npx supabase db query -f supabase/seed_admin.sql --linked
    ```
 
 3. **Verifikasi hasil:**

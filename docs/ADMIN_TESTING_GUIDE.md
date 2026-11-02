@@ -30,7 +30,11 @@ Sebelum mulai testing:
 
 2. Jalankan script:
    ```bash
-   npx supabase db execute -f supabase/seed_admin.sql
+   # Local development
+   npx supabase db query -f supabase/seed_admin.sql
+   
+   # Atau untuk linked project (cloud)
+   npx supabase db query -f supabase/seed_admin.sql --linked
    ```
 
 3. Periksa output di console

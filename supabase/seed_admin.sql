@@ -6,7 +6,7 @@
 -- CARA MENGGUNAKAN:
 -- 1. Edit email, password, dan nama admin di bagian CONFIGURATION
 -- 2. Jalankan script via Supabase Dashboard (SQL Editor) atau CLI:
---    npx supabase db execute -f supabase/seed_admin.sql
+--    npx supabase db query -f supabase/seed_admin.sql
 --
 -- OPSI PENGGUNAAN:
 -- - MODE 1: Create new admin user (jika belum ada)
