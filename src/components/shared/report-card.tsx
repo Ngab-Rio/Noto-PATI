@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   MapPin,
   ThumbsUp,
@@ -12,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
 import type { ReportStatusKey } from "@/config/theme";
 
@@ -78,10 +79,22 @@ export function ReportCard({
       )}
     >
       <div className="space-y-4">
+        {report.imageUrl && (
+          <Link href={`/reports/${report.id}`} className="block overflow-hidden rounded-lg border border-border">
+            <Image
+              src={report.imageUrl}
+              alt="Foto kerusakan fasilitas publik"
+              width={800}
+              height={450}
+              unoptimized
+              className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.02]"
+            />
+          </Link>
+        )}
         {/* Header: Status & Nomor Tiket / Kategori */}
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2">
-            <StatusBadge status={report.status} />
+            <StatusBadgeClient status={report.status} showIcon={true} size="sm" />
             <span className="text-xs font-medium text-text-muted">
               {report.category}
             </span>

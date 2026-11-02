@@ -21,7 +21,7 @@ Dokumen ini melengkapi PRD Noto PATI v1.0 (misalnya `Noto_PATI_PRD_v1.md`; sesua
 | Styling | **Tailwind CSS** | Pendekatan mobile-first dan token desain yang konsisten. Ikuti konfigurasi yang dihasilkan oleh versi stabil yang dipasang; jangan mencampur petunjuk Tailwind v3 dan v4. |
 | UI components | **shadcn/ui** | Gunakan untuk komponen dasar yang dapat disesuaikan. Komponen hasil generator tetap menjadi kode proyek dan harus melalui code review. |
 | Form dan validasi | **React Hook Form + Zod** | Validasi klien membantu pengalaman pengguna; validasi server tetap menjadi acuan final. |
-| Peta | **Leaflet + React-Leaflet + OpenStreetMap tiles** | Komponen peta menggunakan client-side rendering. Jangan menganggap koordinat yang dikirim browser valid sebelum diperiksa server. Patuhi kebijakan penggunaan tile provider. |
+| Peta | **MapLibre GL JS + GeoJSON** | Komponen peta menggunakan client-side rendering. Jangan menganggap koordinat yang dikirim browser valid sebelum diperiksa server. Patuhi kebijakan penggunaan tile provider. |
 | Backend/data API | **Supabase Client + Next.js Server Actions/Route Handlers** | Gunakan server logic untuk tindakan sensitif, integrasi eksternal, serta validasi business rules. |
 | Database | **Supabase PostgreSQL** | Schema dikelola dengan migrasi SQL yang ditinjau dan disimpan di Git. |
 | Geospasial | **PostGIS** | Untuk validasi titik terhadap polygon Kabupaten Pati dan pencarian laporan berdasarkan radius. Data batas administratif harus berasal dari sumber yang diverifikasi. |
@@ -58,9 +58,12 @@ Struktur folder lengkap dan final ada di [ARCHITECTURE.md § 8. Struktur Folder]
 ### Aturan struktur
 
 - **`src/app/` harus tipis.** Business logic yang kompleks disimpan di `src/features/` atau `src/lib/`, bukan menumpuk di `page.tsx`. Lihat panduan lengkap di [ARCHITECTURE.md § 8.1 Konvensi](./ARCHITECTURE.md).
-- **`src/server/`** berisi seluruh infrastruktur server-only: Supabase server client, auth guards, signed URL, AI adapter. Semua file di dalamnya wajib memuat `import "server-only"` agar tidak bisa diimpor dari bundle browser.
-- **`src/server/supabase/admin.ts`** hanya dibuat jika benar-benar diperlukan untuk operasi service role. Pastikan hanya dapat diimpor di server dan setiap operasi tetap dilindungi otorisasi yang eksplisit — jangan gunakan untuk operasi yang bisa dilakukan dengan user-scoped client.
-- **`src/lib/supabase/browser.ts`** hanya untuk pemakaian browser. Jangan impor ini dari Server Components, Server Actions, atau Route Handlers.
+- Infrastruktur server-only saat ini berada di **`src/lib/`**, termasuk Supabase server/admin client,
+  auth guards, signed URL, dan adapter AI. File server-only memakai `import "server-only"`.
+- **`src/lib/supabase/admin.ts`** hanya boleh dipakai untuk operasi service role yang memang diperlukan.
+  Jangan gunakan untuk operasi yang bisa dilakukan dengan user-scoped client.
+- **`src/lib/supabase/client.ts`** adalah client Supabase untuk browser. Jangan impor dari
+  Server Components, Server Actions, atau Route Handlers.
 - **Semua perubahan schema database** dibuat sebagai migrasi SQL di `supabase/migrations/`. Jangan mengubah schema lewat Dashboard Supabase tanpa menangkap perubahan tersebut ke file migrasi.
 - **`scripts/`** berisi alat pemeliharaan data yang dijalankan manual atau CI, bukan logic request web. Tidak boleh diimpor dari `src/` (kecuali `src/domain/`).
 - **Jangan** menaruh foto pengguna, kredensial, dump database, atau data pribadi nyata di `public/`, `supabase/data/`, maupun repository.
@@ -204,8 +207,8 @@ npx supabase db push
 ### 4.5 Konfigurasikan UI dan fitur peta
 
 - Inisialisasikan shadcn/ui pada project yang sudah memakai Tailwind CSS, lalu tambahkan hanya komponen yang benar-benar diperlukan.
-- Impor stylesheet Leaflet dengan benar sesuai pola build yang dipakai.
-- Komponen Leaflet harus berjalan di client karena membutuhkan API browser. Gunakan Client Component dan dynamic import tanpa SSR jika diperlukan oleh konfigurasi Next.js.
+- Impor stylesheet MapLibre dengan benar sesuai pola build yang dipakai.
+- Komponen MapLibre harus berjalan di client karena membutuhkan API browser.
 - Uji tampilan peta pada ponsel dan layar desktop. Pastikan penggunaan ubin OpenStreetMap mematuhi kebijakan atribusi dan penggunaan layanan.
 
 ### 4.6 Jalankan aplikasi dan pengujian
@@ -382,8 +385,7 @@ Jika implementasi memilih nama variabel yang berbeda, perbarui tabel dan `.env.e
 - Supabase database migrations — <https://supabase.com/docs/guides/deployment/database-migrations>
 - Tailwind CSS dengan Next.js — <https://tailwindcss.com/docs/installation/framework-guides/nextjs>
 - shadcn/ui untuk Next.js — <https://ui.shadcn.com/docs/installation/next>
-- Leaflet — <https://leafletjs.com/reference.html>
-- React-Leaflet — <https://react-leaflet.js.org/>
+- MapLibre GL JS — <https://maplibre.org/maplibre-gl-js/docs/>
 - React Hook Form — <https://react-hook-form.com/>
 - Zod — <https://zod.dev/>
 - Vitest — <https://vitest.dev/guide/>

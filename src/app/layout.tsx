@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
   description:
     "Web pelaporan infrastruktur warga dan transparansi data APBD 2025 Kabupaten Pati.",
+  icons: {
+    icon: "/images/icons/noto-pati-monogram.svg",
+    apple: "/images/icons/noto-pati-monogram.svg",
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title>Ikon Bandeng Pati</title>
+  <desc>Ilustrasi sederhana ikan bandeng sebagai identitas Kabupaten Pati</desc>
+  <rect width="64" height="64" rx="16" fill="#3B6EA5"/>
+  <path d="M12 34c7-12 21-18 35-13l8-6-2 10c4 3 6 6 7 9-1 3-3 6-7 9l2 10-8-6c-14 5-28-1-35-13Z" fill="#F6D6A4"/>
+  <path d="M17 34c7-7 16-10 27-9-5 3-5 15 0 18-11 1-20-2-27-9Z" fill="#E4B875"/>
+  <path d="m53 25-8 9 8 9-2-9 2-9ZM12 34l-7-7 3 7-3 7 7-7Z" fill="#FCEBDF"/>
+  <circle cx="43" cy="29" r="2.5" fill="#1F2D3D"/>
+  <path d="M25 25c4 5 4 13 0 18M33 23c4 7 4 15 0 22" fill="none" stroke="#A8532E" stroke-linecap="round" stroke-width="2"/>
+</svg>

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default async function SettingsPage() {
+  // Require authentication
   await requireUser("/profile/settings");
 
   return (

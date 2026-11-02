@@ -3,16 +3,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, PlusCircle, BarChart3, Menu, X, Landmark, User, LogOut } from "lucide-react";
+import { MapPin, ListIcon , X, User, SignOutIcon , PlusCircle, Buildings } from "@phosphor-icons/react";
 import { APP_CONFIG } from "@/config/labels";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/lib/auth/guards";
 
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
-  { href: "/reports", label: "Laporan", icon: PlusCircle },
-  { href: "/map", label: "Peta Laporan", icon: MapPin },
-  { href: "/budget", label: "Anggaran APBD", icon: BarChart3 },
+  { href: "/reports", label: "Laporan" },
+  { href: "/map", label: "Peta Laporan" },
+  { href: "/budget", label: "Anggaran APBD" },
 ];
 
 interface NavbarClientProps {
@@ -39,16 +39,10 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand Logo & Title */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center text-text-on-primary shadow-xs group-hover:bg-primary-dark transition-colors">
-              <Landmark className="h-5 w-5" />
-            </div>
+          <Link href="/" className="flex items-center gap-0 group">
             <div className="flex flex-col">
-              <span className="font-bold text-lg leading-tight tracking-tight text-text">
-                {APP_CONFIG.name}
-              </span>
-              <span className="text-[11px] text-text-muted font-medium -mt-0.5">
-                {APP_CONFIG.region}
+              <span className="font-bold text-xl leading-tight tracking-tight text-text">
+                NOTOPATI
               </span>
             </div>
           </Link>
@@ -58,7 +52,6 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
         <nav className="hidden md:flex items-center gap-1 lg:gap-2">
           {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href;
-            const Icon = link.icon;
             return (
               <Link
                 key={link.href}
@@ -70,7 +63,6 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                     : "text-text-muted hover:bg-primary-soft/50 hover:text-text"
                 )}
               >
-                {Icon && <Icon className="h-4 w-4" />}
                 {link.label}
               </Link>
             );
@@ -86,7 +78,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                 href="/profile"
                 className="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-text px-3 py-2 rounded-lg hover:bg-primary-soft/40 transition-colors"
               >
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4" weight="regular" />
                 <span>Profil</span>
               </Link>
 
@@ -103,7 +95,6 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                 href="/report/new"
                 className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-text-on-primary text-sm font-medium px-4 py-2 rounded-lg shadow-xs transition-colors"
               >
-                <PlusCircle className="h-4 w-4" />
                 <span>Lapor Masalah</span>
               </Link>
 
@@ -113,7 +104,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                   className="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                   title="Keluar dari akun"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <SignOutIcon  className="h-4 w-4" weight="regular" />
                   <span className="sr-only">Keluar</span>
                 </button>
               </form>
@@ -128,10 +119,9 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                 Masuk
               </Link>
               <Link
-                href="/login?next=/report/new"
+                href="/report/new"
                 className="flex items-center gap-1.5 bg-primary hover:bg-primary-dark text-text-on-primary text-sm font-medium px-4 py-2 rounded-lg shadow-xs transition-colors"
               >
-                <PlusCircle className="h-4 w-4" />
                 <span>Lapor Masalah</span>
               </Link>
             </>
@@ -141,10 +131,9 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
         {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center gap-2">
           <Link
-            href={user ? "/report/new" : "/login?next=/report/new"}
+            href="/report/new"
             className="flex items-center gap-1 bg-primary text-text-on-primary text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-xs"
           >
-            <PlusCircle className="h-3.5 w-3.5" />
             <span>Lapor</span>
           </Link>
           <button
@@ -153,7 +142,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
             className="p-2 text-text-muted hover:text-text rounded-lg hover:bg-primary-soft/50 focus:outline-none"
             aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" weight="regular" /> : <ListIcon  className="h-6 w-6" weight="regular" />}
           </button>
         </div>
       </div>
@@ -163,7 +152,6 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
         <div className="md:hidden border-b border-border bg-surface px-4 pt-2 pb-4 space-y-2">
           {NAV_LINKS.map((link) => {
             const isActive = pathname === link.href;
-            const Icon = link.icon;
             return (
               <Link
                 key={link.href}
@@ -175,7 +163,6 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                     : "text-text-muted hover:bg-primary-soft/40 hover:text-text"
                 )}
               >
-                {Icon && <Icon className="h-4 w-4" />}
                 {link.label}
               </Link>
             );
@@ -187,7 +174,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                   href="/profile"
                   className="flex items-center gap-2 text-sm font-medium py-2 px-3 rounded-lg border border-border bg-surface text-text hover:bg-primary-soft/50 transition-colors"
                 >
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4" weight="regular" />
                   <span>Profil Saya</span>
                 </Link>
                 {role === "admin" && (
@@ -203,7 +190,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                     type="submit"
                     className="w-full flex items-center gap-2 text-sm font-medium py-2 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <SignOutIcon  className="h-4 w-4" weight="regular" />
                     <span>Keluar</span>
                   </button>
                 </form>

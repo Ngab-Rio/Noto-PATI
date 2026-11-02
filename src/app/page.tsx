@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ArrowRight, MapPin, Sparkles, PlusCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { ReportCard, type ReportItemData } from "@/components/shared/report-card";
-import { StatusBadge } from "@/components/shared/status-badge";
+import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { HowToReport } from "@/components/shared/how-to-report";
 import { DataSimulationBadge } from "@/components/shared/data-simulation-badge";
+import { PatiHeroVisual } from "@/components/shared/pati-hero-visual";
 import { Button } from "@/components/ui/button";
 
 const FEATURED_REPORTS: ReportItemData[] = [
@@ -55,24 +56,16 @@ export default async function Home() {
           <h1>Perhatian kecil, perubahan yang terasa.</h1>
           <p>
             Noto PATI membantu warga menyampaikan kebutuhan fasilitas publik dengan jelas, aman,
-            dan dapat ditindaklanjuti secara transparan. <span className="text-xs text-text-muted italic">(Platform prototipe untuk demonstrasi konsep)</span>
+            dan dapat ditindaklanjuti secara transparan.
           </p>
           <div className="hero-actions">
-            {user ? (
-              <Link href="/report/new">
-                <Button size="lg" variant="default" className="gap-2">
-                  <PlusCircle className="h-4 w-4" />
-                  <span>Buat Laporan Baru</span>
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/login?next=/report/new">
-                <Button size="lg" variant="default" className="gap-2">
-                  <span>Mulai Lapor Masalah</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            )}
+            <Link href="/report/new">
+              <Button size="lg" variant="default" className="gap-2">
+                <PlusCircle className="h-4 w-4" />
+                <span>{user ? "Buat Laporan Baru" : "Mulai Lapor Masalah"}</span>
+                {!user && <ArrowRight className="h-4 w-4" />}
+              </Button>
+            </Link>
             <Link href="/map">
               <Button size="lg" variant="outline" className="gap-2">
                 <MapPin className="h-4 w-4" />
@@ -82,22 +75,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <div className="hero-mark" aria-hidden="true">
-          <div className="flex items-center justify-between">
-            <span className="font-mono text-xs uppercase tracking-wider text-text-muted">
-              Kab. Pati · 2025
-            </span>
-            <span className="h-2.5 w-2.5 rounded-full bg-accent animate-pulse" />
-          </div>
-          <strong>
-            Noto
-            <br />
-            PATI
-          </strong>
-          <span className="text-xs text-text-muted font-medium">
-            Desain Sistem & Transparansi APBD
-          </span>
-        </div>
+        <PatiHeroVisual />
       </section>
 
       {/* How to Report Section - NEW */}
@@ -126,14 +104,14 @@ export default async function Home() {
         </div>
 
         <div className="flex flex-wrap gap-2.5 pt-2">
-          <StatusBadge status="diterima" size="md" />
-          <StatusBadge status="diverifikasi" size="md" />
-          <StatusBadge status="diproses" size="md" />
-          <StatusBadge status="selesai" size="md" />
-          <StatusBadge status="dibuka_kembali" size="md" />
-          <StatusBadge status="ditolak" size="md" />
-          <StatusBadge status="digabung" size="md" />
-          <StatusBadge status="ditutup" size="md" />
+          <StatusBadgeClient status="diterima" size="md" showIcon={true} />
+          <StatusBadgeClient status="diverifikasi" size="md" showIcon={true} />
+          <StatusBadgeClient status="diproses" size="md" showIcon={true} />
+          <StatusBadgeClient status="selesai" size="md" showIcon={true} />
+          <StatusBadgeClient status="dibuka_kembali" size="md" showIcon={true} />
+          <StatusBadgeClient status="ditolak" size="md" showIcon={true} />
+          <StatusBadgeClient status="digabung" size="md" showIcon={true} />
+          <StatusBadgeClient status="ditutup" size="md" showIcon={true} />
         </div>
 
         {/* Contoh Kartu Laporan */}

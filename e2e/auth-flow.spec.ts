@@ -5,7 +5,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login');
 
     // Check login form elements
-    await expect(page.getByRole('heading', { name: /Masuk/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Selamat datang kembali/i })).toBeVisible();
     await expect(page.getByLabel(/Email/i)).toBeVisible();
     await expect(page.getByLabel(/Password/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /Masuk/i })).toBeVisible();
@@ -15,7 +15,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login');
 
     // Check register link
-    const registerLink = page.getByRole('link', { name: /Daftar|Belum punya akun/i });
+    const registerLink = page.getByRole('link', { name: 'Daftar sekarang', exact: true });
     await expect(registerLink).toBeVisible();
     
     // Navigate to register
@@ -27,7 +27,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/register');
 
     // Check register form elements
-    await expect(page.getByRole('heading', { name: /Daftar/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Buat akun warga/i })).toBeVisible();
     await expect(page.getByLabel(/Nama/i)).toBeVisible();
     await expect(page.getByLabel(/Email/i)).toBeVisible();
     await expect(page.getByLabel(/Password/i)).toBeVisible();
@@ -50,7 +50,7 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login?next=/report/new');
 
     // Check URL contains next parameter
-    await expect(page).toHaveURL(/next=%2Freport%2Fnew/);
+    expect(new URL(page.url()).searchParams.get('next')).toBe('/report/new');
     
     // After login (mocked), should redirect to /report/new
     // This test requires actual authentication to complete
@@ -70,7 +70,7 @@ test.describe('Authorization Flow', () => {
     await page.goto('/unauthorized');
 
     // Check unauthorized message
-    await expect(page.getByText(/Akses Ditolak|tidak memiliki akses/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: /Kembali|Beranda/i })).toBeVisible();
+    await expect(page.getByText(/tidak memiliki izin/i)).toBeVisible();
+    await expect(page.getByRole('link', { name: /Kembali ke halaman utama/i })).toBeVisible();
   });
 });

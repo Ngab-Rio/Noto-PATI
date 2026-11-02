@@ -3,6 +3,9 @@
 > **Versi:** 1.0  
 > **Turunan dari:** `ARCHITECTURE.md § 13` & `DEVELOPMENT.md § 1.1`  
 > **Tujuan:** Panduan teknis terpusat untuk menjalankan, menulis, dan memverifikasi kualitas kode di Noto PATI.
+>
+> **Status saat ini:** test Vitest dan E2E sudah tersedia, tetapi test domain khusus,
+> pgTAP/RLS, dan sebagian coverage alur pelaporan masih merupakan pekerjaan lanjutan.
 
 ---
 
@@ -24,8 +27,8 @@ flowchart TD
 |---|---|---|---|
 | **1. Type Check** | `npx tsc --noEmit` | Memastikan tidak ada pelanggaran tipe data TypeScript | Ya |
 | **2. Linting** | `npm run lint` | Menegakkan standar gaya kode dan batas import | Ya |
-| **3. Unit & Domain** | `npm run test` (Vitest) | Memverifikasi logika murni bisnis (status, SLA, APBD) | Ya |
-| **4. Database & RLS** | `supabase test db` (pgTAP) | Memastikan isolasi hak akses data Warga vs Admin | Ya |
+| **3. Unit & fitur** | `npm run test` (Vitest) | Menjalankan test yang benar-benar ada saat ini, termasuk theme dan kontrak AI | Ya |
+| **4. Database & RLS** | `supabase test db` (pgTAP) | Target pengujian; folder `supabase/tests/` belum tersedia di repository saat ini | Belum |
 | **5. Build Check** | `npm run build` | Menjamin bundle server-only tidak bocor ke klien | Ya |
 | **6. End-to-End** | `npm run test:e2e` (Playwright) | Menguji alur pengguna utuh dari browser | Ya |
 
@@ -42,7 +45,8 @@ npm run test
 npm run test:watch
 
 # Menjalankan test pada file tertentu
-npx vitest run src/domain/sla.test.ts
+npx vitest run src/config/__tests__/theme.test.ts
+npx vitest run src/features/ai/server/contracts.test.ts
 
 # Melihat cakupan pengujian (coverage)
 npx vitest run --coverage
@@ -84,17 +88,16 @@ supabase test db
 
 Sesuai dengan arsitektur 4 lapisan Noto PATI, setiap lapisan memiliki pendekatan pengujian yang berbeda:
 
-### 3.1 Lapisan 1: Domain (Murni TypeScript)
+### 3.1 Test unit yang tersedia
 * **Karakteristik:** Tidak memiliki dependensi ke React, Next.js, maupun Supabase.
 * **Alat:** `Vitest`.
 * **Fokus Uji:**
-  - `report-status.test.ts`: Memastikan matriks transisi status yang sah (contoh: status `received` tidak boleh langsung melompat ke `resolved` tanpa melalui verifikasi).
-  - `sla.test.ts`: Perhitungan sisa waktu dan status keterlambatan berdasarkan timestamp server dan tenggat target.
-  - `budget.test.ts`: Penjumlahan matematis pagu anggaran APBD 2025 secara deterministik (bukan aproksimasi AI).
+  - `src/config/__tests__/theme.test.ts`: validasi konfigurasi theme dan status UI.
+  - `src/features/ai/server/contracts.test.ts`: validasi kontrak dan parsing respons AI.
 
-### 3.2 Lapisan 2: Validasi & Schema Form
+### 3.2 Target test domain dan database
 * **Karakteristik:** Form pelaporan dan filter peta yang berjalan di browser.
-* **Alat:** `Vitest` + Zod schema validation.
+* **Alat yang direncanakan:** `Vitest` + Zod schema validation.
 * **Fokus Uji:**
   - Input teks tidak boleh kosong atau melebihi batas karakter.
   - Jumlah foto wajib 1 hingga 3 lembar.
@@ -102,7 +105,7 @@ Sesuai dengan arsitektur 4 lapisan Noto PATI, setiap lapisan memiliki pendekatan
 
 ### 3.3 Lapisan 3: Database, RPC, dan RLS (PostgreSQL + PostGIS)
 * **Karakteristik:** Garis pertahanan terakhir integritas data.
-* **Alat:** `pgTAP` di folder `supabase/tests/`.
+* **Alat yang direncanakan:** `pgTAP` di folder `supabase/tests/`.
 * **Fokus Uji:**
   - **Uji Hak Akses (RLS):** Pengunjung anonim dan Warga biasa dilarang keras membaca catatan internal admin atau identitas pelapor anonim.
   - **Uji Atomisitas:** Memastikan fungsi RPC `create_report` membatalkan seluruh transaksi jika salah satu foto gagal dicatat.
@@ -154,7 +157,7 @@ Gunakan checklist ini sebelum mengajukan Pull Request:
 - [ ] **Linting:** `npm run lint` lolos tanpa pelanggaran aturan.
 - [ ] **Unit Tests:** Semua pengujian domain lulus (`npm run test`).
 - [ ] **E2E Tests:** Playwright tests untuk critical paths lulus (`npm run test:e2e`).
-- [ ] **Batas Server/Klien:** File di `src/server/` memuat `import "server-only"`.
+- [ ] **Batas Server/Klien:** File server-only di `src/lib/` memuat `import "server-only"`.
 - [ ] **Data Demo & Mock:** Tidak menggunakan kredensial/API key nyata atau data pribadi warga dalam pengujian.
 - [ ] **Data Simulasi Label:** Mock data ditandai dengan badge "Data Simulasi" sesuai `DISCLAIMERS.dataSimulation`.
 - [ ] **Error Boundaries:** Halaman baru memiliki `error.tsx` untuk graceful error handling.
