@@ -1,64 +1,152 @@
 -- ============================================================================
 -- Seed Admin User - Noto PATI
 -- ============================================================================
--- Script untuk promote user menjadi admin
+-- Script untuk membuat user admin secara otomatis (tanpa registrasi manual)
 -- 
 -- CARA MENGGUNAKAN:
--- 1. Edit email di bawah ini dengan email user yang ingin dijadikan admin
--- 2. Jalankan script ini via Supabase Dashboard (SQL Editor) atau CLI:
+-- 1. Edit email, password, dan nama admin di bagian CONFIGURATION
+-- 2. Jalankan script via Supabase Dashboard (SQL Editor) atau CLI:
 --    npx supabase db execute -f supabase/seed_admin.sql
 --
--- CATATAN:
--- - User harus sudah terdaftar terlebih dahulu (via /register)
--- - Default role semua user baru adalah 'warga'
--- - Script ini akan mengubah role menjadi 'admin'
+-- OPSI PENGGUNAAN:
+-- - MODE 1: Create new admin user (jika belum ada)
+-- - MODE 2: Promote existing user ke admin (jika sudah register)
+--
+-- CATATAN KEAMANAN:
+-- - Password akan di-hash oleh Supabase Auth
+-- - Jangan commit password asli ke version control
+-- - Gunakan environment variable untuk production
 -- ============================================================================
 
--- ─────────────────────────────────────────────────────────────────────────
--- 1. PROMOTE USER BY EMAIL
--- ─────────────────────────────────────────────────────────────────────────
--- Ganti 'admin@example.com' dengan email user yang ingin dijadikan admin
-
-UPDATE public.user_roles
-SET role = 'admin'
-WHERE user_id = (
-  SELECT id 
-  FROM auth.users 
-  WHERE email = 'admin@example.com'  -- 👈 EDIT EMAIL DI SINI
-);
-
 
 -- ─────────────────────────────────────────────────────────────────────────
--- 2. VERIFIKASI HASIL
+-- 📝 CONFIGURATION - EDIT DISINI
 -- ─────────────────────────────────────────────────────────────────────────
--- Query ini akan menampilkan informasi user yang baru saja dipromote
+
+-- Admin user credentials
+DO $$
+DECLARE
+  v_admin_email TEXT := 'admin@notopati.dev';           -- 👈 EDIT: Email admin
+  v_admin_password TEXT := 'Admin123!SecurePassword';   -- 👈 EDIT: Password (min 8 char)
+  v_admin_full_name TEXT := 'Administrator Noto PATI';  -- 👈 EDIT: Nama lengkap
+  v_user_id UUID;
+BEGIN
+  -- ─────────────────────────────────────────────────────────────────────────
+  -- MODE 1: CREATE NEW ADMIN USER (Otomatis)
+  -- ─────────────────────────────────────────────────────────────────────────
+  -- Check if user already exists
+  SELECT id INTO v_user_id
+  FROM auth.users
+  WHERE email = v_admin_email;
+
+  IF v_user_id IS NULL THEN
+    -- User belum ada, create new user via auth.users
+    RAISE NOTICE '🔄 Creating new admin user: %', v_admin_email;
+    
+    -- Insert into auth.users (Supabase internal table)
+    -- Note: Password akan di-hash otomatis oleh Supabase
+    INSERT INTO auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      created_at,
+      updated_at,
+      confirmation_token,
+      recovery_token,
+      email_change_token_new,
+      email_change
+    )
+    VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      gen_random_uuid(),
+      'authenticated',
+      'authenticated',
+      v_admin_email,
+      crypt(v_admin_password, gen_salt('bf')),  -- Bcrypt hash
+      NOW(),  -- Email auto-confirmed untuk admin seed
+      '{"provider": "email", "providers": ["email"]}',
+      jsonb_build_object('full_name', v_admin_full_name),
+      NOW(),
+      NOW(),
+      '',
+      '',
+      '',
+      ''
+    )
+    RETURNING id INTO v_user_id;
+
+    RAISE NOTICE '✅ User created with ID: %', v_user_id;
+
+    -- Trigger akan otomatis create profile dan role 'warga'
+    -- Kita tunggu sebentar untuk trigger selesai
+    PERFORM pg_sleep(0.5);
+
+    -- Update role ke admin
+    UPDATE public.user_roles
+    SET role = 'admin'
+    WHERE user_id = v_user_id;
+
+    RAISE NOTICE '✅ Role updated to ADMIN';
+
+  ELSE
+    -- ─────────────────────────────────────────────────────────────────────────
+    -- MODE 2: PROMOTE EXISTING USER
+    -- ─────────────────────────────────────────────────────────────────────────
+    RAISE NOTICE '⚠️  User already exists: %', v_admin_email;
+    RAISE NOTICE '🔄 Promoting existing user to ADMIN...';
+
+    UPDATE public.user_roles
+    SET role = 'admin'
+    WHERE user_id = v_user_id;
+
+    RAISE NOTICE '✅ User promoted to ADMIN';
+  END IF;
+
+END $$;
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- 🔍 VERIFICATION - Tampilkan Hasil
+-- ─────────────────────────────────────────────────────────────────────────
 
 SELECT 
+  '=== ADMIN USER CREATED/UPDATED ===' as info,
   u.id as user_id,
   u.email,
   p.full_name,
   ur.role,
-  ur.created_at as role_assigned_at,
+  u.email_confirmed_at,
   u.created_at as user_created_at,
+  ur.created_at as role_assigned_at,
   CASE 
     WHEN ur.role = 'admin' THEN '✅ ADMIN ACCESS GRANTED'
-    ELSE '⚠️ Still WARGA - Check email or run UPDATE again'
+    WHEN ur.role = 'warga' THEN '⚠️ Still WARGA (check script errors)'
+    ELSE '❌ NO ROLE ASSIGNED'
   END as status
 FROM auth.users u
 LEFT JOIN public.user_roles ur ON ur.user_id = u.id
 LEFT JOIN public.profiles p ON p.id = u.id
-WHERE u.email = 'admin@example.com';  -- 👈 EDIT EMAIL DI SINI (sama dengan di atas)
+WHERE u.email = 'admin@notopati.dev'  -- 👈 EDIT: Sama dengan email di atas
+ORDER BY u.created_at DESC
+LIMIT 1;
 
 
 -- ─────────────────────────────────────────────────────────────────────────
--- 3. BONUS: LIST ALL ADMINS
+-- 📊 BONUS: LIST ALL ADMINS
 -- ─────────────────────────────────────────────────────────────────────────
--- (Opsional) Tampilkan semua user dengan role admin
 
 SELECT 
+  '=== ALL ADMIN USERS ===' as info,
   u.email,
   p.full_name,
-  ur.created_at as admin_since
+  ur.created_at as admin_since,
+  EXTRACT(DAY FROM NOW() - ur.created_at) as days_as_admin
 FROM auth.users u
 INNER JOIN public.user_roles ur ON ur.user_id = u.id
 INNER JOIN public.profiles p ON p.id = u.id
@@ -67,18 +155,45 @@ ORDER BY ur.created_at DESC;
 
 
 -- ============================================================================
--- NOTES:
+-- 🔐 SECURITY NOTES
 -- ============================================================================
--- Setelah promote berhasil:
--- 1. User harus LOGOUT dari aplikasi
--- 2. LOGIN kembali agar session ter-update
--- 3. Akses http://localhost:3000/admin untuk lihat dashboard
--- 
--- Jika masih redirect ke /unauthorized:
--- - Periksa email di query apakah sama persis (case-sensitive)
--- - Pastikan user sudah terdaftar (ada di auth.users)
--- - Coba logout/login ulang atau clear browser cookies
--- 
--- Untuk demote admin kembali ke warga:
--- UPDATE public.user_roles SET role = 'warga' WHERE user_id = '<uuid>';
+-- 1. Password di-hash menggunakan bcrypt (gen_salt('bf'))
+-- 2. Email auto-confirmed untuk admin seed (tidak perlu verifikasi)
+-- 3. Script ini bypass RLS karena berjalan dengan superuser privilege
+-- 4. Untuk production, gunakan environment variable untuk password
+--
+-- RECOMMENDED PRODUCTION SETUP:
+-- - Jangan hardcode password di script
+-- - Gunakan secrets management (Vault, AWS Secrets, dll)
+-- - Rotate password setelah first login
+-- - Enable MFA untuk admin accounts
+-- ============================================================================
+
+-- ============================================================================
+-- 🧪 TESTING
+-- ============================================================================
+-- Setelah script berhasil:
+-- 1. Buka http://localhost:3000/login
+-- 2. Login dengan:
+--    Email: admin@notopati.dev (atau yang Anda edit)
+--    Password: Admin123!SecurePassword (atau yang Anda edit)
+-- 3. Akses http://localhost:3000/admin
+-- 4. Dashboard admin harus terbuka tanpa redirect
+--
+-- Troubleshooting:
+-- - Jika redirect ke /unauthorized: Periksa role di database
+-- - Jika login gagal: Periksa password (case-sensitive)
+-- - Jika trigger error: Pastikan migration profiles sudah jalan
+-- ============================================================================
+
+-- ============================================================================
+-- 🔄 ALTERNATIVE: Promote Existing User (Manual)
+-- ============================================================================
+-- Jika Anda lebih suka promote user yang sudah register via UI:
+--
+-- UPDATE public.user_roles
+-- SET role = 'admin'
+-- WHERE user_id = (
+--   SELECT id FROM auth.users WHERE email = 'user@example.com'
+-- );
 -- ============================================================================

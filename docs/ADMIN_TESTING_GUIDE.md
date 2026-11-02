@@ -15,9 +15,70 @@ Sebelum mulai testing:
 
 ## 🧪 Test Scenarios
 
-### Scenario 1: Register User Baru (Role Default: Warga)
+### Scenario 1: Create Admin via Seed Script (Otomatis) ⭐
 
-**Tujuan:** Memastikan user baru otomatis dapat role `warga`
+**Tujuan:** Membuat user admin langsung dari database tanpa registrasi UI
+
+**Langkah:**
+
+1. Edit `supabase/seed_admin.sql` (line 18-20):
+   ```sql
+   v_admin_email TEXT := 'admin@test.com';
+   v_admin_password TEXT := 'TestAdmin123!';
+   v_admin_full_name TEXT := 'Test Admin User';
+   ```
+
+2. Jalankan script:
+   ```bash
+   npx supabase db execute -f supabase/seed_admin.sql
+   ```
+
+3. Periksa output di console
+
+**Expected Result:**
+- ✅ Console menampilkan:
+  ```
+  🔄 Creating new admin user: admin@test.com
+  ✅ User created with ID: <uuid>
+  ✅ Role updated to ADMIN
+  ```
+- ✅ User tercatat di `auth.users` dengan email confirmed
+- ✅ Profile tercatat di `public.profiles`
+- ✅ Role di `public.user_roles` = `'admin'`
+
+**Verifikasi di Database:**
+
+```sql
+SELECT 
+  u.id,
+  u.email,
+  u.email_confirmed_at,
+  p.full_name,
+  ur.role
+FROM auth.users u
+LEFT JOIN public.profiles p ON p.id = u.id
+LEFT JOIN public.user_roles ur ON ur.user_id = u.id
+WHERE u.email = 'admin@test.com';
+```
+
+**Expected Output:**
+```
+id      | email           | email_confirmed_at    | full_name        | role
+--------+-----------------+----------------------+-----------------+-------
+<uuid>  | admin@test.com  | 2026-11-02 21:30:00  | Test Admin User  | admin
+```
+
+**Keunggulan:**
+- ✅ Tidak perlu buka browser
+- ✅ Email auto-confirmed
+- ✅ Idempotent (bisa dijalankan ulang)
+- ✅ Perfect untuk CI/CD pipeline
+
+---
+
+### Scenario 2: Register User Baru Manual (Role Default: Warga)
+
+**Tujuan:** Memastikan user baru via UI otomatis dapat role `warga`
 
 **Langkah:**
 

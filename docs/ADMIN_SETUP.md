@@ -20,89 +20,113 @@ Dokumentasi lengkap untuk membuat user admin dan mengakses dashboard administras
 
 ## 🚀 Cara Membuat User Admin
 
-### Opsi 1: Via Supabase Dashboard (Recommended)
+### Opsi 1: Via Seed Script - Otomatis (Recommended) ✨
 
-1. **Daftar user baru** atau gunakan user yang sudah ada:
-   - Buka `http://localhost:3000/register`
-   - Daftarkan user dengan email dan password
-   - Catat email yang digunakan
+Script `seed_admin.sql` sekarang bisa **langsung create user admin** tanpa perlu registrasi manual!
 
-2. **Login ke Supabase Dashboard:**
-   - Buka [https://supabase.com/dashboard](https://supabase.com/dashboard)
-   - Pilih project Noto-PATI Anda
+**Langkah:**
 
-3. **Cari User ID:**
-   - Buka menu **Authentication** → **Users**
-   - Cari user berdasarkan email
-   - Copy **UUID** user (contoh: `d290f1ee-6c54-4b01-90e6-d701748f0851`)
-
-4. **Promote ke Admin:**
-   - Buka menu **SQL Editor**
-   - Buat **New query**
-   - Paste dan jalankan:
+1. **Edit konfigurasi di `supabase/seed_admin.sql`:**
 
    ```sql
-   -- Promote user ke admin
-   UPDATE public.user_roles
-   SET role = 'admin'
-   WHERE user_id = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
-   
-   -- Verifikasi (opsional)
-   SELECT 
-     u.email,
-     ur.role,
-     p.full_name,
-     ur.created_at
-   FROM auth.users u
-   LEFT JOIN public.user_roles ur ON ur.user_id = u.id
-   LEFT JOIN public.profiles p ON p.id = u.id
-   WHERE u.id = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
+   -- Line 18-20: Edit credentials admin
+   v_admin_email TEXT := 'admin@notopati.dev';           -- Email admin
+   v_admin_password TEXT := 'Admin123!SecurePassword';   -- Password (min 8 char)
+   v_admin_full_name TEXT := 'Administrator Noto PATI';  -- Nama lengkap
    ```
 
-5. **Logout dan Login Ulang:**
-   - Keluar dari aplikasi
-   - Login kembali dengan user yang sudah dipromote
-   - Akses `http://localhost:3000/admin`
+2. **Jalankan script:**
 
----
+   **Via Supabase Dashboard:**
+   - Buka [Supabase Dashboard](https://supabase.com/dashboard)
+   - Pilih project Noto-PATI
+   - Buka menu **SQL Editor** → **New query**
+   - Copy-paste isi file `supabase/seed_admin.sql`
+   - Klik **Run**
 
-### Opsi 2: Via SQL Script Lokal (Supabase CLI)
-
-Jika Anda menggunakan Supabase local dev:
-
-1. **Buat file script:**
-
-   ```bash
-   # Windows PowerShell
-   New-Item -Path "supabase/seed_admin.sql" -ItemType File
-   ```
-
-2. **Edit file `supabase/seed_admin.sql`:**
-
-   ```sql
-   -- Promote user berdasarkan email menjadi admin
-   UPDATE public.user_roles
-   SET role = 'admin'
-   WHERE user_id = (
-     SELECT id FROM auth.users WHERE email = 'admin@example.com'
-   );
-   
-   -- Tampilkan konfirmasi
-   SELECT 
-     u.email,
-     ur.role,
-     p.full_name
-   FROM auth.users u
-   INNER JOIN public.user_roles ur ON ur.user_id = u.id
-   INNER JOIN public.profiles p ON p.id = u.id
-   WHERE u.email = 'admin@example.com';
-   ```
-
-3. **Jalankan script:**
-
+   **Via CLI (Local Development):**
    ```bash
    npx supabase db execute -f supabase/seed_admin.sql
    ```
+
+3. **Verifikasi hasil:**
+
+   Script akan otomatis menampilkan output:
+   ```
+   🔄 Creating new admin user: admin@notopati.dev
+   ✅ User created with ID: <uuid>
+   ✅ Role updated to ADMIN
+   
+   === ADMIN USER CREATED/UPDATED ===
+   email: admin@notopati.dev
+   full_name: Administrator Noto PATI
+   role: admin
+   status: ✅ ADMIN ACCESS GRANTED
+   ```
+
+4. **Login langsung:**
+
+   - Buka `http://localhost:3000/login`
+   - Login dengan credentials yang Anda set di script
+   - Akses `http://localhost:3000/admin`
+
+**Keunggulan Opsi 1:**
+- ✅ Tidak perlu registrasi manual via UI
+- ✅ Email auto-confirmed (tidak perlu verifikasi)
+- ✅ Password di-hash dengan bcrypt
+- ✅ Idempotent: bisa dijalankan ulang (akan promote jika user sudah ada)
+- ✅ Cocok untuk seed development database
+
+---
+
+### Opsi 2: Promote User yang Sudah Register
+
+Jika Anda sudah punya user yang terdaftar dan ingin di-promote ke admin:
+
+1. **Pastikan user sudah terdaftar:**
+   - Via `/register` atau Google OAuth
+   - Catat email user
+
+2. **Edit dan jalankan query ini:**
+
+   ```sql
+   -- Di Supabase SQL Editor
+   UPDATE public.user_roles
+   SET role = 'admin'
+   WHERE user_id = (
+     SELECT id FROM auth.users WHERE email = 'user@example.com'
+   );
+   
+   -- Verifikasi
+   SELECT u.email, ur.role 
+   FROM auth.users u
+   INNER JOIN public.user_roles ur ON ur.user_id = u.id
+   WHERE u.email = 'user@example.com';
+   ```
+
+3. **Logout dan Login ulang:**
+   - User harus logout dulu
+   - Login kembali agar session ter-update
+   - Akses `/admin`
+
+---
+
+### Opsi 3: Manual via Database UI (Supabase Table Editor)
+
+Untuk yang lebih suka GUI:
+
+1. **Cari User ID:**
+   - Buka **Authentication** → **Users**
+   - Cari user berdasarkan email
+   - Copy **UUID** user
+
+2. **Update Role:**
+   - Buka **Table Editor** → Tabel `user_roles`
+   - Cari row dengan `user_id` yang sesuai
+   - Edit kolom `role` dari `warga` menjadi `admin`
+   - Save
+
+3. **Logout dan Login ulang**
 
 ---
 
