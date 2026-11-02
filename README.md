@@ -231,6 +231,8 @@ tersedia di [`docs/PRODUCT_SCOPE.md`](./docs/PRODUCT_SCOPE.md).
 
 Untuk pemahaman mendalam tentang standar dan alur kerja teknis, silakan baca:
 * [**`docs/TESTING.md`**](./docs/TESTING.md) — Panduan pengujian, alur quality gate, dan cheatsheet testing.
+* [**`docs/ADMIN_SETUP.md`**](./docs/ADMIN_SETUP.md) — Cara membuat user admin dan mengakses dashboard administrasi.
+* [**`docs/ADMIN_TESTING_GUIDE.md`**](./docs/ADMIN_TESTING_GUIDE.md) — Testing admin access control dan role-based permissions.
 * [**`ARCHITECTURE.md`**](./ARCHITECTURE.md) — Rincian arsitektur 4 lapisan, batasan server/client, dan aturan database.
 * [**`DEVELOPMENT.md`**](./DEVELOPMENT.md) — Konvensi pengembangan lokal, standar kode, dan error handling.
 * [**`PRD.md`**](./PRD.md) — Product Requirement Document (kebutuhan produk dan kriteria penerimaan).
