@@ -39,13 +39,20 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(values.data);
+  const { data: sessionData, error } = await supabase.auth.signInWithPassword(values.data);
 
   if (error) {
     return { error: "Email atau password salah. Silakan coba lagi." };
   }
 
-  redirect(getSafeRedirectPath(getFormValue(formData, "next"), "/"));
+  const requestedPath = getSafeRedirectPath(getFormValue(formData, "next"), "/profile");
+  const { data: roleData } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", sessionData.user.id)
+    .maybeSingle();
+
+  redirect(roleData?.role === "admin" ? "/admin" : requestedPath);
 }
 
 export async function register(

@@ -225,7 +225,7 @@ export function AdminQueueTable({ initialReports }: AdminQueueTableProps) {
             </button>
           </div>
         ) : (
-          <div className="divide-y divide-border">
+          <div className="max-h-[34rem] overflow-y-auto divide-y divide-border overscroll-contain">
             {filteredReports.map((report) => (
               <div
                 key={report.id}

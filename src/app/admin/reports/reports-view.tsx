@@ -132,7 +132,6 @@ export function ReportsView({
               <option value="diproses">Diproses</option>
               <option value="selesai">Selesai</option>
               <option value="ditolak">Ditolak</option>
-              <option value="digabung">Digabung</option>
             </select>
 
             {/* Category Select */}

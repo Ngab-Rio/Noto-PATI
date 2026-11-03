@@ -5,6 +5,7 @@ export type BasemapMode = "streets" | "satellite";
 export interface PublicReportsMapProps {
   onMarkerClick?: (reportId: string) => void;
   filters?: MapFilters;
+  adminMode?: boolean;
 }
 
 export interface ReportProperties {

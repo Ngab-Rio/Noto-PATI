@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Navbar } from "@/components/shared/navbar";
 import { Footer } from "@/components/shared/footer";
+import { SiteChrome } from "@/components/shared/site-chrome";
 import { APP_CONFIG } from "@/config/labels";
 import "./globals.css";
 
@@ -32,9 +33,13 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} font-sans antialiased min-h-screen flex flex-col bg-background text-text`}
       >
-        <Navbar />
+        <SiteChrome>
+          <Navbar />
+        </SiteChrome>
         <main className="flex-1">{children}</main>
-        <Footer />
+        <SiteChrome>
+          <Footer />
+        </SiteChrome>
       </body>
     </html>
   );

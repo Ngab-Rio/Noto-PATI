@@ -40,6 +40,7 @@ import { MapResetButton } from "./components/MapResetButton";
 export function PublicReportsMap({
   onMarkerClick,
   filters,
+  adminMode = false,
 }: PublicReportsMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -250,7 +251,7 @@ export function PublicReportsMap({
               className: "noto-map-popup",
             })
               .setLngLat(e.lngLat)
-              .setHTML(buildPopupHTML(properties))
+              .setHTML(buildPopupHTML(properties, { adminMode }))
               .addTo(mapInstance);
 
             if (properties.id) {
@@ -272,7 +273,7 @@ export function PublicReportsMap({
       cancelled = true;
       controller.abort();
     };
-  }, [filters, isLoading]);
+  }, [adminMode, filters, isLoading]);
 
   // ---------------------------------------------------------------------------
   // 4. Reset View Callback

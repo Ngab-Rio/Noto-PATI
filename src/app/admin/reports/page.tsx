@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ClipboardList } from "lucide-react";
 import { ReportsView } from "./reports-view";
-import { MOCK_ADMIN_REPORTS } from "@/features/admin/mock-data";
+import { getAdminReports } from "@/features/admin/server-data";
 
 export const metadata: Metadata = {
   title: "Kelola Seluruh Laporan · Admin Noto PATI",
@@ -21,6 +21,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
   const params = await searchParams;
   const defaultStatus = params.status;
   const defaultOverdue = params.overdue === "true";
+  const reports = await getAdminReports();
 
   return (
     <div className="py-8 bg-background">
@@ -48,7 +49,7 @@ export default async function AdminReportsPage({ searchParams }: ReportsPageProp
 
         {/* ── Client View with Filters ── */}
         <ReportsView
-          initialReports={MOCK_ADMIN_REPORTS}
+          initialReports={reports}
           defaultStatus={defaultStatus}
           defaultOverdue={defaultOverdue}
         />

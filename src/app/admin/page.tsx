@@ -13,25 +13,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminQueueTable } from "@/features/admin/components/admin-queue-table";
-import {
-  MOCK_ADMIN_REPORTS,
-  MOCK_ADMIN_ACTIVITIES,
-} from "@/features/admin/mock-data";
+import { getAdminReports } from "@/features/admin/server-data";
 
 export const metadata: Metadata = {
   title: "Dashboard Admin · Noto PATI",
   description: "Panel pengelolaan dan verifikasi laporan infrastruktur warga Kabupaten Pati.",
   robots: { index: false, follow: false },
 };
-
-const STATUS_DISTRIBUTION = [
-  { label: "Diterima", count: 18, bg: "bg-status-diterima-bg", text: "text-status-diterima-text", pct: 12 },
-  { label: "Diverifikasi", count: 24, bg: "bg-status-diverifikasi-bg", text: "text-status-diverifikasi-text", pct: 15 },
-  { label: "Diproses", count: 42, bg: "bg-status-diproses-bg", text: "text-status-diproses-text", pct: 27 },
-  { label: "Selesai", count: 61, bg: "bg-status-selesai-bg", text: "text-status-selesai-text", pct: 39 },
-  { label: "Ditolak", count: 8, bg: "bg-status-ditolak-bg", text: "text-status-ditolak-text", pct: 5 },
-  { label: "Digabung", count: 3, bg: "bg-status-digabung-bg", text: "text-status-digabung-text", pct: 2 },
-];
 
 function StatCard({
   label,
@@ -81,18 +69,36 @@ function StatCard({
   );
 }
 
-export default function AdminDashboardPage() {
-  const overdueCount = MOCK_ADMIN_REPORTS.filter((r) => r.isOverdue).length;
-  const pendingCount = MOCK_ADMIN_REPORTS.filter((r) => r.status === "diterima").length;
-  const inProgressCount = MOCK_ADMIN_REPORTS.filter(
+export default async function AdminDashboardPage() {
+  const reports = await getAdminReports();
+  const latestReports = reports.slice(0, 10);
+  const pendingCount = reports.filter((r) => r.status === "diterima").length;
+  const inProgressCount = reports.filter(
     (r) => r.status === "diverifikasi" || r.status === "diproses"
   ).length;
+  const completedCount = reports.filter((r) => r.status === "selesai").length;
+  const statusDistribution = [
+    ["diterima", "Diterima", "bg-status-diterima-bg", "text-status-diterima-text"],
+    ["diverifikasi", "Diverifikasi", "bg-status-diverifikasi-bg", "text-status-diverifikasi-text"],
+    ["diproses", "Diproses", "bg-status-diproses-bg", "text-status-diproses-text"],
+    ["selesai", "Selesai", "bg-status-selesai-bg", "text-status-selesai-text"],
+    ["ditolak", "Ditolak", "bg-status-ditolak-bg", "text-status-ditolak-text"],
+  ].map(([status, label, bg, text]) => ({
+    label,
+    count: reports.filter((report) => report.status === status).length,
+    bg,
+    text,
+    pct: reports.length
+      ? Math.round((reports.filter((report) => report.status === status).length / reports.length) * 100)
+      : 0,
+  }));
+  const overdueCount = 0;
 
   return (
-    <div className="py-8 bg-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+    <div className="bg-background py-6 sm:py-8">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 sm:space-y-8 sm:px-6 lg:px-8">
         {/* ── Page Header ── */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-border/60 pb-6">
+        <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-end sm:justify-between sm:pb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-soft text-primary text-xs font-semibold mb-2.5">
               <ShieldCheck className="h-3.5 w-3.5" />
@@ -140,11 +146,11 @@ export default function AdminDashboardPage() {
         )}
 
         {/* ── Stat Cards ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <StatCard
             label="Total Laporan"
-            value={156}
-            sublabel="Sejak platform diluncurkan"
+            value={reports.length}
+            sublabel="Data laporan aktual"
             icon={ClipboardList}
             iconBg="bg-primary-soft"
             iconColor="text-primary"
@@ -169,8 +175,8 @@ export default function AdminDashboardPage() {
           />
           <StatCard
             label="Berhasil Diselesaikan"
-            value={98}
-            sublabel="Rasio tuntas 62.8%"
+            value={completedCount}
+            sublabel="Status selesai"
             icon={CheckCircle2}
             iconBg="bg-status-selesai-bg"
             iconColor="text-status-selesai-text"
@@ -180,9 +186,9 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ── Main Section: Interactive Queue + Side Panels ── */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3 lg:gap-6">
           {/* ── Left 2 Columns: Queue Table ── */}
-          <div className="xl:col-span-2 space-y-4" id="queue">
+          <div className="space-y-4 lg:col-span-2" id="queue">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-text">Antrean Laporan Aktif</h2>
@@ -199,13 +205,13 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Interactive Client Queue Table */}
-            <AdminQueueTable initialReports={MOCK_ADMIN_REPORTS} />
+            <AdminQueueTable initialReports={latestReports} />
           </div>
 
           {/* ── Right Column: Sidebar Panels ── */}
           <div className="space-y-5">
             {/* 1. Status Distribution */}
-            <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
+            <div className="rounded-xl border border-border bg-surface p-4 shadow-xs sm:p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-text">Distribusi Status Laporan</h3>
                 <span className="text-xs text-text-muted font-medium">156 Total</span>
@@ -213,7 +219,7 @@ export default function AdminDashboardPage() {
 
               {/* Multi-segment Progress Bar */}
               <div className="h-3 rounded-full overflow-hidden flex gap-0.5 mb-3.5 bg-background">
-                {STATUS_DISTRIBUTION.map((d) => (
+                {statusDistribution.map((d) => (
                   <div
                     key={d.label}
                     title={`${d.label}: ${d.count} laporan (${d.pct}%)`}
@@ -224,7 +230,7 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
-                {STATUS_DISTRIBUTION.map((d) => (
+                {statusDistribution.map((d) => (
                   <div key={d.label} className="flex items-center justify-between p-1.5 rounded hover:bg-background/60">
                     <div className="flex items-center gap-2 truncate">
                       <div className={`h-2.5 w-2.5 rounded-sm shrink-0 ${d.bg}`} />
@@ -237,7 +243,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* 2. Quick Action Shortcuts */}
-            <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
+            <div className="rounded-xl border border-border bg-surface p-4 shadow-xs sm:p-5">
               <h3 className="text-sm font-bold text-text mb-3">Pintasan Tindakan</h3>
               <div className="space-y-1.5">
                 {[
@@ -309,27 +315,29 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* 4. Recent Admin Activity Log */}
-            <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
+            <div className="rounded-xl border border-border bg-surface p-4 shadow-xs sm:p-5">
               <div className="flex items-center justify-between mb-3.5">
                 <h3 className="text-sm font-bold text-text">Log Tindakan Terakhir</h3>
                 <span className="text-[11px] text-text-muted">Audit trail</span>
               </div>
 
               <div className="space-y-3.5">
-                {MOCK_ADMIN_ACTIVITIES.map((act) => (
-                  <div key={act.id} className="flex gap-2.5 items-start">
+                {reports
+                  .flatMap((report) => report.timeline.map((event) => ({ report, event })))
+                  .slice(0, 5)
+                  .map(({ report, event }) => (
+                  <div key={event.id} className="flex gap-2.5 items-start">
                     <div className="h-6 w-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
                       <Activity className="h-3 w-3 text-primary" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs text-text leading-snug">
-                        <span className="font-semibold">{act.actor}</span>{" "}
-                        <span className="text-text-muted">{act.action}</span>
+                        <span className="font-semibold">{event.actor}</span>{" "}
+                        <span className="text-text-muted">{event.note ?? "Perubahan status"}</span>
                       </p>
-                      <p className="text-[11px] text-text font-medium truncate mt-0.5">{act.note}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-text-muted font-mono">{act.reportId}</span>
-                        <span className="text-[10px] text-text-muted">· {act.time}</span>
+                        <span className="text-[10px] text-text-muted font-mono">{report.ticketNumber}</span>
+                        <span className="text-[10px] text-text-muted">· {event.timestamp}</span>
                       </div>
                     </div>
                   </div>

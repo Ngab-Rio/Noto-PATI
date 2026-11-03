@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ReportActionView } from "./report-action-view";
-import { MOCK_ADMIN_REPORTS } from "@/features/admin/mock-data";
+import { getAdminReport } from "@/features/admin/server-data";
 
 interface ReportDetailPageProps {
   params: Promise<{
@@ -13,7 +13,7 @@ export async function generateMetadata({
   params,
 }: ReportDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  const report = MOCK_ADMIN_REPORTS.find((r) => r.id === id);
+  const report = await getAdminReport(id);
 
   if (!report) {
     return {
@@ -32,7 +32,7 @@ export default async function AdminReportDetailPage({
   params,
 }: ReportDetailPageProps) {
   const { id } = await params;
-  const report = MOCK_ADMIN_REPORTS.find((r) => r.id === id);
+  const report = await getAdminReport(id);
 
   if (!report) {
     notFound();

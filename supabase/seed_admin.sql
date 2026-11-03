@@ -26,9 +26,9 @@
 -- Admin user credentials
 DO $$
 DECLARE
-  v_admin_email TEXT := 'admin@notopati.dev';           -- 👈 EDIT: Email admin
-  v_admin_password TEXT := 'Admin123!SecurePassword';   -- 👈 EDIT: Password (min 8 char)
-  v_admin_full_name TEXT := 'Administrator Noto PATI';  -- 👈 EDIT: Nama lengkap
+  v_admin_email TEXT := '[your admin email]';           -- 👈 EDIT: Email admin
+  v_admin_password TEXT := '[your admin password]';   -- 👈 EDIT: Password (min 8 char)
+  v_admin_full_name TEXT := '[your admin full name]';  -- 👈 EDIT: Nama lengkap
   v_user_id UUID;
 BEGIN
   -- ─────────────────────────────────────────────────────────────────────────

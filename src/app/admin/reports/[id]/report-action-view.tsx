@@ -454,7 +454,23 @@ export function ReportActionView({ report: initialReport }: ReportActionViewProp
 
         {/* ── Right Column: Admin Action Panel ── */}
         <div className="space-y-5">
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-xs sticky top-32">
+          <div className="rounded-xl border border-primary/20 bg-primary-soft/30 p-5 shadow-xs">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <h2 className="text-base font-bold text-text">Status Laporan</h2>
+                <p className="mt-1 text-xs leading-relaxed text-text-muted">
+                  Data laporan dan riwayat diambil dari database. Perubahan status,
+                  proses merge, dan pengaturan SLA belum tersedia pada tahap ini.
+                </p>
+                <div className="mt-3">
+                  <StatusBadge status={report.status} size="md" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden rounded-xl border border-border bg-surface p-5 shadow-xs sticky top-32">
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck className="h-5 w-5 text-primary" />
               <h2 className="text-base font-bold text-text">Tindakan Petugas</h2>

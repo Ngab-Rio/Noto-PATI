@@ -11,6 +11,19 @@ export async function GET(request: Request) {
   if (code) {
     const supabase = await createClient();
     await supabase.auth.exchangeCodeForSession(code);
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData.user) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+
+      if (roleData?.role === "admin") {
+        return NextResponse.redirect(new URL("/admin", requestUrl.origin));
+      }
+    }
   }
 
   return NextResponse.redirect(new URL(next, requestUrl.origin));
