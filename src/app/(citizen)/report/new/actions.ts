@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { detectAndMergeDuplicate } from "@/lib/reports/duplicate-detector";
 
 const REPORT_PHOTOS_BUCKET = "report-photos";
 const MAX_PHOTOS = 3;
@@ -174,6 +175,19 @@ export async function createReport(
         ? "Foto harus berupa JPG, PNG, atau WEBP dengan ukuran maksimal 5MB."
         : "Pengiriman foto belum selesai. Data form tetap tersimpan, silakan coba lagi.",
     };
+  }
+
+  // Trigger automatic duplicate report detection and merge
+  try {
+    const mergeResult = await detectAndMergeDuplicate(report.id);
+    if (mergeResult.isDuplicate && mergeResult.parentTicketNumber) {
+      console.log(
+        `[Report] Report ${report.ticket_number} automatically merged into ${mergeResult.parentTicketNumber} (distance: ${mergeResult.distanceMeters}m)`
+      );
+    }
+  } catch (mergeError) {
+    // Non-fatal: failures in duplicate detection must NEVER prevent report submission
+    console.warn("[Report] Duplicate detection failed non-fatally:", mergeError);
   }
 
   return {

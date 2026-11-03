@@ -3,8 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, ListIcon , X, User, SignOutIcon , PlusCircle, Buildings } from "@phosphor-icons/react";
-import { APP_CONFIG } from "@/config/labels";
+import { ListIcon, X, User, SignOutIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/lib/auth/guards";
 

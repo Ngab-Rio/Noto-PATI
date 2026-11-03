@@ -31,6 +31,7 @@ const STATUS_FILTERS = [
   { value: "diterima", label: "Diterima" },
   { value: "diproses", label: "Diproses" },
   { value: "selesai", label: "Selesai" },
+  { value: "digabung", label: "Digabung" },
 ];
 
 type StoredReport = {
