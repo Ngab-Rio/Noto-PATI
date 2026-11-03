@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { Navbar } from "@/components/shared/navbar";
 import { Footer } from "@/components/shared/footer";
+import { SiteChrome } from "@/components/shared/site-chrome";
 import { APP_CONFIG } from "@/config/labels";
 import "./globals.css";
 
@@ -17,8 +18,8 @@ export const metadata: Metadata = {
   description:
     "Web pelaporan infrastruktur warga dan transparansi data APBD 2025 Kabupaten Pati.",
   icons: {
-    icon: "/images/icons/noto-pati-monogram.svg",
-    apple: "/images/icons/noto-pati-monogram.svg",
+    icon: "/images/photos/pati_bandeng_state.avif",
+    apple: "/images/photos/pati_bandeng_state.avif",
   },
 };
 
@@ -32,9 +33,13 @@ export default function RootLayout({
       <body
         className={`${poppins.variable} font-sans antialiased min-h-screen flex flex-col bg-background text-text`}
       >
-        <Navbar />
+        <SiteChrome>
+          <Navbar />
+        </SiteChrome>
         <main className="flex-1">{children}</main>
-        <Footer />
+        <SiteChrome>
+          <Footer />
+        </SiteChrome>
       </body>
     </html>
   );

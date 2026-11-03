@@ -13,7 +13,13 @@ import { Button } from "@/components/ui/button";
 
 type ReportStatus = "diterima" | "diverifikasi" | "diproses" | "selesai" | "ditolak";
 
-export function MapPageClient() {
+export function MapPageClient({
+  showCreateReportCta = true,
+  adminMode = false,
+}: {
+  showCreateReportCta?: boolean;
+  adminMode?: boolean;
+}) {
   const [selectedStatuses, setSelectedStatuses] = useState<ReportStatus[]>([]);
 
   const toggleStatus = (status: ReportStatus) => {
@@ -49,14 +55,16 @@ export function MapPageClient() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <Link href="/report/new">
-                <Button variant="default" className="gap-2">
-                  <IconPlusCircle className="h-4 w-4" />
-                  <span>Buat Laporan Baru</span>
-                </Button>
-              </Link>
-            </div>
+            {showCreateReportCta && (
+              <div className="flex items-center gap-2.5">
+                <Link href="/report/new">
+                  <Button variant="default" className="gap-2">
+                    <IconPlusCircle className="h-4 w-4" />
+                    <span>Buat Laporan Baru</span>
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -142,6 +150,7 @@ export function MapPageClient() {
         <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
           <div className="h-[calc(100vh-340px)] min-h-[500px]">
             <PublicReportsMap
+              adminMode={adminMode}
               filters={{
                 statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
               }}

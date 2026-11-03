@@ -11,7 +11,10 @@ import type { ReportProperties } from "./map-types";
  * Builds safe HTML markup for report marker popups in MapLibre.
  * Never includes reporter personal identity data (privacy compliance).
  */
-export function buildPopupHTML(properties: ReportProperties): string {
+export function buildPopupHTML(
+  properties: ReportProperties,
+  { adminMode = false }: { adminMode?: boolean } = {}
+): string {
   const status = String(properties.status ?? "");
   const statusColor = STATUS_COLORS[status] ?? "#4B5563";
   const statusBg = STATUS_BG_COLORS[status] ?? "#F3F4F6";
@@ -22,6 +25,8 @@ export function buildPopupHTML(properties: ReportProperties): string {
 
   const photoUrl = getSafePhotoUrl(properties.photoUrl);
   const reportId = encodeURIComponent(String(properties.id ?? ""));
+  const actionHref = adminMode ? `/admin/reports/${reportId}` : `/reports/${reportId}`;
+  const actionLabel = adminMode ? "Kelola & Tinjau →" : "Lihat Detail Laporan →";
   const ticketNumber = escapeHtml(properties.ticketNumber);
   const title = escapeHtml(properties.title);
   const detailLocation = escapeHtml(properties.detailLocation);
@@ -73,12 +78,12 @@ export function buildPopupHTML(properties: ReportProperties): string {
         </div>
 
         <a
-          href="/reports/${reportId}"
+          href="${actionHref}"
           style="display:block;text-align:center;margin-top:6px;padding:7px 12px;background:#2563EB;color:#FFFFFF;font-size:12px;font-weight:600;border-radius:8px;text-decoration:none;transition:background 0.2s;"
           onmouseover="this.style.background='#1D4ED8'"
           onmouseout="this.style.background='#2563EB'"
         >
-          Lihat Detail Laporan →
+          ${actionLabel}
         </a>
       </div>
     </div>

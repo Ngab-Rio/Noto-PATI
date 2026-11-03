@@ -99,7 +99,7 @@ export function HowToReport() {
 
         {/* Additional Info */}
         <div className="rounded-xl bg-primary-soft/50 border border-primary/20 p-6 text-center">
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-text-muted ">
             <span className="font-semibold text-text">Catatan Penting:</span> Pastikan foto tidak
             mengandung wajah, plat nomor kendaraan, atau informasi pribadi lainnya untuk menjaga privasi.
           </p>
