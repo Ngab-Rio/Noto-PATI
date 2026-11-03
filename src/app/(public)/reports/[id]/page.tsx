@@ -6,6 +6,8 @@ import {
   IconCalendar,
   IconThumbsUp,
   IconBuildings,
+  IconGitMerge,
+  IconArrowRight,
 } from "@/components/shared/icons";
 import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
@@ -29,11 +31,18 @@ export default async function ReportDetailPage({
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  // Ketiga query hanya butuh `id`, jadi dijalankan paralel (hemat 2 roundtrip).
-  const [{ data: report, error: reportError }, { data: history }, { data: photos }] = await Promise.all([
+  // Query data laporan, status history, foto, dan relasi duplikat
+  const [
+    { data: report, error: reportError },
+    { data: history },
+    { data: photos },
+    { data: duplicateReports },
+  ] = await Promise.all([
     supabase
       .from("reports")
-      .select("id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m")
+      .select(
+        "id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m, merged_into_report_id"
+      )
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -46,10 +55,26 @@ export default async function ReportDetailPage({
       .select("id, storage_path, sort_order")
       .eq("report_id", id)
       .order("sort_order", { ascending: true }),
+    supabase
+      .from("reports")
+      .select("id, ticket_number, created_at, detail_location, title")
+      .eq("merged_into_report_id", id)
+      .order("created_at", { ascending: true }),
   ]);
 
   if (reportError || !report) {
     notFound();
+  }
+
+  // Jika laporan ini digabung ke laporan lain, ambil informasi laporan utama
+  let parentReport: { id: string; ticket_number: string; title: string; status: string } | null = null;
+  if (report.merged_into_report_id) {
+    const { data: parent } = await supabase
+      .from("reports")
+      .select("id, ticket_number, title, status")
+      .eq("id", report.merged_into_report_id)
+      .maybeSingle();
+    parentReport = parent;
   }
 
   let signedPhotos: { id: string; signedUrl: string }[] = [];
@@ -82,6 +107,41 @@ export default async function ReportDetailPage({
 
         {/* Main Report Card */}
         <article className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs space-y-6">
+          {parentReport && (
+            <div className="rounded-xl border border-purple-200/90 bg-purple-50/60 p-4 sm:p-5 text-purple-950">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
+                  <IconGitMerge className="h-4 w-4" weight="bold" />
+                </div>
+                <div className="space-y-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm text-purple-950">Laporan Ini Telah Digabung Otomatis</span>
+                    <span className="inline-flex items-center rounded-md bg-purple-150 px-2 py-0.5 text-[11px] font-medium text-purple-800 bg-purple-200/60">
+                      Duplikat
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-purple-900/80 leading-relaxed">
+                    Sistem mendeteksi kategori dan koordinat lokasi kerusakan ini serupa dengan laporan yang telah masuk terlebih dahulu.
+                    Seluruh penanganan, progres lapangan, dan SLA dipusatkan pada laporan utama{" "}
+                    <span className="font-mono font-semibold text-purple-950">{parentReport.ticket_number}</span>.
+                  </p>
+                  <div className="pt-1.5">
+                    <Link href={`/reports/${parentReport.id}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 border-purple-200 bg-white hover:bg-purple-100/70 text-purple-900 hover:text-purple-950 gap-1.5 text-xs font-medium shadow-2xs"
+                      >
+                        <span>Buka Laporan Utama ({parentReport.ticket_number})</span>
+                        <IconArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
             <div className="flex items-center gap-2.5">
               <StatusBadgeClient status={normalizeReportStatus(report.status)} size="md" showIcon={true} />
@@ -126,6 +186,45 @@ export default async function ReportDetailPage({
                 ))}
               </div>
             </div>
+          )}
+
+          {duplicateReports && duplicateReports.length > 0 && (
+            <section className="rounded-xl border border-purple-200/70 bg-purple-50/40 p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-150 text-purple-700 bg-purple-100">
+                    <IconGitMerge className="h-3.5 w-3.5" weight="bold" />
+                  </div>
+                  <h2 className="text-sm font-semibold text-text">Laporan Terkait dari Warga Sekitar</h2>
+                </div>
+                <span className="text-[11px] font-medium px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200/50">
+                  +{duplicateReports.length} digabung
+                </span>
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Terdapat {duplicateReports.length} laporan serupa di lokasi berdekatan yang otomatis digabungkan ke tiket ini sebagai informasi penguat.
+              </p>
+              <div className="divide-y divide-purple-100/80 border-t border-purple-100/80 pt-1">
+                {duplicateReports.map((dup) => (
+                  <div key={dup.id} className="py-2.5 flex items-center justify-between text-xs gap-3">
+                    <div className="flex items-center gap-2 font-mono text-text-muted">
+                      <span className="font-semibold text-text">{dup.ticket_number}</span>
+                      <span className="text-border">·</span>
+                      <span className="text-[11px] font-sans text-text-muted">
+                        {new Intl.DateTimeFormat("id-ID", { dateStyle: "medium", timeStyle: "short" }).format(new Date(dup.created_at))}
+                      </span>
+                    </div>
+                    <Link
+                      href={`/reports/${dup.id}`}
+                      className="inline-flex items-center gap-1 text-purple-700 hover:text-purple-900 font-medium text-xs hover:underline"
+                    >
+                      <span>Lihat detail</span>
+                      <IconArrowRight className="h-3 w-3" />
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
 
           <div className="space-y-3">

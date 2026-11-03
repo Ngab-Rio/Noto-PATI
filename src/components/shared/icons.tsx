@@ -31,6 +31,7 @@ export {
   WarningCircle as IconWarningCircle,
   XCircle as IconXCircle,
   Info as IconInfo,
+  GitMerge as IconGitMerge,
   ShieldCheck as IconShieldCheck,
   Sparkle as IconSparkle,
   

@@ -51,6 +51,8 @@ export async function getPublicReports(
   let request = supabase
     .from("reports")
     .select(PUBLIC_REPORT_COLUMNS, { count: "exact" })
+    .is("merged_into_report_id", null)
+    .neq("status", "digabung")
     .order("created_at", { ascending: false });
 
   if (query.category) {
@@ -127,7 +129,12 @@ export async function getPublicReportStats(): Promise<PublicReportStats> {
   const supabase = await createClient();
   // shortcut: hitung dari kolom ringan (bukan join); ganti ke RPC count(distinct)
   // bila jumlah laporan sudah puluhan ribu.
-  const { data, error } = await supabase.from("reports").select("status, detail_location");
+  // Kecualikan laporan yang digabung agar tidak dihitung sebagai laporan aktif independen.
+  const { data, error } = await supabase
+    .from("reports")
+    .select("status, detail_location")
+    .is("merged_into_report_id", null)
+    .neq("status", "digabung");
 
   if (error) {
     console.error("Failed to fetch public report stats", error);

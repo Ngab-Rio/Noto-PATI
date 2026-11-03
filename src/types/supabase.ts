@@ -28,6 +28,7 @@ export interface Database {
           longitude: number | null;
           location_accuracy_m: number | null;
           location_captured_at: string | null;
+          merged_into_report_id: string | null;
           client_request_id: string;
           created_at: string;
           updated_at: string;
@@ -45,6 +46,7 @@ export interface Database {
           longitude?: number | null;
           location_accuracy_m?: number | null;
           location_captured_at?: string | null;
+          merged_into_report_id?: string | null;
           client_request_id: string;
           created_at?: string;
           updated_at?: string;
@@ -62,6 +64,7 @@ export interface Database {
           longitude?: number | null;
           location_accuracy_m?: number | null;
           location_captured_at?: string | null;
+          merged_into_report_id?: string | null;
           client_request_id?: string;
           created_at?: string;
           updated_at?: string;
@@ -122,6 +125,41 @@ export interface Database {
           created_at?: string;
         };
       };
+      report_merge_logs: {
+        Row: {
+          id: string;
+          parent_report_id: string;
+          duplicate_report_id: string;
+          distance_meters: number;
+          time_diff_seconds: number;
+          rule_version: string;
+          decision: string;
+          parameters: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          parent_report_id: string;
+          duplicate_report_id: string;
+          distance_meters: number;
+          time_diff_seconds: number;
+          rule_version?: string;
+          decision?: string;
+          parameters?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          parent_report_id?: string;
+          duplicate_report_id?: string;
+          distance_meters?: number;
+          time_diff_seconds?: number;
+          rule_version?: string;
+          decision?: string;
+          parameters?: Json;
+          created_at?: string;
+        };
+      };
     };
     Enums: {
       report_status:
@@ -129,7 +167,8 @@ export interface Database {
         | "diverifikasi"
         | "diproses"
         | "selesai"
-        | "ditolak";
+        | "ditolak"
+        | "digabung";
       report_category:
         | "jalan"
         | "lampu"
