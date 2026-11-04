@@ -10,23 +10,11 @@ import { logAdminActivity } from "./activity-logger";
 // Validation Schemas
 // ============================================================================
 
-const verifyReportSchema = z.object({
+const transitionSchema = z.object({
   reportId: z.string().uuid("ID laporan tidak valid"),
-  note: z.string().max(500, "Catatan maksimal 500 karakter").optional(),
-});
-
-const rejectReportSchema = z.object({
-  reportId: z.string().uuid("ID laporan tidak valid"),
-  reason: z
-    .string()
-    .min(10, "Alasan penolakan minimal 10 karakter")
-    .max(500, "Alasan penolakan maksimal 500 karakter"),
-});
-
-const updateStatusSchema = z.object({
-  reportId: z.string().uuid("ID laporan tidak valid"),
-  newStatus: z.enum(["diverifikasi", "diproses", "selesai"]),
-  note: z.string().max(500, "Catatan maksimal 500 karakter").optional(),
+  toStatus: z.enum(["diverifikasi", "diproses", "selesai", "ditolak"]),
+  note: z.string().trim().max(2000, "Catatan maksimal 2000 karakter").nullable().optional(),
+  evidencePath: z.string().trim().max(500).nullable().optional(),
 });
 
 // ============================================================================
@@ -36,6 +24,102 @@ const updateStatusSchema = z.object({
 export type ActionResult<T = unknown> =
   | { ok: true; data: T; message: string }
   | { ok: false; message: string };
+
+export async function transitionReport(
+  input: unknown,
+): Promise<ActionResult<{ status: string }>> {
+  const parsed = transitionSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "Data tidak valid." };
+  }
+
+  try {
+    const adminUser = await requireAdmin();
+    const supabase = await createClient();
+    const rpcParams = {
+      p_report_id: parsed.data.reportId,
+      p_to_status: parsed.data.toStatus,
+      p_note: parsed.data.note ?? null,
+      p_merged_into_report_id: null,
+      ...(parsed.data.toStatus === "selesai"
+        ? { p_proof_image_path: parsed.data.evidencePath ?? null }
+        : {}),
+    };
+    const { data, error } = await supabase
+      .rpc("admin_transition_report", rpcParams)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.error("Failed to transition report:", {
+        code: error?.code,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        reportId: parsed.data.reportId,
+        toStatus: parsed.data.toStatus,
+      });
+      const message = error?.message ?? "";
+      if (message.includes("NOT_AUTHORIZED")) {
+        return { ok: false, message: "Sesi admin tidak memiliki izin mengubah laporan. Silakan login ulang." };
+      }
+      if (message.includes("REPORT_NOT_FOUND")) {
+        return { ok: false, message: "Laporan tidak ditemukan atau sudah dihapus." };
+      }
+      if (message.includes("INVALID_STATUS_TRANSITION")) {
+        return { ok: false, message: "Perubahan status tersebut tidak diperbolehkan." };
+      }
+      if (message.includes("REJECTION_NOTE_REQUIRED")) {
+        return { ok: false, message: "Alasan penolakan wajib diisi." };
+      }
+      if (message.includes("COMPLETION_EVIDENCE_REQUIRED")) {
+        return { ok: false, message: "Bukti penyelesaian wajib diunggah." };
+      }
+      if (message.includes("INVALID_COMPLETION_EVIDENCE")) {
+        return { ok: false, message: "Bukti penyelesaian tidak valid." };
+      }
+      if (message.includes("SLA_POLICY_NOT_CONFIGURED")) {
+        return { ok: false, message: "Konfigurasi SLA belum tersedia." };
+      }
+      if (message.includes("SYSTEM_ONLY_MERGE")) {
+        return { ok: false, message: "Penggabungan laporan hanya dapat dilakukan oleh sistem deteksi duplikat." };
+      }
+      if (error?.code === "PGRST202") {
+        return {
+          ok: false,
+          message: "Fungsi perubahan status belum tersedia pada API Supabase. Tunggu beberapa saat lalu coba lagi.",
+        };
+      }
+      return { ok: false, message: "Perubahan status gagal disimpan." };
+    }
+
+    await logAdminActivity({
+      adminUserId: adminUser.id,
+      actionType:
+        parsed.data.toStatus === "ditolak"
+          ? "reject_report"
+          : parsed.data.toStatus === "diverifikasi"
+              ? "verify_report"
+              : "update_status",
+      targetReportId: parsed.data.reportId,
+      details: { newStatus: parsed.data.toStatus, note: parsed.data.note },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/reports");
+    revalidatePath(`/admin/reports/${parsed.data.reportId}`);
+    revalidatePath(`/reports/${parsed.data.reportId}`);
+
+    const transition = data as { status: string };
+    return {
+      ok: true,
+      data: { status: transition.status },
+      message: "Status laporan berhasil diperbarui.",
+    };
+  } catch (error) {
+    console.error("transitionReport error:", error);
+    return { ok: false, message: "Terjadi kesalahan. Silakan coba lagi." };
+  }
+}
 
 // ============================================================================
 // Server Actions
@@ -48,104 +132,11 @@ export async function verifyReport(
   reportId: string,
   note?: string,
 ): Promise<ActionResult> {
-  try {
-    // Authorization check
-    const adminUser = await requireAdmin();
-
-    // Validate input
-    const validated = verifyReportSchema.parse({ reportId, note });
-
-    const supabase = await createClient();
-
-    // Get current report
-    const { data: report, error: fetchError } = await supabase
-      .from("reports")
-      .select("id, status")
-      .eq("id", validated.reportId)
-      .single();
-
-    if (fetchError || !report) {
-      return {
-        ok: false,
-        message: "Laporan tidak ditemukan.",
-      };
-    }
-
-    // Check current status
-    if (report.status !== "diterima") {
-      return {
-        ok: false,
-        message: `Laporan dengan status "${report.status}" tidak dapat diverifikasi.`,
-      };
-    }
-
-    // Update status (remove verified_at since column doesn't exist)
-    const { error: updateError } = await supabase
-      .from("reports")
-      .update({
-        status: "diverifikasi",
-      })
-      .eq("id", validated.reportId);
-
-    if (updateError) {
-      console.error("Error updating report:", updateError);
-      return {
-        ok: false,
-        message: "Gagal memverifikasi laporan. Silakan coba lagi.",
-      };
-    }
-
-    // Record status history with admin user
-    const { error: historyError } = await supabase
-      .from("report_status_history")
-      .insert({
-        report_id: validated.reportId,
-        status: "diverifikasi",
-        changed_by: adminUser.id,
-        note: validated.note || "Laporan telah diverifikasi oleh admin",
-      });
-
-    if (historyError) {
-      console.error("Error recording history:", historyError);
-      // Don't fail the operation if history recording fails
-    }
-
-    // Revalidate admin pages
-    revalidatePath("/admin");
-    revalidatePath("/admin/reports");
-    revalidatePath(`/admin/reports/${validated.reportId}`);
-
-    // Log admin activity (non-blocking)
-    logAdminActivity({
-      adminUserId: adminUser.id,
-      actionType: "verify_report",
-      targetReportId: validated.reportId,
-      details: {
-        note: validated.note,
-        previousStatus: "diterima",
-        newStatus: "diverifikasi",
-      },
-    });
-
-    return {
-      ok: true,
-      data: { reportId: validated.reportId },
-      message: "Laporan berhasil diverifikasi.",
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        ok: false,
-        message: error.issues[0]?.message || "Data tidak valid.",
-      };
-    }
-
-    console.error("verifyReport error:", error);
-    return {
-      ok: false,
-      message: "Terjadi kesalahan. Silakan coba lagi.",
-    };
-  }
+  return transitionReport({
+    reportId,
+    toStatus: "diverifikasi",
+    note: note ?? null,
+  });
 }
 
 /**
@@ -155,103 +146,11 @@ export async function rejectReport(
   reportId: string,
   reason: string,
 ): Promise<ActionResult> {
-  try {
-    // Authorization check
-    const adminUser = await requireAdmin();
-
-    // Validate input
-    const validated = rejectReportSchema.parse({ reportId, reason });
-
-    const supabase = await createClient();
-
-    // Get current report
-    const { data: report, error: fetchError } = await supabase
-      .from("reports")
-      .select("id, status")
-      .eq("id", validated.reportId)
-      .single();
-
-    if (fetchError || !report) {
-      return {
-        ok: false,
-        message: "Laporan tidak ditemukan.",
-      };
-    }
-
-    // Check current status
-    if (report.status !== "diterima") {
-      return {
-        ok: false,
-        message: `Laporan dengan status "${report.status}" tidak dapat ditolak.`,
-      };
-    }
-
-    // Update status
-    const { error: updateError } = await supabase
-      .from("reports")
-      .update({
-        status: "ditolak",
-      })
-      .eq("id", validated.reportId);
-
-    if (updateError) {
-      console.error("Error updating report:", updateError);
-      return {
-        ok: false,
-        message: "Gagal menolak laporan. Silakan coba lagi.",
-      };
-    }
-
-    // Record status history with rejection reason
-    const { error: historyError } = await supabase
-      .from("report_status_history")
-      .insert({
-        report_id: validated.reportId,
-        status: "ditolak",
-        changed_by: adminUser.id,
-        note: `Laporan ditolak: ${validated.reason}`,
-      });
-
-    if (historyError) {
-      console.error("Error recording history:", historyError);
-    }
-
-    // Revalidate admin pages
-    revalidatePath("/admin");
-    revalidatePath("/admin/reports");
-    revalidatePath(`/admin/reports/${validated.reportId}`);
-
-    // Log admin activity
-    logAdminActivity({
-      adminUserId: adminUser.id,
-      actionType: "reject_report",
-      targetReportId: validated.reportId,
-      details: {
-        reason: validated.reason,
-        previousStatus: "diterima",
-        newStatus: "ditolak",
-      },
-    });
-
-    return {
-      ok: true,
-      data: { reportId: validated.reportId },
-      message: "Laporan berhasil ditolak.",
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        ok: false,
-        message: error.issues[0]?.message || "Data tidak valid.",
-      };
-    }
-
-    console.error("rejectReport error:", error);
-    return {
-      ok: false,
-      message: "Terjadi kesalahan. Silakan coba lagi.",
-    };
-  }
+  return transitionReport({
+    reportId,
+    toStatus: "ditolak",
+    note: reason,
+  });
 }
 
 /**
@@ -262,108 +161,5 @@ export async function updateReportStatus(
   newStatus: "diverifikasi" | "diproses" | "selesai",
   note?: string,
 ): Promise<ActionResult> {
-  try {
-    // Authorization check
-    const adminUser = await requireAdmin();
-
-    // Validate input
-    const validated = updateStatusSchema.parse({ reportId, newStatus, note });
-
-    const supabase = await createClient();
-
-    // Get current report
-    const { data: report, error: fetchError } = await supabase
-      .from("reports")
-      .select("id, status")
-      .eq("id", validated.reportId)
-      .single();
-
-    if (fetchError || !report) {
-      return {
-        ok: false,
-        message: "Laporan tidak ditemukan.",
-      };
-    }
-
-    // Validate status transitions
-    const validTransitions: Record<string, string[]> = {
-      diterima: ["diverifikasi"],
-      diverifikasi: ["diproses"],
-      diproses: ["selesai"],
-    };
-
-    const allowedStatuses = validTransitions[report.status] || [];
-    if (!allowedStatuses.includes(validated.newStatus)) {
-      return {
-        ok: false,
-        message: `Transisi dari "${report.status}" ke "${validated.newStatus}" tidak diizinkan.`,
-      };
-    }
-
-    // Update status
-    const { error: updateError } = await supabase
-      .from("reports")
-      .update({
-        status: validated.newStatus,
-      })
-      .eq("id", validated.reportId);
-
-    if (updateError) {
-      console.error("Error updating report:", updateError);
-      return {
-        ok: false,
-        message: "Gagal mengubah status laporan. Silakan coba lagi.",
-      };
-    }
-
-    // Record status history with admin user
-    const { error: historyError } = await supabase
-      .from("report_status_history")
-      .insert({
-        report_id: validated.reportId,
-        status: validated.newStatus,
-        changed_by: adminUser.id,
-        note: validated.note || `Status diubah menjadi ${validated.newStatus}`,
-      });
-
-    if (historyError) {
-      console.error("Error recording history:", historyError);
-    }
-
-    // Revalidate admin pages
-    revalidatePath("/admin");
-    revalidatePath("/admin/reports");
-    revalidatePath(`/admin/reports/${validated.reportId}`);
-
-    // Log admin activity
-    logAdminActivity({
-      adminUserId: adminUser.id,
-      actionType: "update_status",
-      targetReportId: validated.reportId,
-      details: {
-        note: validated.note,
-        previousStatus: report.status,
-        newStatus: validated.newStatus,
-      },
-    });
-
-    return {
-      ok: true,
-      data: { reportId: validated.reportId, newStatus: validated.newStatus },
-      message: `Status berhasil diubah menjadi ${validated.newStatus}.`,
-    };
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return {
-        ok: false,
-        message: error.issues[0]?.message || "Data tidak valid.",
-      };
-    }
-
-    console.error("updateReportStatus error:", error);
-    return {
-      ok: false,
-      message: "Terjadi kesalahan. Silakan coba lagi.",
-    };
-  }
+  return transitionReport({ reportId, toStatus: newStatus, note: note ?? null });
 }

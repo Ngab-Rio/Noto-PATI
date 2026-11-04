@@ -69,6 +69,8 @@ ON public.admin_activity_logs (created_at DESC);
 ALTER TABLE public.admin_activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Only admins can view activity logs
+DROP POLICY IF EXISTS "Only admins can view activity logs"
+ON public.admin_activity_logs;
 CREATE POLICY "Only admins can view activity logs"
 ON public.admin_activity_logs FOR SELECT
 TO authenticated
@@ -81,6 +83,8 @@ USING (
 );
 
 -- Policy: Only admins can insert activity logs (via service role in Server Actions)
+DROP POLICY IF EXISTS "System can insert activity logs"
+ON public.admin_activity_logs;
 CREATE POLICY "System can insert activity logs"
 ON public.admin_activity_logs FOR INSERT
 TO authenticated
@@ -133,7 +137,7 @@ SELECT
   
   -- Admin profile info
   p.full_name as admin_name,
-  p.email as admin_email,
+  u.email as admin_email,
   
   -- Report info
   r.ticket_number,
@@ -142,6 +146,7 @@ SELECT
   
 FROM public.admin_activity_logs aal
 LEFT JOIN public.profiles p ON p.id = aal.admin_user_id
+LEFT JOIN auth.users u ON u.id = aal.admin_user_id
 LEFT JOIN public.reports r ON r.id = aal.target_report_id
 ORDER BY aal.created_at DESC;
 

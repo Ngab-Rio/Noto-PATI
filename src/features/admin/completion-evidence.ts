@@ -10,14 +10,13 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth/guards";
-import { revalidatePath } from "next/cache";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────
 
 export type UploadEvidenceResult = 
-  | { ok: true; data: { publicUrl: string; path: string }; message: string }
+  | { ok: true; data: { signedUrl: string; path: string }; message: string }
   | { ok: false; message: string };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -110,10 +109,19 @@ export async function uploadCompletionEvidence(
         message: "Laporan tidak ditemukan",
       };
     }
+    if (report.status !== "diproses") {
+      return {
+        ok: false,
+        message: "Bukti hanya dapat diunggah saat laporan berstatus diproses.",
+      };
+    }
 
     // Generate unique filename
     const timestamp = Date.now();
-    const fileExt = validated.file.name.split(".").pop();
+    const fileExt = validated.file.name.split(".").pop()?.toLowerCase();
+    if (!fileExt || !["jpg", "jpeg", "png", "webp"].includes(fileExt)) {
+      return { ok: false, message: "Ekstensi file tidak didukung." };
+    }
     const fileName = `${report.ticket_number}_completion_${timestamp}.${fileExt}`;
     const filePath = `${validated.reportId}/${fileName}`;
 
@@ -135,47 +143,25 @@ export async function uploadCompletionEvidence(
       };
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData, error: urlError } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 60 * 60);
 
-    if (!urlData.publicUrl) {
+    if (urlError || !urlData?.signedUrl) {
+      await supabase.storage.from(STORAGE_BUCKET).remove([filePath]);
       return {
         ok: false,
         message: "Gagal mendapatkan URL foto",
       };
     }
 
-    // Record in status history with proof_image_url
-    const { error: historyError } = await supabase
-      .from("report_status_history")
-      .insert({
-        report_id: validated.reportId,
-        status: "selesai",
-        note:
-          validated.note ||
-          "Pekerjaan selesai 100%. Foto bukti penyelesaian telah diupload.",
-        proof_image_url: urlData.publicUrl,
-      });
-
-    if (historyError) {
-      console.error("Error recording history:", historyError);
-      // Don't fail if history fails, photo is already uploaded
-    }
-
-    // Revalidate pages
-    revalidatePath("/admin");
-    revalidatePath("/admin/reports");
-    revalidatePath(`/admin/reports/${validated.reportId}`);
-
     return {
       ok: true,
       data: {
-        publicUrl: urlData.publicUrl,
+        signedUrl: urlData.signedUrl,
         path: filePath,
       },
-      message: "Foto bukti penyelesaian berhasil diupload",
+      message: "Foto bukti berhasil diupload. Lanjutkan untuk menyelesaikan laporan.",
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -197,7 +183,8 @@ export async function uploadCompletionEvidence(
  * Delete completion evidence (if admin needs to re-upload)
  */
 export async function deleteCompletionEvidence(
-  filePath: string
+  filePath: string,
+  reportId: string,
 ): Promise<{ ok: boolean; message: string }> {
   try {
     const adminUser = await requireAdmin();
@@ -206,6 +193,10 @@ export async function deleteCompletionEvidence(
         ok: false,
         message: "Unauthorized",
       };
+    }
+
+    if (!z.string().uuid().safeParse(reportId).success || !filePath.startsWith(`${reportId}/`)) {
+      return { ok: false, message: "Lokasi file tidak valid." };
     }
 
     const supabase = await createClient();
@@ -240,6 +231,7 @@ export async function deleteCompletionEvidence(
  */
 export async function getCompletionEvidence(reportId: string) {
   try {
+    await requireAdmin();
     const supabase = await createClient();
 
     const { data, error } = await supabase
@@ -255,7 +247,15 @@ export async function getCompletionEvidence(reportId: string) {
       return [];
     }
 
-    return data || [];
+    return Promise.all(
+      (data || []).map(async (item) => {
+        if (!item.proof_image_url) return { ...item, signed_url: null };
+        const { data: signed } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .createSignedUrl(item.proof_image_url, 60 * 60);
+        return { ...item, signed_url: signed?.signedUrl ?? null };
+      }),
+    );
   } catch (error) {
     console.error("getCompletionEvidence error:", error);
     return [];

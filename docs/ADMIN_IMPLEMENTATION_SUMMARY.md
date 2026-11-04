@@ -92,7 +92,7 @@ Implementasi backend operations untuk Admin Dashboard (Issue #08) telah selesai 
 
 **Files:**
 - `src/features/admin/activity-logger.ts`
-- `supabase/migrations/20250127_create_admin_activity_logs.sql`
+- `supabase/migrations/20261104100000_create_admin_activity_logs.sql`
 
 #### Features:
 - ✅ **Non-blocking logging** (won't fail parent operation)
@@ -140,7 +140,7 @@ CREATE TABLE admin_activity_logs (
 
 **Files:**
 - `src/features/admin/completion-evidence.ts`
-- `supabase/migrations/20250127_create_completion_evidence_storage.sql`
+- `supabase/migrations/20261104110000_create_completion_evidence_storage.sql`
 
 #### Features:
 - ✅ **File Upload** to Supabase Storage bucket `completion-evidence`
@@ -198,8 +198,8 @@ MIME Types: image/jpeg, image/jpg, image/png, image/webp
 2. `src/app/admin/reports/[id]/report-actions-client.tsx` - UI Component
 3. `src/features/admin/activity-logger.ts` - Activity logging
 4. `src/features/admin/completion-evidence.ts` - Evidence upload
-5. `supabase/migrations/20250127_create_admin_activity_logs.sql`
-6. `supabase/migrations/20250127_create_completion_evidence_storage.sql`
+5. `supabase/migrations/20261104100000_create_admin_activity_logs.sql`
+6. `supabase/migrations/20261104110000_create_completion_evidence_storage.sql`
 7. `docs/ADMIN_OPERATIONS_TESTING.md`
 8. `docs/ADMIN_IMPLEMENTATION_SUMMARY.md` (this file)
 
@@ -217,7 +217,7 @@ MIME Types: image/jpeg, image/jpg, image/png, image/webp
   - `reports` - Admin can update status
   - `report_status_history` - Admin can insert
   - `admin_activity_logs` - Admin-only view
-  - `storage.completion-evidence` - Admin upload, public read
+  - `storage.completion-evidence` - Admin upload/read, private objects with signed URLs
 
 ### ✅ Input Validation
 - Zod schemas untuk semua user inputs
@@ -279,8 +279,9 @@ MIME Types: image/jpeg, image/jpg, image/png, image/webp
 - [ ] Test 9: Permission checks (non-admin)
 - [ ] Test 10: Page revalidation
 
-### Optional Features (if migrations run):
-- [ ] Upload completion evidence photo
+### Additional verification:
+- [ ] Upload completion evidence photo before marking a report `Selesai`
+- [ ] Verify evidence storage is private and signed URLs expire
 - [ ] View activity logs
 - [ ] Check storage bucket RLS
 
@@ -295,10 +296,10 @@ Run via Supabase Dashboard SQL Editor:
 
 ```sql
 -- Step 1: Create activity logs table
--- Run: supabase/migrations/20250127_create_admin_activity_logs.sql
+-- Run: supabase/migrations/20261104100000_create_admin_activity_logs.sql
 
 -- Step 2: Create completion evidence storage (optional)
--- Run: supabase/migrations/20250127_create_completion_evidence_storage.sql
+-- Run: supabase/migrations/20261104110000_create_completion_evidence_storage.sql
 
 -- Step 3: Seed admin user
 -- Run: supabase/seed_admin.sql

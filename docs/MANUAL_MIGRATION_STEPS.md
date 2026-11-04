@@ -4,6 +4,24 @@
 
 Karena ada conflict dengan migration history, kita akan jalankan migrations secara manual via Supabase Dashboard.
 
+## Migrasi SLA Admin
+
+Untuk mengaktifkan alur status admin dan tenggat SLA, jalankan file berikut
+secara berurutan:
+
+1. `supabase/migrations/20261104150000_add_report_sla_and_transitions.sql`
+2. `supabase/migrations/20261104153000_guard_missing_sla_policy.sql`
+3. `supabase/migrations/20261104160000_restrict_admin_report_transitions.sql`
+4. `supabase/migrations/20261104161000_private_completion_evidence.sql`
+5. `supabase/migrations/20261104162000_publish_completion_evidence.sql`
+
+Migrasi pertama membuat konfigurasi SLA, deadline pada `reports`, aturan
+transisi status, dan RPC `admin_transition_report`. Migrasi kedua memastikan
+RPC menolak perubahan status jika tidak ada SLA aktif. Migrasi ketiga mengganti
+signature RPC menjadi versi bukti penyelesaian dan membatasi transisi admin
+sesuai PRD. Migrasi keempat mengunci bucket evidence menjadi private.
+Migrasi kelima memberikan izin baca publik untuk kolom `proof_image_url`.
+
 ## 📋 Prerequisites
 
 - Akses ke Supabase Dashboard
@@ -13,13 +31,13 @@ Karena ada conflict dengan migration history, kita akan jalankan migrations seca
 
 ## Step 1: Admin Activity Logs Table
 
-**File:** `supabase/migrations/20250127_create_admin_activity_logs.sql`
+**File:** `supabase/migrations/20261104100000_create_admin_activity_logs.sql`
 
 ### Jalankan via SQL Editor:
 
 1. Buka Supabase Dashboard → SQL Editor
 2. New Query
-3. Copy-paste seluruh isi file `supabase/migrations/20250127_create_admin_activity_logs.sql`
+3. Copy-paste seluruh isi file `supabase/migrations/20261104100000_create_admin_activity_logs.sql`
 4. Run
 
 ### Expected Output:
@@ -44,12 +62,12 @@ SELECT EXISTS (
 
 ## Step 2: Completion Evidence Storage
 
-**File:** `supabase/migrations/20250127_create_completion_evidence_storage.sql`
+**File:** `supabase/migrations/20261104110000_create_completion_evidence_storage.sql`
 
 ### Jalankan via SQL Editor:
 
 1. New Query
-2. Copy-paste seluruh isi file `supabase/migrations/20250127_create_completion_evidence_storage.sql`
+2. Copy-paste seluruh isi file `supabase/migrations/20261104110000_create_completion_evidence_storage.sql`
 3. Run
 
 ### Expected Output:
@@ -65,9 +83,13 @@ SELECT * FROM storage.buckets WHERE id = 'completion-evidence';
 
 -- Should return 1 row with:
 -- id: completion-evidence
--- public: true
+-- public: false
 -- file_size_limit: 5242880
 ```
+
+After the base migration, apply `20261104160000_restrict_admin_report_transitions.sql`
+and `20261104161000_private_completion_evidence.sql`. Completion evidence is stored
+as a private storage path and is only exposed through short-lived signed URLs.
 
 ---
 
@@ -249,3 +271,4 @@ Pastikan tahun adalah **2026**, bukan 2025.
 ---
 
 *Last Updated: 2026-01-27*
+Migrasi kelima memberikan izin baca publik untuk kolom `proof_image_url`.

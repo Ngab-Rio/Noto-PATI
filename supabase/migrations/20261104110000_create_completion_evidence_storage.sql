@@ -13,23 +13,27 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES (
   'completion-evidence',
   'completion-evidence',
-  true,  -- Public bucket untuk display di UI
+  false, -- Private bucket; access uses short-lived signed URLs
   5242880,  -- 5MB limit
   ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
 )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- 2. Storage RLS Policies
 -- ─────────────────────────────────────────────────────────────────────────
 
 -- Policy: Authenticated users can view completion evidence
+DROP POLICY IF EXISTS "Authenticated users can view completion evidence"
+ON storage.objects;
 CREATE POLICY "Authenticated users can view completion evidence"
 ON storage.objects FOR SELECT
 TO authenticated
 USING (bucket_id = 'completion-evidence');
 
 -- Policy: Only admins can upload completion evidence
+DROP POLICY IF EXISTS "Only admins can upload completion evidence"
+ON storage.objects;
 CREATE POLICY "Only admins can upload completion evidence"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -43,6 +47,8 @@ WITH CHECK (
 );
 
 -- Policy: Only admins can update/delete their uploads
+DROP POLICY IF EXISTS "Only admins can delete completion evidence"
+ON storage.objects;
 CREATE POLICY "Only admins can delete completion evidence"
 ON storage.objects FOR DELETE
 TO authenticated
@@ -72,7 +78,7 @@ BEGIN
     ADD COLUMN proof_image_url TEXT;
 
     COMMENT ON COLUMN public.report_status_history.proof_image_url IS
-    'Public URL of completion evidence photo (for status=selesai)';
+    'Private storage path of completion evidence photo (for status=selesai)';
   END IF;
 END $$;
 

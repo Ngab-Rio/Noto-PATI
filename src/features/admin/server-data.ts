@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { CATEGORY_LABELS } from "@/lib/reports/public";
 import { normalizeReportStatus } from "@/config/theme";
 import type { AdminReportItem } from "./types";
+import { calculateSlaStage, formatRemainingTime } from "@/domain/sla";
 
 const CATEGORY_KEYS: Record<string, AdminReportItem["categoryKey"]> = {
   jalan: "road_damage",
@@ -30,6 +31,9 @@ type ReportRow = {
   latitude: number | null;
   longitude: number | null;
   created_at: string;
+  verification_due_at: string | null;
+  handling_due_at: string | null;
+  verified_at: string | null;
 };
 
 type PhotoRow = {
@@ -45,6 +49,7 @@ type HistoryRow = {
   status: string;
   changed_by: string | null;
   note: string | null;
+  proof_image_url: string | null;
   created_at: string;
 };
 
@@ -79,6 +84,18 @@ function toReportItem(
   signedUrls: Map<string, string>,
 ): AdminReportItem {
   const category = report.category.toLowerCase();
+  const status = normalizeReportStatus(report.status);
+  const dueAt =
+    status === "diterima" ? report.verification_due_at : report.handling_due_at;
+  const sla = calculateSlaStage(status, dueAt, new Date().toISOString());
+  const dueDateLabel =
+    sla.state === "completed"
+      ? "Tuntas"
+      : sla.state === "overdue"
+        ? `Terlambat ${formatRemainingTime(sla.remainingMs)}`
+        : sla.state === "in_target"
+          ? `Tersisa ${formatRemainingTime(sla.remainingMs)}`
+          : undefined;
 
   return {
     id: report.id,
@@ -87,7 +104,7 @@ function toReportItem(
     description: report.description,
     category: CATEGORY_LABELS[category] ?? category,
     categoryKey: CATEGORY_KEYS[category] ?? "other_infrastructure",
-    status: normalizeReportStatus(report.status),
+    status,
     location: report.detail_location,
     coordinates: {
       lat: report.latitude ?? 0,
@@ -98,6 +115,10 @@ function toReportItem(
     supportCount: 0,
     submittedAt: formatDate(report.created_at),
     submittedAtRaw: report.created_at,
+    slaState: sla.state,
+    slaDueAt: sla.dueAt ?? undefined,
+    dueDateLabel,
+    isOverdue: sla.state === "overdue",
     images: photos
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((photo) => signedUrls.get(photo.storage_path))
@@ -111,6 +132,7 @@ function toReportItem(
         actor: entry.changed_by ? "Pengguna terautentikasi" : "Sistem",
         role: entry.changed_by ? "warga" : "sistem",
         note: entry.note ?? undefined,
+        proofImage: entry.proof_image_url ?? undefined,
         timestamp: formatDate(entry.created_at),
       })),
   };
@@ -125,7 +147,7 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
       admin
         .from("reports")
         .select(
-          "id, ticket_number, reporter_id, category, title, description, detail_location, status, latitude, longitude, created_at",
+          "id, ticket_number, reporter_id, category, title, description, detail_location, status, latitude, longitude, created_at, verification_due_at, handling_due_at, verified_at",
         )
         .order("created_at", { ascending: false }),
       admin
@@ -134,7 +156,7 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
         .order("sort_order", { ascending: true }),
       admin
         .from("report_status_history")
-        .select("id, report_id, status, changed_by, note, created_at")
+        .select("id, report_id, status, changed_by, note, proof_image_url, created_at")
         .order("created_at", { ascending: false }),
     ]);
 

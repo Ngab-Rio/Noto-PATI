@@ -99,7 +99,7 @@ USING (auth.uid() = user_id);
 Migration not run yet
 
 **Fix:**
-1. Run `supabase/migrations/20250127_create_admin_activity_logs.sql`
+1. Run `supabase/migrations/20261104100000_create_admin_activity_logs.sql`
 2. Or: Activity logging is **non-blocking**, so operations will still work
 
 **Note:** Activity logging is optional. The main operations will succeed even if logging fails.
@@ -115,7 +115,7 @@ Migration not run yet
 Storage bucket `completion-evidence` doesn't exist
 
 **Fix:**
-Run `supabase/migrations/20250127_create_completion_evidence_storage.sql` via Dashboard
+Run `supabase/migrations/20261104110000_create_completion_evidence_storage.sql` via Dashboard
 
 ---
 
