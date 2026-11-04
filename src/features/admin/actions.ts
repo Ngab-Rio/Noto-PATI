@@ -79,12 +79,11 @@ export async function verifyReport(
       };
     }
 
-    // Update status
+    // Update status (remove verified_at since column doesn't exist)
     const { error: updateError } = await supabase
       .from("reports")
       .update({
         status: "diverifikasi",
-        verified_at: new Date().toISOString(),
       })
       .eq("id", validated.reportId);
 
@@ -96,12 +95,13 @@ export async function verifyReport(
       };
     }
 
-    // Record status history
+    // Record status history with admin user
     const { error: historyError } = await supabase
       .from("report_status_history")
       .insert({
         report_id: validated.reportId,
         status: "diverifikasi",
+        changed_by: adminUser.id,
         note: validated.note || "Laporan telah diverifikasi oleh admin",
       });
 
@@ -208,6 +208,7 @@ export async function rejectReport(
       .insert({
         report_id: validated.reportId,
         status: "ditolak",
+        changed_by: adminUser.id,
         note: `Laporan ditolak: ${validated.reason}`,
       });
 
@@ -315,12 +316,13 @@ export async function updateReportStatus(
       };
     }
 
-    // Record status history
+    // Record status history with admin user
     const { error: historyError } = await supabase
       .from("report_status_history")
       .insert({
         report_id: validated.reportId,
         status: validated.newStatus,
+        changed_by: adminUser.id,
         note: validated.note || `Status diubah menjadi ${validated.newStatus}`,
       });
 
