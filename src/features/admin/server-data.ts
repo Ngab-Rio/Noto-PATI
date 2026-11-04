@@ -1,6 +1,6 @@
 import "server-only";
 
-import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
+import { getSignedPhotoUrls, getSignedCompletionEvidenceUrls } from "@/lib/reports/signed-urls";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
 import { CATEGORY_LABELS } from "@/lib/reports/public";
@@ -82,6 +82,7 @@ function toReportItem(
   photos: PhotoRow[],
   history: HistoryRow[],
   signedUrls: Map<string, string>,
+  proofSignedUrls: Map<string, string>,
 ): AdminReportItem {
   const category = report.category.toLowerCase();
   const status = normalizeReportStatus(report.status);
@@ -132,7 +133,7 @@ function toReportItem(
         actor: entry.changed_by ? "Pengguna terautentikasi" : "Sistem",
         role: entry.changed_by ? "warga" : "sistem",
         note: entry.note ?? undefined,
-        proofImage: entry.proof_image_url ?? undefined,
+        proofImage: entry.proof_image_url ? proofSignedUrls.get(entry.proof_image_url) : undefined,
         timestamp: formatDate(entry.created_at),
       })),
   };
@@ -183,7 +184,16 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
   const profileById = new Map(
     ((profiles ?? []) as ProfileRow[]).map((profile) => [profile.id, profile]),
   );
+  
+  // Generate signed URLs untuk foto laporan
   const signedUrls = await getSignedPhotoUrls(photoRows.map((photo) => photo.storage_path));
+  
+  // Generate signed URLs untuk proof completion evidence
+  const proofPaths = historyRows
+    .map((entry) => entry.proof_image_url)
+    .filter((path): path is string => Boolean(path));
+  const proofSignedUrls = await getSignedCompletionEvidenceUrls(proofPaths);
+  
   const photosByReport = new Map<string, PhotoRow[]>();
   const historyByReport = new Map<string, HistoryRow[]>();
 
@@ -206,6 +216,7 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
       photosByReport.get(report.id) ?? [],
       historyByReport.get(report.id) ?? [],
       signedUrls,
+      proofSignedUrls,
     ),
   );
 }
