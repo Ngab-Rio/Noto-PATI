@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { ReportActionsClient } from "./report-actions-client";
 import type { AdminReportItem } from "@/features/admin/types";
 import type { ReportStatusKey } from "@/config/theme";
 
@@ -445,6 +446,38 @@ export function ReportActionView({ report: initialReport }: ReportActionViewProp
                         {item.note}
                       </p>
                     )}
+
+                    {/* Proof Image Display */}
+                    {item.proofImage && (
+                      <div className="mt-2">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-status-selesai-text" />
+                          <span className="text-xs font-semibold text-status-selesai-text">
+                            Bukti Penyelesaian
+                          </span>
+                        </div>
+                        <a
+                          href={item.proofImage}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group block relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border-2 border-status-selesai-text/30 bg-status-selesai-bg/20 hover:border-status-selesai-text/60 transition-all"
+                        >
+                          <Image
+                            src={item.proofImage}
+                            alt="Foto bukti penyelesaian"
+                            fill
+                            unoptimized
+                            className="object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                            <ExternalLink className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </a>
+                        <p className="text-[11px] text-text-muted mt-1 italic">
+                          📸 Dokumentasi penyelesaian dari admin
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -454,21 +487,8 @@ export function ReportActionView({ report: initialReport }: ReportActionViewProp
 
         {/* ── Right Column: Admin Action Panel ── */}
         <div className="space-y-5">
-          <div className="rounded-xl border border-primary/20 bg-primary-soft/30 p-5 shadow-xs">
-            <div className="flex items-start gap-3">
-              <Info className="h-5 w-5 shrink-0 text-primary" />
-              <div>
-                <h2 className="text-base font-bold text-text">Status Laporan</h2>
-                <p className="mt-1 text-xs leading-relaxed text-text-muted">
-                  Data laporan dan riwayat diambil dari database. Perubahan status,
-                  proses merge, dan pengaturan SLA belum tersedia pada tahap ini.
-                </p>
-                <div className="mt-3">
-                  <StatusBadge status={report.status} size="md" />
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Real Database-Connected Actions */}
+          <ReportActionsClient reportId={report.id} currentStatus={report.status} />
 
           <div className="hidden rounded-xl border border-border bg-surface p-5 shadow-xs sticky top-32">
             <div className="flex items-center gap-2 mb-4">

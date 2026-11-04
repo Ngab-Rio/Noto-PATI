@@ -13,7 +13,10 @@ import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
+import {
+  getSignedCompletionEvidenceUrls,
+  getSignedPhotoUrls,
+} from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
 
@@ -34,7 +37,7 @@ export default async function ReportDetailPage({
   // Query data laporan, status history, foto, dan relasi duplikat
   const [
     { data: report, error: reportError },
-    { data: history },
+    { data: history, error: historyError },
     { data: photos },
     { data: duplicateReports },
   ] = await Promise.all([
@@ -47,7 +50,7 @@ export default async function ReportDetailPage({
       .maybeSingle(),
     supabase
       .from("report_status_history")
-      .select("status, note, created_at")
+      .select("status, note, created_at, proof_image_url")
       .eq("report_id", id)
       .order("created_at", { ascending: true }),
     admin
@@ -64,6 +67,9 @@ export default async function ReportDetailPage({
 
   if (reportError || !report) {
     notFound();
+  }
+  if (historyError) {
+    throw new Error(`Gagal memuat riwayat laporan: ${historyError.message}`);
   }
 
   // Jika laporan ini digabung ke laporan lain, ambil informasi laporan utama
@@ -88,6 +94,18 @@ export default async function ReportDetailPage({
       })
       .filter((p): p is { id: string; signedUrl: string } => p !== null);
   }
+
+  const completionPaths = (history ?? [])
+    .filter((item) => item.status === "selesai" && item.proof_image_url)
+    .map((item) => item.proof_image_url as string);
+  const completionUrlByPath = await getSignedCompletionEvidenceUrls(completionPaths);
+  const completionEvidence = (history ?? []).flatMap((item) => {
+    if (item.status !== "selesai" || !item.proof_image_url) return [];
+    const signedUrl = completionUrlByPath.get(item.proof_image_url);
+    return signedUrl
+      ? [{ createdAt: item.created_at, note: item.note, signedUrl }]
+      : [];
+  });
 
   return (
     <div className="min-h-screen bg-background py-8 px-4 sm:px-6 lg:px-8">
@@ -186,6 +204,38 @@ export default async function ReportDetailPage({
                 ))}
               </div>
             </div>
+          )}
+
+          {completionEvidence.length > 0 && (
+            <section className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
+              <div>
+                <h2 className="text-sm font-semibold text-emerald-950">
+                  Bukti Penyelesaian
+                </h2>
+                <p className="mt-1 text-xs text-emerald-900/75">
+                  Foto ini diunggah oleh Admin sebagai dokumentasi penyelesaian laporan.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {completionEvidence.map((evidence) => (
+                  <div key={`${evidence.signedUrl}-${evidence.createdAt}`} className="overflow-hidden rounded-lg border border-emerald-200 bg-white">
+                    <a href={evidence.signedUrl} target="_blank" rel="noreferrer">
+                      <Image
+                        src={evidence.signedUrl}
+                        alt="Foto bukti penyelesaian laporan"
+                        width={800}
+                        height={450}
+                        unoptimized
+                        className="aspect-video w-full object-cover transition-opacity hover:opacity-90"
+                      />
+                    </a>
+                    {evidence.note && (
+                      <p className="p-3 text-xs leading-relaxed text-text-muted">{evidence.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
 
           {duplicateReports && duplicateReports.length > 0 && (

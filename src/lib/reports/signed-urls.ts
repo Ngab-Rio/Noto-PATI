@@ -28,6 +28,7 @@ export async function getSignedPhotoUrls(
     } else {
       missing.push(path);
     }
+
   }
 
   if (missing.length === 0) {
@@ -47,6 +48,23 @@ export async function getSignedPhotoUrls(
   if (cache.size > MAX_CACHED_PATHS) {
     for (const [path, entry] of cache) {
       if (entry.expiresAt <= now) cache.delete(path);
+    }
+  }
+
+  return signed;
+}
+
+export async function getSignedCompletionEvidenceUrls(
+  paths: string[],
+): Promise<Map<string, string>> {
+  const { data } = await createAdminClient()
+    .storage.from("completion-evidence")
+    .createSignedUrls([...new Set(paths)], SIGNED_URL_TTL_SECONDS);
+  const signed = new Map<string, string>();
+
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl) {
+      signed.set(item.path, item.signedUrl);
     }
   }
 

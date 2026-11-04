@@ -26,9 +26,9 @@
 -- Admin user credentials
 DO $$
 DECLARE
-  v_admin_email TEXT := '[your admin email]';           -- 👈 EDIT: Email admin
-  v_admin_password TEXT := '[your admin password]';   -- 👈 EDIT: Password (min 8 char)
-  v_admin_full_name TEXT := '[your admin full name]';  -- 👈 EDIT: Nama lengkap
+  v_admin_email TEXT := 'admin@production.com';           -- 👈 Email dari .env
+  v_admin_password TEXT := '123123qweqwe123123';          -- 👈 Password dari .env
+  v_admin_full_name TEXT := 'Admin Noto PATI';            -- 👈 Nama lengkap admin
   v_user_id UUID;
 BEGIN
   -- ─────────────────────────────────────────────────────────────────────────
@@ -132,7 +132,7 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.user_roles ur ON ur.user_id = u.id
 LEFT JOIN public.profiles p ON p.id = u.id
-WHERE u.email = 'admin@notopati.dev'  -- 👈 EDIT: Sama dengan email di atas
+WHERE u.email = 'admin@production.com'  -- 👈 EDIT: Sama dengan email di atas
 ORDER BY u.created_at DESC
 LIMIT 1;
 
@@ -175,8 +175,8 @@ ORDER BY ur.created_at DESC;
 -- Setelah script berhasil:
 -- 1. Buka http://localhost:3000/login
 -- 2. Login dengan:
---    Email: admin@notopati.dev (atau yang Anda edit)
---    Password: Admin123!SecurePassword (atau yang Anda edit)
+--    Email: admin@production.com
+--    Password: 123123qweqwe123123
 -- 3. Akses http://localhost:3000/admin
 -- 4. Dashboard admin harus terbuka tanpa redirect
 --
