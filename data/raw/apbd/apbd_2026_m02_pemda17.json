@@ -1,0 +1,204 @@
+{
+  "metadata": {
+    "sourceUrl": "https://djpk.kemenkeu.go.id/portal/data/apbd?periode=2&tahun=2026&provinsi=11&pemda=17",
+    "downloadUrl": "https://djpk.kemenkeu.go.id/portal/csv_apbd?type=apbd&periode=2&tahun=2026&provinsi=11&pemda=17",
+    "fetchedAt": "2026-11-05T15:39:19.704Z",
+    "httpStatus": 200,
+    "keteranganPortal": "Keterangan: Data APBD Murni, realisasi APBD s.d Februari 2026, - data diterima SIKD per 04 November 2026",
+    "region": {
+      "provinsiCode": "11",
+      "provinsiName": "Provinsi Jawa Tengah",
+      "pemdaCode": "17",
+      "pemdaName": "Kab. Pati"
+    },
+    "budgetYear": 2026,
+    "periodMonth": 2,
+    "periodName": "Februari",
+    "dataHash": "7416b31c927624991354c8fa53561d28a91efd5e1ced3cd7ceca60f28ea7e5a0",
+    "rawRowCount": 29
+  },
+  "rows": [
+    {
+      "akun": "Pendapatan Daerah",
+      "anggaran": 2719861122000,
+      "realisasi": 408844477388,
+      "persentase": 15.03
+    },
+    {
+      "akun": "PAD",
+      "anggaran": 612271706000,
+      "realisasi": 95996957675,
+      "persentase": 15.68
+    },
+    {
+      "akun": "Pajak Daerah",
+      "anggaran": 268161175000,
+      "realisasi": 43547796465,
+      "persentase": 16.24
+    },
+    {
+      "akun": "Retribusi Daerah",
+      "anggaran": 304651506000,
+      "realisasi": 50673371712,
+      "persentase": 16.63
+    },
+    {
+      "akun": "Hasil Pengelolaan Kekayaan Daerah yang Dipisahkan",
+      "anggaran": 36090545000,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Lain-Lain PAD yang Sah",
+      "anggaran": 3368480000,
+      "realisasi": 1775789498,
+      "persentase": 52.72
+    },
+    {
+      "akun": "TKDD",
+      "anggaran": 1975368105000,
+      "realisasi": 307059055577,
+      "persentase": 15.54
+    },
+    {
+      "akun": "Pendapatan Transfer Pemerintah Pusat",
+      "anggaran": 1975368105000,
+      "realisasi": 307059055577,
+      "persentase": 15.54
+    },
+    {
+      "akun": "Pendapatan Lainnya",
+      "anggaran": 132221311000,
+      "realisasi": 5788464136,
+      "persentase": 4.38
+    },
+    {
+      "akun": "Pendapatan Transfer Antar Daerah",
+      "anggaran": 132221311000,
+      "realisasi": 5788464136,
+      "persentase": 4.38
+    },
+    {
+      "akun": "Belanja Daerah",
+      "anggaran": 2867861122000,
+      "realisasi": 205160007772,
+      "persentase": 7.15
+    },
+    {
+      "akun": "Belanja Pegawai",
+      "anggaran": 1346662674524,
+      "realisasi": 124720431851,
+      "persentase": 9.26
+    },
+    {
+      "akun": "Belanja Pegawai",
+      "anggaran": 1346662674524,
+      "realisasi": 124720431851,
+      "persentase": 9.26
+    },
+    {
+      "akun": "Belanja Barang dan Jasa",
+      "anggaran": 642808524676,
+      "realisasi": 79053364579,
+      "persentase": 12.3
+    },
+    {
+      "akun": "Belanja Barang dan Jasa",
+      "anggaran": 642808524676,
+      "realisasi": 79053364579,
+      "persentase": 12.3
+    },
+    {
+      "akun": "Belanja Modal",
+      "anggaran": 266755143800,
+      "realisasi": 296539882,
+      "persentase": 0.11
+    },
+    {
+      "akun": "Belanja Modal",
+      "anggaran": 266755143800,
+      "realisasi": 296539882,
+      "persentase": 0.11
+    },
+    {
+      "akun": "Belanja Lainnya",
+      "anggaran": 611634779000,
+      "realisasi": 1089671460,
+      "persentase": 0.18
+    },
+    {
+      "akun": "Belanja Bagi Hasil",
+      "anggaran": 31172000000,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Belanja Bantuan Keuangan",
+      "anggaran": 537866206000,
+      "realisasi": 1042671460,
+      "persentase": 0.19
+    },
+    {
+      "akun": "Belanja Bunga",
+      "anggaran": 2120000000,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Belanja Hibah",
+      "anggaran": 31738668000,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Belanja Bantuan Sosial",
+      "anggaran": 1147780000,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Belanja Tidak Terduga",
+      "anggaran": 7590125000,
+      "realisasi": 47000000,
+      "persentase": 0.62
+    },
+    {
+      "akun": "Pembiayaan Daerah",
+      "anggaran": 0,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Penerimaan Pembiayaan Daerah",
+      "anggaran": 148000000000,
+      "realisasi": 287620655929,
+      "persentase": 194.34
+    },
+    {
+      "akun": "Sisa Lebih Perhitungan Anggaran Tahun Sebelumnya",
+      "anggaran": 58000000000,
+      "realisasi": 287620655929,
+      "persentase": 495.9
+    },
+    {
+      "akun": "Penerimaan Kembali Pemberian Pinjaman Daerah",
+      "anggaran": 0,
+      "realisasi": 0,
+      "persentase": 0
+    },
+    {
+      "akun": "Penerimaan Pembiayaan Lainnya Sesuai dengan Ketentuan Peraturan Perundang-Undangan",
+      "anggaran": 90000000000,
+      "realisasi": 0,
+      "persentase": 0
+    }
+  ],
+  "summary": {
+    "totalPendapatanAnggaran": 2719861122000,
+    "totalPendapatanRealisasi": 408844477388,
+    "totalBelanjaAnggaran": 2867861122000,
+    "totalBelanjaRealisasi": 205160007772,
+    "totalPembiayaanAnggaran": 0,
+    "totalPembiayaanRealisasi": 0
+  }
+}
