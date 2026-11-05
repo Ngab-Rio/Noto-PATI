@@ -44,3 +44,65 @@ export interface ApbdExtractionResult {
   };
 }
 
+/**
+ * APBD snapshot after normalization. Values that could not be parsed are null
+ * so validation can report them instead of silently importing zero.
+ */
+export interface ApbdNormalizedReport {
+  budgetYear: number | null;
+  periodMonth: number | null;
+  periodName: string;
+  provinsiCode: string;
+  provinsiName: string;
+  pemdaCode: string;
+  pemdaName: string;
+  sourceUrl: string;
+  downloadUrl: string;
+  fetchedAt: string;
+  httpStatus: number | null;
+  keteranganPortal: string | null;
+  dataHash: string;
+  rawRowCount: number | null;
+  totalPendapatanAnggaran: number | null;
+  totalPendapatanRealisasi: number | null;
+  totalBelanjaAnggaran: number | null;
+  totalBelanjaRealisasi: number | null;
+  totalPembiayaanAnggaran: number | null;
+  totalPembiayaanRealisasi: number | null;
+}
+
+export interface ApbdNormalizedAccount {
+  /** Zero-based position in the source file; the only stable identity DJPK provides. */
+  rowIndex: number;
+  akun: string;
+  anggaran: number | null;
+  realisasi: number | null;
+  persentase: number | null;
+  /** True only for the three top-level totals the scraper already treats as totals. */
+  isTotalRow: boolean;
+  /** Original source row, kept so no scraped attribute is lost. */
+  rawRow: Record<string, unknown>;
+}
+
+export interface ApbdNormalizationResult {
+  report: ApbdNormalizedReport | null;
+  accounts: ApbdNormalizedAccount[];
+  warnings: string[];
+}
+
+export interface ApbdValidatedSnapshot {
+  report: ApbdNormalizedReport;
+  accounts: ApbdNormalizedAccount[];
+}
+
+export interface ApbdValidationIssue {
+  path: string;
+  message: string;
+}
+
+export interface ApbdValidationResult {
+  data: ApbdValidatedSnapshot | null;
+  errors: ApbdValidationIssue[];
+  warnings: string[];
+}
+
