@@ -49,6 +49,12 @@ export {
   Clock as IconClock,
   ClockCountdown as IconClockCountdown,
   CheckFat as IconCheckFat,
+
+  // Edukasi & Keselamatan Care
+  BookOpen as IconBookOpen,
+  FirstAid as IconFirstAid,
+  Lightbulb as IconLightbulb,
+  ShieldWarning as IconShieldWarning,
 } from "@phosphor-icons/react/dist/ssr";
 
 export type { IconProps, IconWeight } from "@phosphor-icons/react";
