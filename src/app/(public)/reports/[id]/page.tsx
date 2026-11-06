@@ -7,7 +7,6 @@ import {
   IconCalendar,
   IconThumbsUp,
   IconBuildings,
-  IconInfo,
   IconGitMerge,
   IconArrowRight,
   IconShare2,
@@ -22,8 +21,9 @@ import {
 } from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
-import { calculateReportSla, formatRemainingTime, formatDueDate } from "@/domain/sla";
+import { calculateReportSla, formatRemainingTime, formatDueDate, type SlaState } from "@/domain/sla";
 import { RelatedReportsThread } from "@/features/reports/components/RelatedReportsThread";
+import { VisualEducationCard } from "@/features/care/components/VisualEducationCard";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -63,7 +63,7 @@ export default async function ReportDetailPage({
       .select("id, storage_path, sort_order")
       .eq("report_id", id)
       .order("sort_order", { ascending: true }),
-    supabase
+    admin
       .from("reports")
       .select("id, ticket_number, created_at, detail_location, title")
       .eq("merged_into_report_id", id)
@@ -159,6 +159,7 @@ export default async function ReportDetailPage({
     },
     now,
   );
+  const slaCopy = getSlaCopy(slaStage.state, slaStage.remainingMs, report.merged_into_report_id !== null);
 
   return (
     <div className="min-h-screen bg-background py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
@@ -396,6 +397,22 @@ export default async function ReportDetailPage({
                 )}
               </dl>
 
+              {/* SLA Summary */}
+              <section className="border-t border-border pt-4 space-y-3" aria-labelledby="report-sla-title">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 id="report-sla-title" className="text-sm font-semibold text-text">Target Penanganan</h3>
+                  <span className={`rounded-md px-2 py-1 text-[11px] font-semibold ${slaCopy.badgeClassName}`}>
+                    {slaCopy.badge}
+                  </span>
+                </div>
+                <p className="text-sm font-medium text-text">{slaCopy.message}</p>
+                {slaStage.dueAt && !report.merged_into_report_id && (
+                  <p className="text-xs text-text-muted">
+                    Tenggat: {formatDueDate(slaStage.dueAt)}
+                  </p>
+                )}
+              </section>
+
               {/* Action Buttons - Stacked */}
               <div className="pt-4 border-t border-border space-y-2">
                 <Button variant="default" size="default" className="w-full gap-2 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all">
@@ -441,9 +458,69 @@ export default async function ReportDetailPage({
             </div>
           </aside>
         </div>
+
+        {/* Contextual Education */}
+        <div className="mt-8">
+          <VisualEducationCard
+            category={report.category}
+            reportId={report.id}
+            ticketNumber={report.ticket_number}
+          />
+        </div>
       </div>
     </div>
   );
+}
+
+function getSlaCopy(
+  state: SlaState,
+  remainingMs: number | null,
+  isMerged: boolean,
+): {
+  badge: string;
+  message: string;
+  badgeClassName: string;
+} {
+  if (isMerged) {
+    return {
+      badge: "Mengikuti laporan utama",
+      message: "Target penanganan mengikuti laporan utama.",
+      badgeClassName: "bg-purple-100 text-purple-800",
+    };
+  }
+
+  switch (state) {
+    case "in_target":
+      return {
+        badge: "Dalam target",
+        message: `Tersisa ${formatRemainingTime(remainingMs)}`,
+        badgeClassName: "bg-emerald-100 text-emerald-800",
+      };
+    case "overdue":
+      return {
+        badge: "Melewati target",
+        message: `Terlambat ${formatRemainingTime(remainingMs)}`,
+        badgeClassName: "bg-red-100 text-red-800",
+      };
+    case "completed_on_time":
+      return {
+        badge: "Sesuai target",
+        message: "Laporan diselesaikan sesuai target.",
+        badgeClassName: "bg-emerald-100 text-emerald-800",
+      };
+    case "completed_late":
+      return {
+        badge: "Selesai terlambat",
+        message: "Laporan diselesaikan setelah melewati target.",
+        badgeClassName: "bg-amber-100 text-amber-800",
+      };
+    default:
+      return {
+        badge: "Tidak berlaku",
+        message: "Target penanganan belum tersedia untuk status ini.",
+        badgeClassName: "bg-border text-text-muted",
+      };
+  }
 }
 
 /**
