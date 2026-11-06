@@ -124,6 +124,16 @@ Struktur data JSON:
 }
 ```
 
+### D. Impor ke Supabase
+
+Setelah file JSON tersimpan, normalisasi, validasi, dan impor ke Supabase
+dijelaskan di [`docs/APBD_IMPORT.md`](./APBD_IMPORT.md):
+
+```bash
+npm run import:apbd -- --dry-run
+npm run import:apbd
+```
+
 ---
 
 ## 5. Pengujian & Verifikasi Mutu
