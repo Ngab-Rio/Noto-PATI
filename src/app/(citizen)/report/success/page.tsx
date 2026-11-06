@@ -1,105 +1,134 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CheckCircle, Home, FileText, MapPin } from "lucide-react";
+import {
+  IconCheckCircle,
+  IconHouse,
+  IconFileText,
+  IconMapPin,
+  IconBookOpen,
+} from "@/components/shared/icons";
 import { Button } from "@/components/ui/button";
+import {
+  VisualEducationCard,
+  VisualEducationCardSkeleton,
+} from "@/features/care/components/VisualEducationCard";
 
 export const metadata = {
-  title: "Laporan Berhasil Dikirim · Noto PATI",
+  title: "Laporan Berhasil Terkirim · Noto PATI",
+  description:
+    "Konfirmasi keberhasilan pengiriman laporan infrastruktur publik Kabupaten Pati beserta panduan edukasi keselamatan.",
 };
 
-export default function ReportSuccessPage({
+interface ReportSuccessPageProps {
+  searchParams: Promise<{
+    reportId?: string;
+    ticket?: string;
+    category?: string;
+  }>;
+}
+
+export default async function ReportSuccessPage({
   searchParams,
-}: {
-  searchParams: { ticket?: string };
-}) {
-  const ticketNumber = searchParams.ticket || `NP-${new Date().getFullYear()}-XXXX`;
+}: ReportSuccessPageProps) {
+  const { reportId, ticket, category } = await searchParams;
+  const ticketNumber =
+    ticket || (reportId ? `NP-${reportId.slice(0, 8).toUpperCase()}` : "NP-PATI-BARU");
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <div className="max-w-2xl w-full">
-        <div className="rounded-2xl border border-border bg-surface p-8 sm:p-12 shadow-lg text-center space-y-6">
+    <div className="min-h-screen bg-background px-4 py-8 sm:py-12">
+      <div className="max-w-3xl mx-auto space-y-8">
+        {/* Main Success Confirmation Card */}
+        <div className="rounded-3xl border border-border bg-surface p-6 sm:p-10 shadow-xs text-center space-y-6">
           {/* Success Icon */}
           <div className="flex justify-center">
-            <div className="h-20 w-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-              <CheckCircle className="h-12 w-12 text-emerald-600 dark:text-emerald-400" />
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-emerald-100 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 shadow-2xs">
+              <IconCheckCircle className="h-10 w-10 sm:h-12 sm:w-12" weight="fill" />
             </div>
           </div>
 
           {/* Success Message */}
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-text mb-2">
-              Laporan Berhasil Dikirim!
+          <div className="space-y-1.5">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight">
+              Laporan Berhasil Terkirim!
             </h1>
-            <p className="text-text-muted">
-              Terima kasih atas kontribusi Anda untuk Kabupaten Pati yang lebih baik.
+            <p className="text-xs sm:text-sm text-text-muted max-w-md mx-auto leading-relaxed">
+              Terima kasih atas kepedulian Anda. Laporan ini telah tercatat dalam sistem dan segera memasuki tahap verifikasi dinas.
             </p>
           </div>
 
-          {/* Ticket Number */}
-          <div className="rounded-lg bg-primary-soft border border-primary/25 p-6">
-            <p className="text-sm text-text-muted mb-2">Nomor Tiket Laporan Anda:</p>
-            <p className="text-3xl font-bold text-primary font-mono">{ticketNumber}</p>
-            <p className="text-xs text-text-muted mt-3">
-              Simpan nomor ini untuk memantau progres laporan Anda
+          {/* Ticket Number Highlight */}
+          <div className="rounded-2xl bg-primary-soft/50 border border-primary/20 p-5 sm:p-6 space-y-1.5">
+            <p className="text-xs font-semibold text-text-muted uppercase tracking-wider">
+              Nomor Tiket Pemantauan:
+            </p>
+            <p className="text-2xl sm:text-3xl font-extrabold text-primary font-mono tracking-wide">
+              {ticketNumber}
+            </p>
+            <p className="text-[11px] text-text-muted pt-1">
+              Simpan nomor tiket ini untuk memantau pembaruan status dan SLA penanganan di lapangan.
             </p>
           </div>
 
-          {/* What's Next */}
-          <div className="rounded-lg bg-surface border border-border p-6 text-left">
-            <h2 className="text-sm font-semibold text-text mb-3">Langkah Selanjutnya:</h2>
-            <ul className="space-y-2 text-sm text-text-muted">
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-600 font-bold shrink-0">1.</span>
-                <span>
-                  Tim verifikasi akan memeriksa laporan Anda dalam <strong>1-2 hari kerja</strong>
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-600 font-bold shrink-0">2.</span>
-                <span>
-                  Setelah diverifikasi, laporan akan diteruskan ke <strong>dinas terkait</strong>
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-emerald-600 font-bold shrink-0">3.</span>
-                <span>
-                  Anda dapat memantau status melalui <strong>Peta Laporan</strong> atau{" "}
-                  <strong>Dashboard Profil</strong>
-                </span>
-              </li>
-            </ul>
-          </div>
+          {/* Action Navigation Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            {reportId && (
+              <Link href={`/reports/${reportId}`}>
+                <Button variant="default" size="sm" className="gap-2 shadow-2xs font-semibold">
+                  <IconFileText className="h-4 w-4" />
+                  <span>Lihat Detail Laporan</span>
+                </Button>
+              </Link>
+            )}
 
-          {/* Info Note */}
-          <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4">
-            <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-              <strong>Catatan:</strong> Untuk prototipe ini, data laporan adalah simulasi dan tidak
-              terhubung dengan sistem pemerintahan resmi. Target SLA respons dinas adalah 3-7 hari kerja.
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-            <Link href="/" className="w-full sm:w-auto">
-              <Button variant="outline" className="gap-2 w-full">
-                <Home className="h-4 w-4" />
-                <span>Kembali ke Beranda</span>
-              </Button>
-            </Link>
-
-            <Link href="/my-reports" className="w-full sm:w-auto">
-              <Button variant="outline" className="gap-2 w-full">
-                <FileText className="h-4 w-4" />
+            <Link href="/my-reports">
+              <Button variant="outline" size="sm" className="gap-2">
+                <IconFileText className="h-4 w-4 text-primary" />
                 <span>Lihat Laporan Saya</span>
               </Button>
             </Link>
 
-            <Link href="/" className="w-full sm:w-auto">
-              <Button variant="default" className="gap-2 w-full">
-                <MapPin className="h-4 w-4" />
-                <span>Lihat di Peta</span>
+            <Link href="/map">
+              <Button variant="outline" size="sm" className="gap-2">
+                <IconMapPin className="h-4 w-4 text-primary" />
+                <span>Pantau di Peta</span>
+              </Button>
+            </Link>
+
+            <Link href="/">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <IconHouse className="h-4 w-4" />
+                <span>Kembali ke Beranda</span>
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Visual-First Contextual Education Section */}
+        {category ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm font-bold text-text uppercase tracking-wider flex items-center gap-2">
+                <IconBookOpen className="h-4 w-4 text-primary" />
+                <span>Edukasi Keselamatan Infrastruktur</span>
+              </h2>
+              <span className="text-xs text-text-muted">Visual-First Panduan Warga</span>
+            </div>
+
+            <Suspense fallback={<VisualEducationCardSkeleton />}>
+              <VisualEducationCard
+                category={category}
+                reportId={reportId}
+                ticketNumber={ticketNumber}
+              />
+            </Suspense>
+          </div>
+        ) : null}
+
+        {/* Simulation Notice Disclaimer */}
+        <div className="rounded-xl border border-border bg-surface/50 p-4 text-center">
+          <p className="text-[11px] text-text-muted leading-relaxed">
+            Noto PATI merupakan prototipe platform partisipasi publik Kabupaten Pati. Seluruh SLA dan edukasi ditujukan untuk literasi dan demonstrasi simulasi.
+          </p>
         </div>
       </div>
     </div>

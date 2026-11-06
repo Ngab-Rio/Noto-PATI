@@ -124,7 +124,7 @@ export function ReportForm() {
   const locationCapturePendingRef = useRef(false);
   const manuallyEditedFieldsRef = useRef(new Set<AiSuggestionField>());
   const capturedLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
-  
+
   const [formData, setFormData] = useState<ReportFormData>({
     photos: [],
     photoPreviewUrls: [],
@@ -181,10 +181,10 @@ export function ReportForm() {
         locationCapturePendingRef.current = false;
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-        
+
         // Store in ref for immediate access (no closure issues)
         capturedLocationRef.current = { latitude, longitude };
-        
+
         setFormData((currentFormData) => ({
           ...currentFormData,
           latitude,
@@ -200,7 +200,7 @@ export function ReportForm() {
           return nextErrors;
         });
         setLocationMessage("Lokasi perangkat berhasil ditangkap. Upload foto untuk analisis AI.");
-        
+
         // Don't auto-fill location text until user uploads a photo
         // This prevents confusion when user hasn't seen the form yet
       },
@@ -241,16 +241,16 @@ export function ReportForm() {
         lon: String(longitude),
       });
       console.log('[resolveLocation] Fetching from API:', `/api/location/reverse-geocode?${query}`);
-      
+
       // Add timeout for client-side request (15 seconds)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
+
       const response = await fetch(`/api/location/reverse-geocode?${query}`, {
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      
+
       const payload: unknown = await response.json();
       console.log('[resolveLocation] API response:', { ok: response.ok, status: response.status, payload });
 
@@ -334,10 +334,10 @@ export function ReportForm() {
         locationCapturePendingRef.current = false;
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-        
+
         // Store in ref for immediate access
         capturedLocationRef.current = { latitude, longitude };
-        
+
         setFormData((currentFormData) => ({
           ...currentFormData,
           latitude,
@@ -417,7 +417,7 @@ export function ReportForm() {
         return next;
       });
       setErrors(newErrors);
-      
+
       // If location already captured (from mount), trigger reverse geocode
       // Otherwise, request device location
       if (files.length > 0) {
@@ -485,18 +485,18 @@ export function ReportForm() {
     try {
       const body = new FormData();
       body.append("photo", photo);
-      
+
       // Add timeout for AI analysis (35 seconds - slightly longer than server timeout)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 35000);
-      
+
       const response = await fetch("/api/ai/analyze-report-photo", {
         method: "POST",
         body,
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      
+
       const payload: unknown = await response.json();
       if (requestId !== analysisRequestIdRef.current) {
         return;
@@ -603,7 +603,7 @@ export function ReportForm() {
     if (submitLockRef.current || isSubmitting || isCompressing) {
       return;
     }
-    
+
     if (!validateForm()) {
       // Scroll to first error
       const firstError = document.querySelector('[data-error]');
@@ -617,16 +617,16 @@ export function ReportForm() {
     try {
       const result = await Promise.race([
         createReport({
-        clientRequestId: clientRequestIdRef.current,
-        category: formData.category,
-        title: formData.title,
-        description: formData.description,
-        detailLocation: formData.detailLocation,
-        photos: formData.photos,
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        locationAccuracyM: formData.locationAccuracyM,
-        locationCapturedAt: formData.locationCapturedAt,
+          clientRequestId: clientRequestIdRef.current,
+          category: formData.category,
+          title: formData.title,
+          description: formData.description,
+          detailLocation: formData.detailLocation,
+          photos: formData.photos,
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          locationAccuracyM: formData.locationAccuracyM,
+          locationCapturedAt: formData.locationCapturedAt,
         }),
         new Promise<never>((_, reject) => {
           window.setTimeout(
@@ -641,7 +641,9 @@ export function ReportForm() {
         return;
       }
 
-      router.push(`/reports/${result.reportId}`);
+      const ticketParam = encodeURIComponent(result.ticketNumber || "");
+      const categoryParam = encodeURIComponent(formData.category || "");
+      router.push(`/report/success?reportId=${result.reportId}&ticket=${ticketParam}&category=${categoryParam}`);
     } catch (error) {
       console.error("Submission error:", error);
       setErrors({
@@ -826,70 +828,27 @@ export function ReportForm() {
           {/* Left Column: Form (2/3 width on large screens) */}
           <div className="lg:col-span-2">
             <form onSubmit={handleSubmit} className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs space-y-8">
-          {/* Section 1: Photos */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Camera className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold text-text">1. Foto Kerusakan</h2>
-            </div>
-            <p className="text-sm text-text-muted">
-              Upload foto lokasi kerusakan. Pastikan foto jelas dan tidak mengandung wajah atau plat nomor kendaraan.
-            </p>
-            <p className="text-xs text-text-muted">
-              Setelah foto dipilih, lokasi perangkat akan diminta untuk membantu mengisi perkiraan alamat. Analisis foto oleh AI hanya berjalan jika Anda menekan tombol analisis.
-            </p>
-
-            {formData.photos.length === 0 ? (
-              <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <Upload className="h-10 w-10 text-text-muted mb-3" />
-                  <p className="mb-2 text-sm text-text">
-                    <span className="font-semibold">Ambil foto dengan kamera</span>
-                  </p>
-                  <p className="text-xs text-text-muted">Foto akan dikompres otomatis, maksimal 3 foto</p>
+              {/* Section 1: Photos */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Camera className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-bold text-text">1. Foto Kerusakan</h2>
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  onClick={(event) => event.stopPropagation()}
-                  onChange={handleFileSelect}
-                />
-              </label>
-            ) : (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {formData.photoPreviewUrls.map((url, index) => (
-                    <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border bg-surface group">
-                      <Image
-                        src={url}
-                        alt={`Foto ${index + 1}`}
-                        width={400}
-                        height={225}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
-                        Foto {index + 1}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-sm text-text-muted">
+                  Upload foto lokasi kerusakan. Pastikan foto jelas dan tidak mengandung wajah atau plat nomor kendaraan.
+                </p>
+                <p className="text-xs text-text-muted">
+                  Setelah foto dipilih, lokasi perangkat akan diminta untuk membantu mengisi perkiraan alamat. Analisis foto oleh AI hanya berjalan jika Anda menekan tombol analisis.
+                </p>
 
-                {formData.photos.length < MAX_PHOTOS && (
-                  <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface/50 transition-colors bg-background">
-                    <div className="flex items-center gap-2 text-sm text-text-muted">
-                      <Upload className="h-4 w-4" />
-                      <span>Tambah foto ({formData.photos.length}/{MAX_PHOTOS})</span>
+                {formData.photos.length === 0 ? (
+                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="h-10 w-10 text-text-muted mb-3" />
+                      <p className="mb-2 text-sm text-text">
+                        <span className="font-semibold">Ambil foto dengan kamera</span>
+                      </p>
+                      <p className="text-xs text-text-muted">Foto akan dikompres otomatis, maksimal 3 foto</p>
                     </div>
                     <input
                       ref={fileInputRef}
@@ -902,322 +861,365 @@ export function ReportForm() {
                       onChange={handleFileSelect}
                     />
                   </label>
-                )}
-              </div>
-            )}
-
-            {formData.photos.length > 0 && (
-              <div className="space-y-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => formData.photos[0] && analyzePhoto(formData.photos[0])}
-                  disabled={isAnalyzingPhoto || isSubmitting || isCompressing}
-                  className="gap-2"
-                >
-                  <IconSparkle className="h-4 w-4" />
-                  <span>{isAnalyzingPhoto ? "Sedang menganalisis..." : "Analisis dengan AI"}</span>
-                </Button>
-                {isAnalyzingPhoto && (
-                  <p role="status" className="text-sm text-text-muted">
-                    AI sedang meninjau foto pertama. Anda tetap dapat mengedit semua field.
-                  </p>
-                )}
-                {photoAnalysisMessage && (
-                  <p role={photoAnalysis ? "status" : "alert"} className="text-sm text-text-muted">
-                    {photoAnalysisMessage}
-                  </p>
-                )}
-                {photoAnalysis && (
-                  <div className="space-y-3 rounded-lg border border-primary/20 bg-primary-soft/30 p-4">
-                    <div>
-                      <p className="text-sm font-semibold text-text">Saran AI — sudah diisikan ke field yang kosong</p>
-                      <p className="text-xs text-text-muted">
-                        {photoAnalysis.provider} · {photoAnalysis.model}
-                        {photoAnalysis.analysis.confidence !== null
-                          && photoAnalysis.analysis.confidence !== undefined
-                          && ` · Confidence ${Math.round(photoAnalysis.analysis.confidence * 100)}% (bukan jaminan kebenaran)`}
-                      </p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {formData.photoPreviewUrls.map((url, index) => (
+                        <div key={index} className="relative aspect-video rounded-lg overflow-hidden border border-border bg-surface group">
+                          <Image
+                            src={url}
+                            alt={`Foto ${index + 1}`}
+                            width={400}
+                            height={225}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(index)}
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                          <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/60 text-white text-xs font-medium">
+                            Foto {index + 1}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <p className="text-sm text-text">
-                      Kategori: {CATEGORIES.find((category) => category.value === photoAnalysis.analysis.category)?.label}
-                    </p>
-                    <p className="text-sm text-text">{photoAnalysis.analysis.title}</p>
-                    <p className="text-sm text-text">{photoAnalysis.analysis.description}</p>
-                    <p className="text-xs text-text-muted">
-                      Saran kategori AI belum dievaluasi terhadap dataset berlabel. Tinjau dan edit semua field sebelum mengirim laporan.
-                    </p>
+
+                    {formData.photos.length < MAX_PHOTOS && (
+                      <label className="flex items-center justify-center w-full h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-surface/50 transition-colors bg-background">
+                        <div className="flex items-center gap-2 text-sm text-text-muted">
+                          <Upload className="h-4 w-4" />
+                          <span>Tambah foto ({formData.photos.length}/{MAX_PHOTOS})</span>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          capture="environment"
+                          multiple
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={handleFileSelect}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+
+                {formData.photos.length > 0 && (
+                  <div className="space-y-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => formData.photos[0] && analyzePhoto(formData.photos[0])}
+                      disabled={isAnalyzingPhoto || isSubmitting || isCompressing}
+                      className="gap-2"
+                    >
+                      <IconSparkle className="h-4 w-4" />
+                      <span>{isAnalyzingPhoto ? "Sedang menganalisis..." : "Analisis dengan AI"}</span>
+                    </Button>
+                    {isAnalyzingPhoto && (
+                      <p role="status" className="text-sm text-text-muted">
+                        AI sedang meninjau foto pertama. Anda tetap dapat mengedit semua field.
+                      </p>
+                    )}
+                    {photoAnalysisMessage && (
+                      <p role={photoAnalysis ? "status" : "alert"} className="text-sm text-text-muted">
+                        {photoAnalysisMessage}
+                      </p>
+                    )}
+                    {photoAnalysis && (
+                      <div className="space-y-3 rounded-lg border border-primary/20 bg-primary-soft/30 p-4">
+                        <div>
+                          <p className="text-sm font-semibold text-text">Saran AI — sudah diisikan ke field yang kosong</p>
+                          <p className="text-xs text-text-muted">
+                            {photoAnalysis.provider} · {photoAnalysis.model}
+                            {photoAnalysis.analysis.confidence !== null
+                              && photoAnalysis.analysis.confidence !== undefined
+                              && ` · Confidence ${Math.round(photoAnalysis.analysis.confidence * 100)}% (bukan jaminan kebenaran)`}
+                          </p>
+                        </div>
+                        <p className="text-sm text-text">
+                          Kategori: {CATEGORIES.find((category) => category.value === photoAnalysis.analysis.category)?.label}
+                        </p>
+                        <p className="text-sm text-text">{photoAnalysis.analysis.title}</p>
+                        <p className="text-sm text-text">{photoAnalysis.analysis.description}</p>
+                        <p className="text-xs text-text-muted">
+                          Saran kategori AI belum dievaluasi terhadap dataset berlabel. Tinjau dan edit semua field sebelum mengirim laporan.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {isCompressing && (
+                  <p className="text-sm text-text-muted">Memproses foto...</p>
+                )}
+
+                {errors.photos && (
+                  <div data-error className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{errors.photos}</span>
                   </div>
                 )}
               </div>
-            )}
 
-            {isCompressing && (
-              <p className="text-sm text-text-muted">Memproses foto...</p>
-            )}
-
-            {errors.photos && (
-              <div data-error className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{errors.photos}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Section 2: Location */}
-          <div className="space-y-4 pt-6 border-t border-border">
-            <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold text-text">2. Lokasi Kerusakan</h2>
-            </div>
-            <p className="text-sm text-text-muted">
-              Jelaskan lokasi kerusakan dengan detail alamat, nama jalan, dan patokan yang jelas.
-            </p>
-            <p className="text-xs text-text-muted">
-              Setelah lokasi perangkat diperoleh, koordinat dikirim ke OpenStreetMap untuk mencari perkiraan alamat. Periksa dan edit hasilnya; pelaporan tetap dapat dilanjutkan jika pencarian gagal.
-            </p>
-
-            {/* Detail Location */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text block">
-                Detail Alamat / Lokasi Kerusakan <span className="text-red-600">*</span>
-              </label>
-              <textarea
-                value={formData.detailLocation}
-                onChange={(e) => {
-                  markFieldAsManuallyEdited("detailLocation");
-                  setFormData({ ...formData, detailLocation: e.target.value });
-                  const newErrors = { ...errors };
-                  delete newErrors.detailLocation;
-                  setErrors(newErrors);
-                }}
-                rows={4}
-                placeholder="Contoh: Jalan Raya Pati-Tayu KM 12, Kecamatan Gabus, depan Pasar Desa Tanjang, sebelah Masjid Al-Ikhlas"
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed"
-              />
-              {isResolvingLocation && (
-                <p role="status" className="text-xs text-text-muted">
-                  Mencari perkiraan alamat dari koordinat GPS...
+              {/* Section 2: Location */}
+              <div className="space-y-4 pt-6 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-bold text-text">2. Lokasi Kerusakan</h2>
+                </div>
+                <p className="text-sm text-text-muted">
+                  Jelaskan lokasi kerusakan dengan detail alamat, nama jalan, dan patokan yang jelas.
                 </p>
-              )}
-              {locationMessage && (
-                <p role="status" className="text-xs text-text-muted">
-                  {locationMessage}
-                  {locationMessage.includes("OpenStreetMap") && (
-                    <> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">© OpenStreetMap contributors</a></>
+                <p className="text-xs text-text-muted">
+                  Setelah lokasi perangkat diperoleh, koordinat dikirim ke OpenStreetMap untuk mencari perkiraan alamat. Periksa dan edit hasilnya; pelaporan tetap dapat dilanjutkan jika pencarian gagal.
+                </p>
+
+                {/* Detail Location */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text block">
+                    Detail Alamat / Lokasi Kerusakan <span className="text-red-600">*</span>
+                  </label>
+                  <textarea
+                    value={formData.detailLocation}
+                    onChange={(e) => {
+                      markFieldAsManuallyEdited("detailLocation");
+                      setFormData({ ...formData, detailLocation: e.target.value });
+                      const newErrors = { ...errors };
+                      delete newErrors.detailLocation;
+                      setErrors(newErrors);
+                    }}
+                    rows={4}
+                    placeholder="Contoh: Jalan Raya Pati-Tayu KM 12, Kecamatan Gabus, depan Pasar Desa Tanjang, sebelah Masjid Al-Ikhlas"
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed"
+                  />
+                  {isResolvingLocation && (
+                    <p role="status" className="text-xs text-text-muted">
+                      Mencari perkiraan alamat dari koordinat GPS...
+                    </p>
                   )}
-                </p>
+                  {locationMessage && (
+                    <p role="status" className="text-xs text-text-muted">
+                      {locationMessage}
+                      {locationMessage.includes("OpenStreetMap") && (
+                        <> · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">© OpenStreetMap contributors</a></>
+                      )}
+                    </p>
+                  )}
+                  {formData.photos.length > 0
+                    && (formData.latitude === null || formData.longitude === null)
+                    && !isResolvingLocation && (
+                      <Button type="button" variant="outline" onClick={requestDeviceLocation}>
+                        Coba deteksi lokasi lagi
+                      </Button>
+                    )}
+                  {errors.location && (
+                    <p data-error className="text-xs text-red-600">{errors.location}</p>
+                  )}
+                  {aiFilledFields.has("detailLocation") && (
+                    <p className="text-xs text-primary">Perkiraan alamat otomatis dari GPS · dapat diedit</p>
+                  )}
+                  {errors.detailLocation && (
+                    <p data-error className="text-xs text-red-600">{errors.detailLocation}</p>
+                  )}
+                  <p className="text-xs text-text-muted">
+                    💡 Tips: Sertakan nama kecamatan, desa/kelurahan, nama jalan, nomor KM (jika ada), dan patokan bangunan terdekat
+                  </p>
+                </div>
+              </div>
+
+              {/* Section 3: Details */}
+              <div className="space-y-4 pt-6 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <IconSparkle className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-bold text-text">3. Detail Laporan</h2>
+                </div>
+
+                {/* Title */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text block">
+                    Judul Laporan <span className="text-red-600">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.title}
+                    onChange={(e) => {
+                      markFieldAsManuallyEdited("title");
+                      setFormData({ ...formData, title: e.target.value });
+                      const newErrors = { ...errors };
+                      delete newErrors.title;
+                      setErrors(newErrors);
+                    }}
+                    placeholder="Contoh: Lampu penerangan jalan mati di ruas Tanjang - Gabus"
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text"
+                    maxLength={100}
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    {errors.title ? (
+                      <p data-error className="text-red-600">{errors.title}</p>
+                    ) : (
+                      <span className="text-text-muted">{formData.title.length}/100 karakter (min 10)</span>
+                    )}
+                  </div>
+                  {aiFilledFields.has("title") && (
+                    <p className="text-xs text-primary">Diisi sebagai draf oleh AI · dapat diedit</p>
+                  )}
+                </div>
+
+                {/* Category */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text block">
+                    Kategori Kerusakan <span className="text-red-600">*</span>
+                  </label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => {
+                      markFieldAsManuallyEdited("category");
+                      setFormData({ ...formData, category: e.target.value });
+                      const newErrors = { ...errors };
+                      delete newErrors.category;
+                      setErrors(newErrors);
+                    }}
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text"
+                  >
+                    <option value="">-- Pilih Kategori --</option>
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat.value} value={cat.value}>
+                        {cat.label}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedCategory && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                      ✓ Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong>
+                    </p>
+                  )}
+                  {aiFilledFields.has("category") && (
+                    <p className="text-xs text-primary">Dipilih sebagai saran AI · dapat diedit</p>
+                  )}
+                  {errors.category && (
+                    <p data-error className="text-xs text-red-600">{errors.category}</p>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-text block">
+                    Deskripsi Masalah <span className="text-red-600">*</span>
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => {
+                      markFieldAsManuallyEdited("description");
+                      setFormData({ ...formData, description: e.target.value });
+                      const newErrors = { ...errors };
+                      delete newErrors.description;
+                      setErrors(newErrors);
+                    }}
+                    rows={5}
+                    placeholder="Jelaskan kondisi kerusakan secara detail (apa yang rusak, sejak kapan, dampak bagi warga, dll)"
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed"
+                    maxLength={1000}
+                  />
+                  <div className="flex items-center justify-between text-xs">
+                    {errors.description ? (
+                      <p data-error className="text-red-600">{errors.description}</p>
+                    ) : (
+                      <span className="text-text-muted">{formData.description.length}/1000 karakter (min 20)</span>
+                    )}
+                  </div>
+                  {aiFilledFields.has("description") && (
+                    <p className="text-xs text-primary">Diisi sebagai draf oleh AI · dapat diedit</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Terms Agreement */}
+              <div className="pt-4 border-t border-border">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.agreedToTerms}
+                    onChange={(e) => {
+                      setFormData({ ...formData, agreedToTerms: e.target.checked });
+                      const newErrors = { ...errors };
+                      delete newErrors.terms;
+                      setErrors(newErrors);
+                    }}
+                    className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/40"
+                  />
+                  <span className="text-sm text-text-muted group-hover:text-text">
+                    Saya menyatakan bahwa informasi yang saya sampaikan adalah benar dan dapat
+                    dipertanggungjawabkan. Saya memahami bahwa laporan ini akan ditampilkan secara publik
+                    tanpa identitas pribadi saya.
+                  </span>
+                </label>
+                {errors.terms && (
+                  <p data-error className="text-xs text-red-600 mt-2">{errors.terms}</p>
+                )}
+              </div>
+
+              {/* Submit Error */}
+              {errors.submit && (
+                <div data-error className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{errors.submit}</span>
+                </div>
               )}
-              {formData.photos.length > 0
-                && (formData.latitude === null || formData.longitude === null)
-                && !isResolvingLocation && (
-                  <Button type="button" variant="outline" onClick={requestDeviceLocation}>
-                    Coba deteksi lokasi lagi
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleCancel}
+                  className="gap-2 w-full sm:w-auto"
+                >
+                  <X className="h-4 w-4" />
+                  <span>Batal</span>
+                </Button>
+
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={isCompressing}
+                    onClick={() => {
+                      if (validateForm()) {
+                        setShowPreview(true);
+                      }
+                    }}
+                    className="gap-2 flex-1 sm:flex-none"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span>Pratinjau</span>
                   </Button>
-                )}
-              {errors.location && (
-                <p data-error className="text-xs text-red-600">{errors.location}</p>
-              )}
-              {aiFilledFields.has("detailLocation") && (
-                <p className="text-xs text-primary">Perkiraan alamat otomatis dari GPS · dapat diedit</p>
-              )}
-              {errors.detailLocation && (
-                <p data-error className="text-xs text-red-600">{errors.detailLocation}</p>
-              )}
-              <p className="text-xs text-text-muted">
-                💡 Tips: Sertakan nama kecamatan, desa/kelurahan, nama jalan, nomor KM (jika ada), dan patokan bangunan terdekat
-              </p>
-            </div>
-          </div>
 
-          {/* Section 3: Details */}
-          <div className="space-y-4 pt-6 border-t border-border">
-            <div className="flex items-center gap-2">
-              <IconSparkle className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-bold text-text">3. Detail Laporan</h2>
-            </div>
-
-            {/* Title */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text block">
-                Judul Laporan <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => {
-                  markFieldAsManuallyEdited("title");
-                  setFormData({ ...formData, title: e.target.value });
-                  const newErrors = { ...errors };
-                  delete newErrors.title;
-                  setErrors(newErrors);
-                }}
-                placeholder="Contoh: Lampu penerangan jalan mati di ruas Tanjang - Gabus"
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text"
-                maxLength={100}
-              />
-              <div className="flex items-center justify-between text-xs">
-                {errors.title ? (
-                  <p data-error className="text-red-600">{errors.title}</p>
-                ) : (
-                  <span className="text-text-muted">{formData.title.length}/100 karakter (min 10)</span>
-                )}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting || isCompressing}
+                    variant="default"
+                    className="gap-2 flex-1 sm:flex-none"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <span className="inline-block h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                        <span>Mengirim...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4" />
+                        <span>{errors.submit ? "Coba Lagi" : "Kirim Laporan"}</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              {aiFilledFields.has("title") && (
-                <p className="text-xs text-primary">Diisi sebagai draf oleh AI · dapat diedit</p>
-              )}
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text block">
-                Kategori Kerusakan <span className="text-red-600">*</span>
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => {
-                  markFieldAsManuallyEdited("category");
-                  setFormData({ ...formData, category: e.target.value });
-                  const newErrors = { ...errors };
-                  delete newErrors.category;
-                  setErrors(newErrors);
-                }}
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text"
-              >
-                <option value="">-- Pilih Kategori --</option>
-                {CATEGORIES.map((cat) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
-              {selectedCategory && (
-                <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                  ✓ Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong>
-                </p>
-              )}
-              {aiFilledFields.has("category") && (
-                <p className="text-xs text-primary">Dipilih sebagai saran AI · dapat diedit</p>
-              )}
-              {errors.category && (
-                <p data-error className="text-xs text-red-600">{errors.category}</p>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-text block">
-                Deskripsi Masalah <span className="text-red-600">*</span>
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => {
-                  markFieldAsManuallyEdited("description");
-                  setFormData({ ...formData, description: e.target.value });
-                  const newErrors = { ...errors };
-                  delete newErrors.description;
-                  setErrors(newErrors);
-                }}
-                rows={5}
-                placeholder="Jelaskan kondisi kerusakan secara detail (apa yang rusak, sejak kapan, dampak bagi warga, dll)"
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed"
-                maxLength={1000}
-              />
-              <div className="flex items-center justify-between text-xs">
-                {errors.description ? (
-                  <p data-error className="text-red-600">{errors.description}</p>
-                ) : (
-                  <span className="text-text-muted">{formData.description.length}/1000 karakter (min 20)</span>
-                )}
-              </div>
-              {aiFilledFields.has("description") && (
-                <p className="text-xs text-primary">Diisi sebagai draf oleh AI · dapat diedit</p>
-              )}
-            </div>
-          </div>
-
-          {/* Terms Agreement */}
-          <div className="pt-4 border-t border-border">
-            <label className="flex items-start gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={formData.agreedToTerms}
-                onChange={(e) => {
-                  setFormData({ ...formData, agreedToTerms: e.target.checked });
-                  const newErrors = { ...errors };
-                  delete newErrors.terms;
-                  setErrors(newErrors);
-                }}
-                className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-2 focus:ring-primary/40"
-              />
-              <span className="text-sm text-text-muted group-hover:text-text">
-                Saya menyatakan bahwa informasi yang saya sampaikan adalah benar dan dapat
-                dipertanggungjawabkan. Saya memahami bahwa laporan ini akan ditampilkan secara publik
-                tanpa identitas pribadi saya.
-              </span>
-            </label>
-            {errors.terms && (
-              <p data-error className="text-xs text-red-600 mt-2">{errors.terms}</p>
-            )}
-          </div>
-
-          {/* Submit Error */}
-          {errors.submit && (
-            <div data-error className="flex items-center gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg border border-red-200 dark:border-red-800">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{errors.submit}</span>
-            </div>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-border">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleCancel}
-              className="gap-2 w-full sm:w-auto"
-            >
-              <X className="h-4 w-4" />
-              <span>Batal</span>
-            </Button>
-
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isCompressing}
-                onClick={() => {
-                  if (validateForm()) {
-                    setShowPreview(true);
-                  }
-                }}
-                className="gap-2 flex-1 sm:flex-none"
-              >
-                <Eye className="h-4 w-4" />
-                <span>Pratinjau</span>
-              </Button>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || isCompressing}
-                variant="default"
-                className="gap-2 flex-1 sm:flex-none"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="inline-block h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                    <span>Mengirim...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" />
-                    <span>{errors.submit ? "Coba Lagi" : "Kirim Laporan"}</span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        </form>
+            </form>
           </div>
 
           {/* Right Column: Tips Card (1/3 width on large screens, hidden on mobile) */}

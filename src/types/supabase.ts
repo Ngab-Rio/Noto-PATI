@@ -212,6 +212,62 @@ export interface Database {
           to_status?: Database["public"]["Enums"]["report_status"];
         };
       };
+      care_articles: {
+        Row: {
+          id: string;
+          slug: string;
+          category: Database["public"]["Enums"]["report_category"];
+          title: string;
+          summary: string;
+          content: string;
+          causes: string[];
+          impacts: string[];
+          safety_actions: string[];
+          prevention_steps: string[];
+          references: Json;
+          reviewed_at: string;
+          is_published: boolean;
+          read_time_minutes: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          category: Database["public"]["Enums"]["report_category"];
+          title: string;
+          summary: string;
+          content: string;
+          causes?: string[];
+          impacts?: string[];
+          safety_actions?: string[];
+          prevention_steps?: string[];
+          references?: Json;
+          reviewed_at?: string;
+          is_published?: boolean;
+          read_time_minutes?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          category?: Database["public"]["Enums"]["report_category"];
+          title?: string;
+          summary?: string;
+          content?: string;
+          causes?: string[];
+          impacts?: string[];
+          safety_actions?: string[];
+          prevention_steps?: string[];
+          references?: Json;
+          reviewed_at?: string;
+          is_published?: boolean;
+          read_time_minutes?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Enums: {
       report_status:

@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/", label: "Beranda" },
   { href: "/reports", label: "Laporan" },
   { href: "/budget", label: "Anggaran APBD" },
+  { href: "/care", label: "Edukasi" },
 ];
 
 interface NavbarClientProps {
@@ -102,7 +103,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                   className="flex items-center gap-1.5 text-sm font-medium text-text-muted hover:text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                   title="Keluar dari akun"
                 >
-                  <SignOutIcon  className="h-4 w-4" weight="regular" />
+                  <SignOutIcon className="h-4 w-4" weight="regular" />
                   <span className="sr-only">Keluar</span>
                 </button>
               </form>
@@ -140,7 +141,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
             className="p-2.5 text-text-muted hover:text-text rounded-lg hover:bg-primary-soft/50 focus:outline-none transition-colors active:scale-95"
             aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" weight="regular" /> : <ListIcon  className="h-6 w-6" weight="regular" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" weight="regular" /> : <ListIcon className="h-6 w-6" weight="regular" />}
           </button>
         </div>
       </div>
@@ -188,7 +189,7 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
                     type="submit"
                     className="w-full flex items-center gap-2 text-sm font-medium py-2 px-3 rounded-lg border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 transition-colors"
                   >
-                    <SignOutIcon  className="h-4 w-4" weight="regular" />
+                    <SignOutIcon className="h-4 w-4" weight="regular" />
                     <span>Keluar</span>
                   </button>
                 </form>
