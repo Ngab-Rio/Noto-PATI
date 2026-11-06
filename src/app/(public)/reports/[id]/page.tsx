@@ -11,10 +11,6 @@ import {
   IconGitMerge,
   IconArrowRight,
   IconShare2,
-  IconClock,
-  IconClockCountdown,
-  IconWarning,
-  IconCheckFat,
 } from "@/components/shared/icons";
 import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
@@ -27,7 +23,7 @@ import {
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
 import { calculateReportSla, formatRemainingTime, formatDueDate } from "@/domain/sla";
-import { CareRelatedSection } from "@/features/care/components/CareRelatedSection";
+import { RelatedReportsThread } from "@/features/reports/components/RelatedReportsThread";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -36,14 +32,10 @@ export const metadata: Metadata = {
 
 export default async function ReportDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ submitted?: string }>;
 }) {
   const { id } = await params;
-  const resolvedSearchParams = searchParams ? await searchParams : undefined;
-  const isJustSubmitted = resolvedSearchParams?.submitted === "true";
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -124,6 +116,37 @@ export default async function ReportDetailPage({
     }))
     .filter((item): item is { createdAt: string; note: string | null; signedUrl: string } => !!item.signedUrl);
 
+  // Ambil thumbnail foto untuk laporan yang digabungkan (jika ada)
+  const duplicateIds = (duplicateReports ?? []).map((d) => d.id);
+  const duplicatePhotosMap = new Map<string, string>();
+  if (duplicateIds.length > 0) {
+    const { data: dupPhotos } = await admin
+      .from("report_photos")
+      .select("report_id, storage_path, sort_order")
+      .in("report_id", duplicateIds)
+      .order("sort_order", { ascending: true });
+
+    if (dupPhotos && dupPhotos.length > 0) {
+      const paths = dupPhotos.map((p) => p.storage_path);
+      const dupSignedUrls = await getSignedPhotoUrls(paths);
+      for (const p of dupPhotos) {
+        if (!duplicatePhotosMap.has(p.report_id)) {
+          const url = dupSignedUrls.get(p.storage_path);
+          if (url) duplicatePhotosMap.set(p.report_id, url);
+        }
+      }
+    }
+  }
+
+  const relatedReportsData = (duplicateReports ?? []).map((dup) => ({
+    id: dup.id,
+    ticketNumber: dup.ticket_number,
+    title: dup.title,
+    createdAt: dup.created_at,
+    detailLocation: dup.detail_location,
+    photoUrl: duplicatePhotosMap.get(dup.id) ?? null,
+  }));
+
   // Hitung SLA — gunakan waktu server sebagai acuan
   const now = new Date().toISOString();
   const completedAt = (history ?? []).find((h) => h.status === "selesai")?.created_at ?? null;
@@ -139,9 +162,9 @@ export default async function ReportDetailPage({
 
   return (
     <div className="min-h-screen bg-background py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Navigation Breadcrumb */}
-        <nav className="flex items-center gap-3 text-sm text-text-muted" aria-label="Breadcrumb">
+      <div className="max-w-7xl mx-auto">
+        {/* Navigation Breadcrumb - Enhanced */}
+        <nav className="flex items-center gap-3 text-sm text-text-muted mb-4 sm:mb-6" aria-label="Breadcrumb">
           <Link href="/" className="hover:text-text transition-colors">
             Beranda
           </Link>
@@ -172,7 +195,7 @@ export default async function ReportDetailPage({
                       </span>
                     </div>
                     <p className="text-sm text-purple-900 leading-relaxed">
-                      Laporan ini digabung karena lokasi dan jenis masalahnya sama dengan laporan lain yang sudah ada.
+                      Laporan ini digabung karena lokasi dan jenis masalahnya sama dengan laporan lain yang sudah ada. 
                       Semua update akan diberikan di laporan utama <span className="font-semibold">{parentReport.ticket_number}</span>.
                     </p>
                     <div className="pt-1">
@@ -182,7 +205,7 @@ export default async function ReportDetailPage({
                           variant="outline"
                           className="h-8 border-purple-300 bg-white hover:bg-purple-100 text-purple-900 gap-1.5 text-xs font-medium"
                         >
-                          <span>Buka Laporan Utama ({parentReport.ticket_number})</span>
+                          <span>Buka Laporan Utama</span>
                           <IconArrowRight className="h-3.5 w-3.5" />
                         </Button>
                       </Link>
@@ -192,7 +215,7 @@ export default async function ReportDetailPage({
               </div>
             )}
 
-            {/* Main Report Article */}
+            {/* Main Report Card */}
             <article className="rounded-2xl border-2 border-border bg-surface p-5 sm:p-6 lg:p-8 shadow-sm space-y-6">
               {/* Header: Status + Date */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-border">
@@ -210,123 +233,15 @@ export default async function ReportDetailPage({
                 </div>
               </div>
 
-              {/* Title and Location */}
-              <div className="space-y-2">
+              {/* Title - Enhanced Size */}
+              <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-text leading-tight">
                   {report.title}
                 </h1>
-                <div className="flex items-start gap-2 text-sm text-text-muted">
+                <div className="mt-3 flex items-start gap-2 text-sm text-text-muted">
                   <IconMapPin className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                   <span>{report.detail_location}</span>
                 </div>
-              </div>
-
-              {/* SLA Indicator */}
-              {slaStage.state !== "not_applicable" && (
-                <div
-                  className={[
-                    "rounded-xl border p-4 sm:p-5 space-y-3",
-                    slaStage.state === "in_target"
-                      ? "border-sky-200 bg-sky-50/60"
-                      : slaStage.state === "overdue"
-                        ? "border-red-200 bg-red-50/60"
-                        : slaStage.state === "completed_on_time"
-                          ? "border-emerald-200 bg-emerald-50/60"
-                          : "border-amber-200 bg-amber-50/60",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {slaStage.state === "in_target" && (
-                      <IconClockCountdown className="h-4 w-4 text-sky-600 shrink-0" />
-                    )}
-                    {slaStage.state === "overdue" && (
-                      <IconWarning className="h-4 w-4 text-red-600 shrink-0" />
-                    )}
-                    {slaStage.state === "completed_on_time" && (
-                      <IconCheckFat className="h-4 w-4 text-emerald-600 shrink-0" weight="fill" />
-                    )}
-                    {slaStage.state === "completed_late" && (
-                      <IconClock className="h-4 w-4 text-amber-600 shrink-0" />
-                    )}
-                    <span
-                      className={[
-                        "text-sm font-semibold",
-                        slaStage.state === "in_target"
-                          ? "text-sky-900"
-                          : slaStage.state === "overdue"
-                            ? "text-red-900"
-                            : slaStage.state === "completed_on_time"
-                              ? "text-emerald-900"
-                              : "text-amber-900",
-                      ].join(" ")}
-                    >
-                      {slaStage.state === "in_target" &&
-                        (slaStage.kind === "verification"
-                          ? "Dalam Target Verifikasi"
-                          : "Dalam Target Penyelesaian")}
-                      {slaStage.state === "overdue" &&
-                        (slaStage.kind === "verification"
-                          ? "Melewati Tenggat Verifikasi"
-                          : "Melewati Tenggat Penyelesaian")}
-                      {slaStage.state === "completed_on_time" && "Diselesaikan Tepat Waktu"}
-                      {slaStage.state === "completed_late" && "Diselesaikan Melebihi Tenggat"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-text-muted">Tenggat:</span>{" "}
-                      <span className="font-medium text-text">
-                        {formatDueDate(slaStage.dueAt)}
-                      </span>
-                    </div>
-                    {(slaStage.state === "in_target" || slaStage.state === "overdue") &&
-                      slaStage.remainingMs !== null && (
-                        <div>
-                          <span className="text-text-muted">
-                            {slaStage.state === "overdue" ? "Keterlambatan:" : "Sisa waktu:"}
-                          </span>{" "}
-                          <span
-                            className={[
-                              "font-semibold",
-                              slaStage.state === "overdue"
-                                ? "text-red-700"
-                                : "text-sky-700",
-                            ].join(" ")}
-                          >
-                            {formatRemainingTime(slaStage.remainingMs)}
-                          </span>
-                        </div>
-                      )}
-                  </div>
-                </div>
-              )}
-
-              {slaStage.state === "not_applicable" &&
-                report.status !== "ditolak" &&
-                report.status !== "digabung" && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 sm:p-5">
-                    <div className="flex items-start gap-2.5">
-                      <IconInfo className="h-4 w-4 shrink-0 mt-0.5 text-amber-600" />
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-amber-900">
-                          SLA Belum Dapat Dihitung
-                        </p>
-                        <p className="text-xs text-amber-900/80 leading-relaxed">
-                          Data tenggat verifikasi atau penyelesaian belum lengkap, sehingga
-                          status SLA tidak dapat ditampilkan.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-              <div className="flex items-start gap-1.5 rounded-lg border border-border bg-surface px-3 py-2">
-                <IconInfo className="h-3.5 w-3.5 shrink-0 mt-px text-text-muted" />
-                <p className="text-[11px] text-text-muted leading-relaxed">
-                  SLA merupakan simulasi untuk kebutuhan demonstrasi prototipe, bukan
-                  standar pelayanan resmi Pemerintah Kabupaten Pati.
-                </p>
               </div>
 
               {/* Description */}
@@ -337,26 +252,26 @@ export default async function ReportDetailPage({
                 </p>
               </div>
 
-              {/* Photos Section */}
+              {/* Photos Section - Enhanced Grid */}
               {signedPhotos.length > 0 && (
                 <Suspense fallback={<PhotosSkeleton count={signedPhotos.length} />}>
                   <div className="space-y-3">
                     <h2 className="text-base font-semibold text-text">Foto Laporan</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {signedPhotos.map((photo, index) => (
-                        <a
-                          key={photo.id}
-                          href={photo.signedUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <a 
+                          key={photo.id} 
+                          href={photo.signedUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
                           className="block overflow-hidden rounded-lg border-2 border-border hover:border-primary transition-all hover:shadow-md group"
                         >
-                          <Image
-                            src={photo.signedUrl}
+                          <Image 
+                            src={photo.signedUrl} 
                             alt={`Foto laporan ${report.title} (${index + 1} dari ${signedPhotos.length})`}
-                            width={400}
-                            height={300}
-                            className="aspect-video w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            width={800}
+                            height={600}
+                            className="aspect-[4/3] w-full object-cover group-hover:scale-105 transition-transform duration-300"
                             priority={index === 0}
                           />
                         </a>
@@ -366,7 +281,7 @@ export default async function ReportDetailPage({
                 </Suspense>
               )}
 
-              {/* Completion Evidence */}
+              {/* Completion Evidence - Keep, but cleaner */}
               {completionEvidence.length > 0 && (
                 <section className="space-y-3 rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-5">
                   <div>
@@ -377,16 +292,16 @@ export default async function ReportDetailPage({
                       Foto ini diunggah oleh Admin sebagai dokumentasi penyelesaian laporan.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {completionEvidence.map((evidence, index) => (
                       <div key={`${evidence.signedUrl}-${evidence.createdAt}`} className="overflow-hidden rounded-lg border-2 border-emerald-300 bg-white group">
                         <a href={evidence.signedUrl} target="_blank" rel="noreferrer">
                           <Image
                             src={evidence.signedUrl}
                             alt={`Bukti penyelesaian laporan ${report.title} (${index + 1})`}
-                            width={400}
-                            height={300}
-                            className="aspect-video w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            width={800}
+                            height={600}
+                            className="aspect-[4/3] w-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </a>
                         {evidence.note && (
@@ -398,100 +313,50 @@ export default async function ReportDetailPage({
                 </section>
               )}
 
-              {/* Related Duplicate Reports */}
-              {duplicateReports && duplicateReports.length > 0 && (
-                <section className="space-y-3 rounded-xl border-2 border-purple-200 bg-white p-4 sm:p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-100 text-purple-700">
-                        <IconGitMerge className="h-3.5 w-3.5" weight="bold" />
-                      </div>
-                      <h2 className="text-base font-semibold text-text">Laporan Terkait</h2>
-                    </div>
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                      {duplicateReports.length} laporan serupa
-                    </span>
-                  </div>
-                  <p className="text-sm text-text-muted leading-relaxed">
-                    Laporan berikut di lokasi berdekatan digabungkan ke tiket ini.
-                  </p>
-                  <div className="divide-y divide-border border-t border-border">
-                    {duplicateReports.map((dup) => (
-                      <div key={dup.id} className="py-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-sm font-mono text-text-muted min-w-0 flex-1">
-                          <span className="font-semibold text-text">{dup.ticket_number}</span>
-                          <span className="text-border">·</span>
-                          <span className="text-xs truncate">
-                            {new Intl.DateTimeFormat("id-ID", { dateStyle: "short" }).format(new Date(dup.created_at))}
-                          </span>
-                        </div>
-                        <Link
-                          href={`/reports/${dup.id}`}
-                          className="inline-flex items-center gap-1 text-primary hover:text-primary-dark font-medium text-sm hover:underline shrink-0"
-                        >
-                          <span className="hidden sm:inline">Lihat</span>
-                          <IconArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+              {/* Related Reports Thread (Issue #40) - Hanya tampil pada laporan utama */}
+              {!report.merged_into_report_id && relatedReportsData.length > 0 && (
+                <RelatedReportsThread
+                  parentTicketNumber={report.ticket_number}
+                  reports={relatedReportsData}
+                  initialLimit={3}
+                />
               )}
 
-              {/* Status History Timeline */}
+              {/* Status History - Enhanced Timeline */}
               <div className="space-y-3">
                 <h2 className="text-base font-semibold text-text">Riwayat Status</h2>
-                {(history ?? []).length === 0 ? (
-                  <p className="text-xs text-text-muted py-2">Belum ada riwayat perubahan status.</p>
-                ) : (
-                  <ol className="relative border-l-2 border-border ml-3 space-y-0">
-                    {(history ?? []).map((item, idx) => {
-                      const isLast = idx === (history ?? []).length - 1;
-                      return (
-                        <li key={`${item.status}-${item.created_at}`} className="ml-5 pb-5 last:pb-0">
-                          {/* Dot on timeline */}
-                          <span
-                            className={[
-                              "absolute -left-[9px] flex h-4 w-4 items-center justify-center rounded-full border-2 border-background",
-                              isLast ? "bg-primary" : "bg-border",
-                            ].join(" ")}
-                          />
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <StatusBadgeClient
-                                status={normalizeReportStatus(item.status)}
-                                size="sm"
-                                showIcon={true}
-                              />
-                              {item.note && (
-                                <p className="text-xs sm:text-sm text-text-muted leading-relaxed max-w-prose">
-                                  {item.note}
-                                </p>
-                              )}
-                            </div>
-                            <time
-                              dateTime={item.created_at}
-                              className="text-xs text-text-muted whitespace-nowrap"
-                            >
-                              {new Intl.DateTimeFormat("id-ID", {
-                                dateStyle: "medium",
-                                timeStyle: "short",
-                                timeZone: "Asia/Jakarta",
-                              }).format(new Date(item.created_at))}
-                            </time>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ol>
-                )}
+                <div className="space-y-3">
+                  {(history ?? []).map((item, index) => (
+                    <div key={`${item.status}-${item.created_at}`} className="flex gap-4">
+                      {/* Timeline Indicator */}
+                      <div className="flex flex-col items-center">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft border-2 border-primary">
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                        </div>
+                        {index < (history?.length ?? 0) - 1 && (
+                          <div className="w-0.5 h-full bg-border mt-1" />
+                        )}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 pb-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                          <StatusBadgeClient status={normalizeReportStatus(item.status)} size="sm" showIcon={true} />
+                          <time className="text-xs text-text-muted">
+                            {new Intl.DateTimeFormat("id-ID", { 
+                              dateStyle: "medium", 
+                              timeStyle: "short" 
+                            }).format(new Date(item.created_at))}
+                          </time>
+                        </div>
+                        {item.note && (
+                          <p className="text-sm text-text-muted leading-relaxed mt-1">{item.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              {/* Rekomendasi Edukasi Kontekstual Noto PATI Care */}
-              <CareRelatedSection
-                category={report.category}
-                isJustSubmitted={isJustSubmitted}
-              />
             </article>
           </div>
 
@@ -500,7 +365,7 @@ export default async function ReportDetailPage({
             {/* Quick Info Card */}
             <div className="rounded-xl border-2 border-border bg-surface p-4 sm:p-5 space-y-4 sticky top-4">
               <h2 className="text-base font-semibold text-text">Informasi Laporan</h2>
-
+              
               {/* Metadata Grid */}
               <dl className="space-y-3 text-sm">
                 <div>
@@ -540,10 +405,10 @@ export default async function ReportDetailPage({
                     42
                   </span>
                 </Button>
-
+                
                 <Link href={`/map?reportId=${report.id}`} className="block">
                   <Button variant="outline" size="default" className="w-full gap-2 hover:scale-[1.02] active:scale-95 transition-all">
-                    <IconMapPin className="h-4 w-4 text-primary" />
+                    <IconMapPin className="h-4 w-4" />
                     <span>Lihat di Peta</span>
                   </Button>
                 </Link>

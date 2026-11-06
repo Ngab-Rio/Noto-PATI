@@ -26,6 +26,9 @@ export {
   Calendar as IconCalendar,
   ShareNetwork as IconShare2,
   ArrowsOut as IconMaximize2,
+  CaretDown as IconCaretDown,
+  CaretUp as IconCaretUp,
+  Image as IconImage,
 
   // Status & Indikator
   CheckCircle as IconCheckCircle,
