@@ -219,14 +219,45 @@
   .hero-section { align-items: center; display: grid; gap: 8vw; grid-template-columns: minmax(0, 1fr) 380px; margin: 6vh auto 10vh; max-width: 1180px; }
   .hero-copy { max-width: 700px; }
   .eyebrow { color: var(--accent); font-family: var(--font-sans), sans-serif; font-size: .75rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
-  .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(2.5rem, 6vw, 5.5rem); font-weight: 600; letter-spacing: -.03em; line-height: 1.05; margin: 1.4rem 0; color: var(--text); }
+  
+  /* Enhanced Hero Headline */
+  .hero-headline {
+    font-size: clamp(2.8rem, 7vw, 6rem);
+    font-weight: 800;
+    letter-spacing: -.04em;
+    line-height: 1;
+    margin: 1.6rem 0 1.8rem;
+    color: var(--text);
+  }
+  
+  /* Gradient Text Effect */
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: inline-block;
+  }
+  
+  .hero-description {
+    color: var(--text-muted);
+    font-family: var(--font-sans), sans-serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    line-height: 1.75;
+    max-width: 560px;
+  }
+  
+  .hero-section h1, .auth-intro h1, .page-heading h1, .narrow-shell h1 { font-size: clamp(2.5rem, 6vw, 5.5rem); font-weight: 700; letter-spacing: -.03em; line-height: 1.05; margin: 1.4rem 0; color: var(--text); }
   .hero-copy p, .page-heading p, .page-shell > p { color: var(--text-muted); font-family: var(--font-sans), sans-serif; font-size: 1.05rem; line-height: 1.7; max-width: 550px; }
   .hero-actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 2rem; }
   .button { align-items: center; border: 1px solid transparent; border-radius: 0.5rem; cursor: pointer; display: inline-flex; font-family: var(--font-sans), sans-serif; font-size: .875rem; font-weight: 500; justify-content: center; min-height: 2.75rem; padding: 0 1.25rem; transition: all 0.2s ease-in-out; }
   .button-primary { background: var(--primary); color: var(--text-on-primary); }
-  .button-primary:hover { background: var(--primary-dark); }
+  .button-primary:hover { background: var(--primary-dark); transform: scale(1.02); }
+  .button-primary:active { transform: scale(0.95); }
   .button-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
-  .button-secondary:hover { background: var(--primary-soft); color: var(--primary-dark); }
+  .button-secondary:hover { background: var(--primary-soft); color: var(--primary-dark); transform: scale(1.02); }
+  .button-secondary:active { transform: scale(0.95); }
   
   /* ── Flat Modern Hero Visual - Pati ── */
   .pati-flat-hero {
@@ -392,8 +423,8 @@
   .caption-text {
     color: var(--text-muted);
   }
-  .public-strip { border-top: 1px solid var(--border); display: grid; gap: 2rem; grid-template-columns: 1fr 1fr; margin: 0 auto; max-width: 1180px; padding-top: 2.5rem; }
-  .public-strip h2 { font-size: clamp(1.5rem, 3vw, 2.4rem); font-weight: 600; line-height: 1.15; margin: 0.75rem 0 0; max-width: 560px; color: var(--text); }
+  .public-strip { border-top: 1px solid var(--border); display: grid; gap: 2rem; grid-template-columns: 1fr 1fr; margin: 0 auto; max-width: 1180px; padding-top: 3rem; }
+  .public-strip h2 { font-size: clamp(1.5rem, 3vw, 2.4rem); font-weight: 700; line-height: 1.15; margin: 0.75rem 0 0; max-width: 560px; color: var(--text); }
   .public-strip p { color: var(--text-muted); font-family: var(--font-sans), sans-serif; line-height: 1.6; margin: 0; max-width: 420px; }
   .auth-shell, .narrow-shell { margin: 5vh auto 0; max-width: 560px; }
   .auth-form, .profile-form { display: grid; gap: 1.1rem; margin-top: 0; }
@@ -431,6 +462,7 @@
   
   .auth-intro h1 { 
     font-size: clamp(1.75rem, 8vw, 2.5rem) !important;
+    font-weight: 700 !important;
     margin: 1rem 0 !important;
   }
   
@@ -594,22 +626,15 @@
 
 /* Patung Bandeng - Absolute Positioning for Unlimited Scale */
 .bandeng-statue-full {
-  position: absolute;  /* ✅ FIXED: Kembali ke absolute untuk proper centering */
+  position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);  /* ✅ Perfect center */
-  width: 140%;  /* 🔧 PENYESUAIAN: Scale width (100% = container, 120% = larger, 150% = much larger) */
-  max-width: 2500px;  /* 🔧 PENYESUAIAN: Maximum absolute width (default: 1200px) */
+  transform: translate(-50%, -50%);
+  width: 130%;
+  max-width: 1400px;
   height: auto;
-  z-index: 1;  /* 🎯 FOREGROUND: Di depan map */
-  /* 
-     📌 LAYER STACKING:
-     z-index: 1  → Patung di depan (foreground)
-     z-index: 0  → Map di belakang (background)
-     
-     Jika ingin menambahkan konten lain di depan patung:
-     - Konten baru: z-index: 2 atau lebih
-  */
+  z-index: 2;
+  animation: heroFloat 6s ease-in-out infinite;
 }
 
 /* Map Pati - Background Layer (Memenuhi Setengah Layar) */
@@ -618,87 +643,44 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 50vw;  /* 🔧 RESTORED: 50% viewport width - memenuhi setengah layar */
-  max-width: 960px;  /* 🔧 PENYESUAIAN: Maximum width untuk layar lebar */
+  width: 50vw;
+  max-width: 960px;
   height: auto;
-  z-index: 1;  /* 🎯 MAIN DISPLAY: Sekarang sebagai elemen utama */
-  pointer-events: none;  /* ✅ Prevent map from blocking interactions */
-  /* 
-      UKURAN MAP LAYER:
-     
-     Viewport-based sizing (restored):
-     - 40vw  → 40% lebar layar
-     - 50vw  → 50% lebar layar (default - setengah layar) ✅
-     - 60vw  → 60% lebar layar
-     - 70vw  → 70% lebar layar
-     - 100vw → full width layar
-     
-     Max-width mencegah terlalu besar di layar lebar:
-     - max-width: 800px  → smaller
-     - max-width: 960px  → default ✅
-     - max-width: 1200px → larger
-     - max-width: none   → no limit
-     
-     Note: 
-     - overflow:visible pada container memungkinkan map tidak terpotong
-     - overflow-x:hidden pada html/body mencegah horizontal scroll di page level
-     - pointer-events:none memastikan map tidak menghalangi interaksi
-  */
+  z-index: 1;
+  pointer-events: none;
 }
 
 .pati-map-image {
   width: 100%;
   height: auto;
   object-fit: contain;
-  opacity: 0.7;  /* 🔧 INCREASED: Lebih visible karena sekarang elemen utama (was 0.4) */
-  filter: grayscale(0.1) blur(0px);
-  pointer-events: auto;  /* ✅ Allow interactions with map image itself */
-  /* 🔧 PENYESUAIAN MAP EFFECTS:
-     
-     Opacity:
-     - 0.2  → very subtle
-     - 0.4  → subtle
-     - 0.6  → medium
-     - 0.7  → prominent (default - map as main element) ✅
-     - 0.8  → very prominent
-     - 1.0  → full opaque
-     
-     Grayscale:
-     - grayscale(0)   → full color
-     - grayscale(0.1) → very slight desaturation (default) ✅
-     - grayscale(0.2) → slight desaturation
-     - grayscale(0.5) → half grayscale
-     - grayscale(1)   → full B&W
-     
-     Blur (optional):
-     - blur(0px)  → sharp (default)
-     - blur(2px)  → slight blur
-     - blur(5px)  → medium blur
-     - blur(10px) → heavy blur
-     
-     Untuk remove all filters:
-     filter: none;
-     opacity: 1.0;
-  */
+  opacity: 0.5;
+  filter: grayscale(0.15) blur(0px);
+  pointer-events: auto;
 }
 
 .bandeng-statue-hero {
   width: 100%;
   height: auto;
   object-fit: contain;
-  filter: drop-shadow(0 40px 100px rgba(31, 45, 61, 0.15));
-  /* 🔧 PENYESUAIAN SHADOW: 
-     Format: drop-shadow(x y blur color)
-     - No shadow: filter: none;
-     - Light: drop-shadow(0 20px 50px rgba(31, 45, 61, 0.08))
-     - Heavy: drop-shadow(0 60px 150px rgba(31, 45, 61, 0.3))
-  */
+  filter: drop-shadow(0 50px 120px rgba(31, 45, 61, 0.18)) drop-shadow(0 20px 60px rgba(59, 110, 165, 0.12));
 }
 
-/* Hover Effect - Optional */
+/* Hover Effect - Enhanced */
 .bandeng-statue-full:hover .bandeng-statue-hero {
-  filter: drop-shadow(0 45px 110px rgba(31, 45, 61, 0.2));
-  /* 🔧 PENYESUAIAN: Hapus section ini jika tidak ingin hover effect */
+  filter: drop-shadow(0 55px 130px rgba(31, 45, 61, 0.22)) drop-shadow(0 25px 70px rgba(59, 110, 165, 0.15));
+  transform: scale(1.02);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Floating Animation */
+@keyframes heroFloat {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-10px);
+  }
 }
 
 /* =============================================
@@ -916,3 +898,157 @@
      untuk memastikan readability
   
 */
+
+/* =============================================
+   ENTRANCE ANIMATIONS - LANDING PAGE
+   ============================================= */
+
+/* Fade In Up Animation - Hero Elements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+/* Slide Down Animation - Badge/Tags */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+/* Scroll-Triggered Fade In - Sections */
+@keyframes scrollFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-on-scroll {
+  animation: scrollFadeIn 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
+}
+
+/* Stagger Fade In - Status Badges */
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-stagger-fade-in {
+  animation: staggerFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+.animate-stagger-fade-in > * {
+  animation: staggerFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+.animate-stagger-fade-in > *:nth-child(1) { animation-delay: 0.1s; }
+.animate-stagger-fade-in > *:nth-child(2) { animation-delay: 0.15s; }
+.animate-stagger-fade-in > *:nth-child(3) { animation-delay: 0.2s; }
+.animate-stagger-fade-in > *:nth-child(4) { animation-delay: 0.25s; }
+.animate-stagger-fade-in > *:nth-child(5) { animation-delay: 0.3s; }
+.animate-stagger-fade-in > *:nth-child(6) { animation-delay: 0.35s; }
+.animate-stagger-fade-in > *:nth-child(7) { animation-delay: 0.4s; }
+.animate-stagger-fade-in > *:nth-child(8) { animation-delay: 0.45s; }
+
+/* Stagger Cards - Report Cards */
+.animate-stagger-cards > * {
+  animation: scrollFadeIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+/* Animation Delays */
+.animation-delay-200 { animation-delay: 0.2s; }
+.animation-delay-400 { animation-delay: 0.4s; }
+.animation-delay-600 { animation-delay: 0.6s; }
+.animation-delay-800 { animation-delay: 0.8s; }
+.animation-delay-1000 { animation-delay: 1s; }
+
+/* Performance Optimization */
+.animate-fade-in-up,
+.animate-slide-down,
+.animate-on-scroll,
+.animate-stagger-fade-in,
+.animate-stagger-cards > * {
+  will-change: opacity, transform;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-slide-down,
+  .animate-on-scroll,
+  .animate-stagger-fade-in,
+  .animate-stagger-fade-in > *,
+  .animate-stagger-cards > * {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Mobile - Faster animations */
+@media (max-width: 768px) {
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scrollFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(25px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in-up,
+  .animate-slide-down,
+  .animate-on-scroll {
+    animation-duration: 0.5s;
+  }
+}

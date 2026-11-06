@@ -1,129 +1,65 @@
 import Link from "next/link";
-import { ArrowRight, MapPin, Sparkles, PlusCircle } from "lucide-react";
+import { ArrowRight, MapPin, PlusCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth/guards";
-import { ReportCard, type ReportItemData } from "@/components/shared/report-card";
-import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { HowToReport } from "@/components/shared/how-to-report";
-import { DataSimulationBadge } from "@/components/shared/data-simulation-badge";
 import { PatiHeroVisual } from "@/components/shared/pati-hero-visual";
+import { PublicMapSection } from "@/components/map/PublicMapSection";
 import { Button } from "@/components/ui/button";
-
-const FEATURED_REPORTS: ReportItemData[] = [
-  {
-    id: "rep-001",
-    ticketNumber: "NP-2025-0104",
-    title: "Penerangan Jalan Umum Rusak di Jalur Lingkar Selatan Pati",
-    description:
-      "Tiga tiang lampu penerangan jalan mati berturut-turut di ruas Tanjang menuju Sukolilo. Kondisi gelap rawan kecelakaan dan tindak kriminal saat malam hari.",
-    category: "Infrastruktur Penerangan",
-    status: "diproses",
-    location: "Kecamatan Gabus, Kab. Pati",
-    date: "24 Okt 2026",
-    supportCount: 42,
-    dinasTerkait: "Dishub & DPUTR Pati",
-    officialNote:
-      "Tim teknis Dishub telah melakukan survei lapangan. Komponen trafo pengganti sedang dipasang hari ini dengan estimasi selesai 24 jam. (Simulasi respon untuk prototipe)",
-  },
-  {
-    id: "rep-002",
-    ticketNumber: "NP-2025-0089",
-    title: "Perbaikan Tanggul Sungai Juwana Sisi Timur Desa Bendar",
-    description:
-      "Bronjong penahan tanggul yang sebelumnya tergerus arus kini telah diperkuat dengan batu belah dan bronjong anyam kawat ganda.",
-    category: "Sumber Daya Air",
-    status: "selesai",
-    location: "Kecamatan Juwana, Kab. Pati",
-    date: "22 Okt 2026",
-    supportCount: 128,
-    dinasTerkait: "Balai Besar Wilayah Sungai & BPBD",
-    officialNote:
-      "Pekerjaan penguatan tanggul sepanjang 45 meter telah tuntas 100%. Telah dilakukan serah terima bersama warga dan kepala desa setempat.",
-  },
-];
 
 export default async function Home() {
   const { user } = await getCurrentUser();
 
   return (
-    <main className="landing-shell max-w-7xl mx-auto space-y-16">
+    <main className="landing-shell max-w-7xl mx-auto space-y-20">
       {/* Hero Section */}
-      <section className="hero-section">
+      <section className="hero-section animate-fade-in-up">
         <div className="hero-copy">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent-soft text-accent text-xs font-semibold uppercase tracking-wider mb-3">
-            <Sparkles className="h-3.5 w-3.5" />
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary-soft text-primary text-xs font-semibold uppercase tracking-wide mb-5 border border-primary/20 animate-slide-down animation-delay-200">
             <span>Portal Warga Kabupaten Pati</span>
           </div>
-          <h1>Perhatian kecil, perubahan yang terasa.</h1>
-          <p>
+          <h1 className="hero-headline animation-delay-400">
+            Perhatian kecil, <br className="hidden sm:block" />
+            <span className="text-primary">perubahan yang terasa.</span>
+          </h1>
+          <p className="hero-description animation-delay-600">
             Noto PATI membantu warga menyampaikan kebutuhan fasilitas publik dengan jelas, aman,
             dan dapat ditindaklanjuti secara transparan.
           </p>
-          <div className="hero-actions">
+          <div className="hero-actions animation-delay-800">
             <Link href="/report/new">
-              <Button size="lg" variant="default" className="gap-2">
-                <PlusCircle className="h-4 w-4" />
-                <span>{user ? "Buat Laporan Baru" : "Mulai Lapor Masalah"}</span>
+              <Button size="lg" variant="default" className="gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all duration-300">
+                <PlusCircle className="h-5 w-5" />
+                <span className="font-semibold">{user ? "Buat Laporan Baru" : "Lapor Masalah Sekarang"}</span>
                 {!user && <ArrowRight className="h-4 w-4" />}
               </Button>
             </Link>
-            <Link href="/map">
-              <Button size="lg" variant="outline" className="gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>Lihat Peta Laporan</span>
+            <a href="#peta-laporan">
+              <Button size="lg" variant="outline" className="gap-2 border-2 hover:border-primary hover:scale-[1.05] active:scale-95 transition-all duration-300">
+                <MapPin className="h-5 w-5" />
+                <span className="font-semibold">Lihat Peta Laporan</span>
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
 
         <PatiHeroVisual />
       </section>
 
-      {/* How to Report Section - NEW */}
-      <HowToReport />
+      {/* How to Report Section */}
+      <div className="animate-on-scroll">
+        <HowToReport />
+      </div>
 
-      {/* Status Showcase Preview */}
-      <section className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <h2 className="text-xl sm:text-2xl font-bold text-text">
-                Status Laporan Warga Real-time
-              </h2>
-              <DataSimulationBadge size="sm" />
-            </div>
-            <p className="text-sm text-text-muted">
-              Setiap laporan warga diklasifikasikan dengan palet berstandar kontras WCAG AA.
-            </p>
-          </div>
-          <Link href="/map">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-primary hover:text-primary-dark">
-              <span>Lihat di Peta Laporan</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-        </div>
-
-        <div className="flex flex-wrap gap-2.5 pt-2">
-          <StatusBadgeClient status="diterima" size="md" showIcon={true} />
-          <StatusBadgeClient status="diverifikasi" size="md" showIcon={true} />
-          <StatusBadgeClient status="diproses" size="md" showIcon={true} />
-          <StatusBadgeClient status="selesai" size="md" showIcon={true} />
-          <StatusBadgeClient status="dibuka_kembali" size="md" showIcon={true} />
-          <StatusBadgeClient status="ditolak" size="md" showIcon={true} />
-          <StatusBadgeClient status="digabung" size="md" showIcon={true} />
-          <StatusBadgeClient status="ditutup" size="md" showIcon={true} />
-        </div>
-
-        {/* Contoh Kartu Laporan */}
-        <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {FEATURED_REPORTS.map((report) => (
-            <ReportCard key={report.id} report={report} />
-          ))}
-        </div>
-      </section>
+      {/* Map Section - Interactive Report Locations */}
+      <div id="peta-laporan" className="animate-on-scroll scroll-mt-20">
+        <PublicMapSection 
+          height="600px"
+          showFilters={true}
+        />
+      </div>
 
       {/* Public Strip */}
-      <section className="public-strip">
+      <section className="public-strip animate-on-scroll">
         <div>
           <span className="eyebrow">Terbuka untuk semua</span>
           <h2>Informasi publik tetap bisa diakses tanpa login.</h2>
@@ -133,11 +69,16 @@ export default async function Home() {
             Warga dapat menjelajahi peta sebaran laporan infrastruktur dan alokasi anggaran APBD
             Kabupaten Pati 2025 secara bebas tanpa memerlukan akun.
           </p>
-          <div className="flex items-center gap-3">
-            <Link href="/map">
-              <Button variant="outline" size="sm" className="gap-1.5">
+          <div className="flex items-center gap-3 flex-wrap">
+            <a href="#peta-laporan">
+              <Button variant="outline" size="sm" className="gap-1.5 hover:scale-[1.02] active:scale-95 transition-transform">
                 <MapPin className="h-3.5 w-3.5 text-primary" />
                 <span>Buka Peta Publik</span>
+              </Button>
+            </a>
+            <Link href="/budget">
+              <Button variant="outline" size="sm" className="gap-1.5 hover:scale-[1.02] active:scale-95 transition-transform">
+                <span>Lihat Transparansi APBD</span>
               </Button>
             </Link>
           </div>

@@ -24,6 +24,8 @@ export {
   CaretRight as IconCaretRight,
   MagnifyingGlass as IconSearch,
   Calendar as IconCalendar,
+  ShareNetwork as IconShare2,
+  ArrowsOut as IconMaximize2,
 
   // Status & Indikator
   CheckCircle as IconCheckCircle,
