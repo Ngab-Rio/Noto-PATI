@@ -41,6 +41,9 @@ export {
   Eye as IconEye,
   FileText as IconFileText,
   WarningOctagon as IconAlertTriangle,
+  Clock as IconClock,
+  ClockCountdown as IconClockCountdown,
+  CheckFat as IconCheckFat,
 } from "@phosphor-icons/react/dist/ssr";
 
 export type { IconProps, IconWeight } from "@phosphor-icons/react";
