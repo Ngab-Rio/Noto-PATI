@@ -149,46 +149,6 @@ export interface Database {
           parameters: Json;
           created_at: string;
         };
-        sla_policies: {
-          Row: {
-            id: string;
-            name: string;
-            verification_hours: number;
-            handling_days: number;
-            is_active: boolean;
-            created_at: string;
-          };
-          Insert: {
-            id?: string;
-            name: string;
-            verification_hours: number;
-            handling_days: number;
-            is_active?: boolean;
-            created_at?: string;
-          };
-          Update: {
-            id?: string;
-            name?: string;
-            verification_hours?: number;
-            handling_days?: number;
-            is_active?: boolean;
-            created_at?: string;
-          };
-        };
-        report_status_transitions: {
-          Row: {
-            from_status: Database["public"]["Enums"]["report_status"];
-            to_status: Database["public"]["Enums"]["report_status"];
-          };
-          Insert: {
-            from_status: Database["public"]["Enums"]["report_status"];
-            to_status: Database["public"]["Enums"]["report_status"];
-          };
-          Update: {
-            from_status?: Database["public"]["Enums"]["report_status"];
-            to_status?: Database["public"]["Enums"]["report_status"];
-          };
-        };
         Insert: {
           id?: string;
           parent_report_id: string;
@@ -210,6 +170,46 @@ export interface Database {
           decision?: string;
           parameters?: Json;
           created_at?: string;
+        };
+      };
+      sla_policies: {
+        Row: {
+          id: string;
+          name: string;
+          verification_hours: number;
+          handling_days: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          verification_hours: number;
+          handling_days: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          verification_hours?: number;
+          handling_days?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+      };
+      report_status_transitions: {
+        Row: {
+          from_status: Database["public"]["Enums"]["report_status"];
+          to_status: Database["public"]["Enums"]["report_status"];
+        };
+        Insert: {
+          from_status: Database["public"]["Enums"]["report_status"];
+          to_status: Database["public"]["Enums"]["report_status"];
+        };
+        Update: {
+          from_status?: Database["public"]["Enums"]["report_status"];
+          to_status?: Database["public"]["Enums"]["report_status"];
         };
       };
     };

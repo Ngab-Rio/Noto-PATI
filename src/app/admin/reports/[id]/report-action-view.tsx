@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -33,6 +33,11 @@ interface ReportActionViewProps {
 
 export function ReportActionView({ report: initialReport }: ReportActionViewProps) {
   const [report, setReport] = useState<AdminReportItem>(initialReport);
+
+  // Setelah router.refresh(), server mengirim data terbaru sebagai prop.
+  useEffect(() => {
+    setReport(initialReport);
+  }, [initialReport]);
   const [activeAction, setActiveAction] = useState<
     "verify" | "progress" | "reject" | "merge"
   >(
