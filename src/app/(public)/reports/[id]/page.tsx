@@ -7,6 +7,7 @@ import {
   IconCalendar,
   IconThumbsUp,
   IconBuildings,
+  IconInfo,
   IconGitMerge,
   IconArrowRight,
   IconShare2,
@@ -21,6 +22,7 @@ import {
 } from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
+import { calculateReportSla, formatRemainingTime, formatDueDate } from "@/domain/sla";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -46,13 +48,13 @@ export default async function ReportDetailPage({
     supabase
       .from("reports")
       .select(
-        "id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m, merged_into_report_id"
+        "id, ticket_number, category, title, description, detail_location, status, created_at, latitude, longitude, location_accuracy_m, merged_into_report_id, verification_due_at, handling_due_at"
       )
       .eq("id", id)
       .maybeSingle(),
     supabase
       .from("report_status_history")
-      .select("status, note, created_at, proof_image_url")
+      .select("id, status, note, created_at, proof_image_url")
       .eq("report_id", id)
       .order("created_at", { ascending: true }),
     admin
@@ -67,7 +69,10 @@ export default async function ReportDetailPage({
       .order("created_at", { ascending: true }),
   ]);
 
-  if (reportError || !report) {
+  if (reportError) {
+    throw new Error(`Gagal memuat laporan: ${reportError.message}`);
+  }
+  if (!report) {
     notFound();
   }
   if (historyError) {

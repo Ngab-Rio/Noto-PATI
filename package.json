@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "seed:region": "node --env-file-if-exists=.env scripts/seed-pati-region.mjs",
-    "disable:region": "node --env-file-if-exists=.env scripts/disable-pati-region.mjs"
+    "disable:region": "node --env-file-if-exists=.env scripts/disable-pati-region.mjs",
+    "scrape:apbd": "jiti scripts/scrape-apbd.ts",
+    "import:apbd": "node --env-file-if-exists=.env ./node_modules/jiti/lib/jiti-cli.mjs scripts/import-apbd.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

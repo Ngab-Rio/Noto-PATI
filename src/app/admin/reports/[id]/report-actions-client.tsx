@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   XCircle,
@@ -29,6 +30,7 @@ export function ReportActionsClient({
   reportId,
   currentStatus,
 }: ReportActionsClientProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -80,7 +82,7 @@ export function ReportActionsClient({
 
       if (result.ok) {
         alert("✅ " + result.message);
-        window.location.reload();
+        router.refresh();
       } else {
         setError(result.message);
         alert("❌ " + result.message);
@@ -118,7 +120,7 @@ export function ReportActionsClient({
         alert("✅ " + result.message);
         setShowRejectDialog(false);
         setRejectReason("");
-        window.location.reload();
+        router.refresh();
       } else {
         setError(result.message);
         alert("❌ " + result.message);
@@ -181,7 +183,7 @@ export function ReportActionsClient({
 
       if (result.ok) {
         alert("✅ " + result.message);
-        window.location.reload();
+        router.refresh();
       } else {
         if (evidencePath) {
           await deleteCompletionEvidence(evidencePath, reportId);

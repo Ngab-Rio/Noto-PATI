@@ -20,7 +20,7 @@ export interface AdminReportItem {
   submittedAtRaw: string;
   dueDateLabel?: string;
   dueDateRaw?: string;
-  slaState?: "in_target" | "overdue" | "completed" | "not_applicable";
+  slaState?: "in_target" | "overdue" | "completed_on_time" | "completed_late" | "not_applicable";
   slaDueAt?: string;
   isOverdue?: boolean;
   images: string[];

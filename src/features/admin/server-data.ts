@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { CATEGORY_LABELS } from "@/lib/reports/public";
 import { normalizeReportStatus } from "@/config/theme";
 import type { AdminReportItem } from "./types";
-import { calculateSlaStage, formatRemainingTime } from "@/domain/sla";
+import { calculateReportSla, formatRemainingTime } from "@/domain/sla";
 
 const CATEGORY_KEYS: Record<string, AdminReportItem["categoryKey"]> = {
   jalan: "road_damage",
@@ -86,17 +86,27 @@ function toReportItem(
 ): AdminReportItem {
   const category = report.category.toLowerCase();
   const status = normalizeReportStatus(report.status);
-  const dueAt =
-    status === "diterima" ? report.verification_due_at : report.handling_due_at;
-  const sla = calculateSlaStage(status, dueAt, new Date().toISOString());
+  const completedAt =
+    history.find((entry) => entry.status === "selesai")?.created_at ?? null;
+  const sla = calculateReportSla(
+    {
+      status,
+      verificationDueAt: report.verification_due_at,
+      handlingDueAt: report.handling_due_at,
+      completedAt,
+    },
+    new Date().toISOString(),
+  );
   const dueDateLabel =
-    sla.state === "completed"
+    sla.state === "completed_on_time"
       ? "Tuntas"
-      : sla.state === "overdue"
-        ? `Terlambat ${formatRemainingTime(sla.remainingMs)}`
-        : sla.state === "in_target"
-          ? `Tersisa ${formatRemainingTime(sla.remainingMs)}`
-          : undefined;
+      : sla.state === "completed_late"
+        ? "Tuntas (terlambat)"
+        : sla.state === "overdue"
+          ? `Terlambat ${formatRemainingTime(sla.remainingMs)}`
+          : sla.state === "in_target"
+            ? `Tersisa ${formatRemainingTime(sla.remainingMs)}`
+            : undefined;
 
   return {
     id: report.id,
