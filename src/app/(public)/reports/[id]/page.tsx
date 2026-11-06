@@ -23,6 +23,7 @@ import {
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
 import { calculateReportSla, formatRemainingTime, formatDueDate } from "@/domain/sla";
+import { RelatedReportsThread } from "@/features/reports/components/RelatedReportsThread";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -114,6 +115,50 @@ export default async function ReportDetailPage({
       signedUrl: completionUrlByPath.get(item.proof_image_url as string),
     }))
     .filter((item): item is { createdAt: string; note: string | null; signedUrl: string } => !!item.signedUrl);
+
+  // Ambil thumbnail foto untuk laporan yang digabungkan (jika ada)
+  const duplicateIds = (duplicateReports ?? []).map((d) => d.id);
+  const duplicatePhotosMap = new Map<string, string>();
+  if (duplicateIds.length > 0) {
+    const { data: dupPhotos } = await admin
+      .from("report_photos")
+      .select("report_id, storage_path, sort_order")
+      .in("report_id", duplicateIds)
+      .order("sort_order", { ascending: true });
+
+    if (dupPhotos && dupPhotos.length > 0) {
+      const paths = dupPhotos.map((p) => p.storage_path);
+      const dupSignedUrls = await getSignedPhotoUrls(paths);
+      for (const p of dupPhotos) {
+        if (!duplicatePhotosMap.has(p.report_id)) {
+          const url = dupSignedUrls.get(p.storage_path);
+          if (url) duplicatePhotosMap.set(p.report_id, url);
+        }
+      }
+    }
+  }
+
+  const relatedReportsData = (duplicateReports ?? []).map((dup) => ({
+    id: dup.id,
+    ticketNumber: dup.ticket_number,
+    title: dup.title,
+    createdAt: dup.created_at,
+    detailLocation: dup.detail_location,
+    photoUrl: duplicatePhotosMap.get(dup.id) ?? null,
+  }));
+
+  // Hitung SLA — gunakan waktu server sebagai acuan
+  const now = new Date().toISOString();
+  const completedAt = (history ?? []).find((h) => h.status === "selesai")?.created_at ?? null;
+  const slaStage = calculateReportSla(
+    {
+      status: report.status as Parameters<typeof calculateReportSla>[0]["status"],
+      verificationDueAt: report.verification_due_at ?? null,
+      handlingDueAt: report.handling_due_at ?? null,
+      completedAt,
+    },
+    now,
+  );
 
   return (
     <div className="min-h-screen bg-background py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
@@ -212,7 +257,7 @@ export default async function ReportDetailPage({
                 <Suspense fallback={<PhotosSkeleton count={signedPhotos.length} />}>
                   <div className="space-y-3">
                     <h2 className="text-base font-semibold text-text">Foto Laporan</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {signedPhotos.map((photo, index) => (
                         <a 
                           key={photo.id} 
@@ -224,9 +269,9 @@ export default async function ReportDetailPage({
                           <Image 
                             src={photo.signedUrl} 
                             alt={`Foto laporan ${report.title} (${index + 1} dari ${signedPhotos.length})`}
-                            width={400} 
-                            height={300} 
-                            className="aspect-video w-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                            width={800}
+                            height={600}
+                            className="aspect-[4/3] w-full object-cover group-hover:scale-105 transition-transform duration-300"
                             priority={index === 0}
                           />
                         </a>
@@ -247,16 +292,16 @@ export default async function ReportDetailPage({
                       Foto ini diunggah oleh Admin sebagai dokumentasi penyelesaian laporan.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {completionEvidence.map((evidence, index) => (
                       <div key={`${evidence.signedUrl}-${evidence.createdAt}`} className="overflow-hidden rounded-lg border-2 border-emerald-300 bg-white group">
                         <a href={evidence.signedUrl} target="_blank" rel="noreferrer">
                           <Image
                             src={evidence.signedUrl}
                             alt={`Bukti penyelesaian laporan ${report.title} (${index + 1})`}
-                            width={400}
-                            height={300}
-                            className="aspect-video w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            width={800}
+                            height={600}
+                            className="aspect-[4/3] w-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </a>
                         {evidence.note && (
@@ -268,44 +313,13 @@ export default async function ReportDetailPage({
                 </section>
               )}
 
-              {/* Related Duplicate Reports - Simplified */}
-              {duplicateReports && duplicateReports.length > 0 && (
-                <section className="space-y-3 rounded-xl border-2 border-purple-200 bg-white p-4 sm:p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-purple-100 text-purple-700">
-                        <IconGitMerge className="h-3.5 w-3.5" weight="bold" />
-                      </div>
-                      <h2 className="text-base font-semibold text-text">Laporan Terkait</h2>
-                    </div>
-                    <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
-                      {duplicateReports.length} laporan serupa
-                    </span>
-                  </div>
-                  <p className="text-sm text-text-muted leading-relaxed">
-                    Laporan berikut di lokasi berdekatan digabungkan ke tiket ini.
-                  </p>
-                  <div className="divide-y divide-border border-t border-border">
-                    {duplicateReports.map((dup) => (
-                      <div key={dup.id} className="py-3 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 text-sm font-mono text-text-muted min-w-0 flex-1">
-                          <span className="font-semibold text-text">{dup.ticket_number}</span>
-                          <span className="text-border">·</span>
-                          <span className="text-xs truncate">
-                            {new Intl.DateTimeFormat("id-ID", { dateStyle: "short" }).format(new Date(dup.created_at))}
-                          </span>
-                        </div>
-                        <Link
-                          href={`/reports/${dup.id}`}
-                          className="inline-flex items-center gap-1 text-primary hover:text-primary-dark font-medium text-sm hover:underline shrink-0"
-                        >
-                          <span className="hidden sm:inline">Lihat</span>
-                          <IconArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      </div>
-                    ))}
-                  </div>
-                </section>
+              {/* Related Reports Thread (Issue #40) - Hanya tampil pada laporan utama */}
+              {!report.merged_into_report_id && relatedReportsData.length > 0 && (
+                <RelatedReportsThread
+                  parentTicketNumber={report.ticket_number}
+                  reports={relatedReportsData}
+                  initialLimit={3}
+                />
               )}
 
               {/* Status History - Enhanced Timeline */}
