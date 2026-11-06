@@ -39,7 +39,7 @@ export default function NotFound() {
               <span>Kembali ke Beranda</span>
             </Button>
           </Link>
-          <Link href="/map" className="w-full sm:w-auto">
+          <Link href="/" className="w-full sm:w-auto">
             <Button variant="outline" className="gap-2 w-full">
               <MapPin className="h-4 w-4" />
               <span>Lihat Peta Laporan</span>

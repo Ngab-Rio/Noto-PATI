@@ -9,13 +9,13 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-border bg-surface/80 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <footer className="border-t border-border bg-surface/80 backdrop-blur-sm mt-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Links & Info Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-6 border-b border-border">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-8 border-b border-border">
           {/* About */}
           <div>
-            <h3 className="font-semibold text-sm text-text mb-3">
+            <h3 className="font-semibold text-sm text-text mb-3.5">
               Tentang {APP_CONFIG.name}
             </h3>
             <p className="text-xs text-text-muted leading-relaxed">
@@ -28,25 +28,25 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-semibold text-sm text-text mb-3">Tautan Cepat</h3>
-            <ul className="space-y-2 text-xs text-text-muted">
+            <h3 className="font-semibold text-sm text-text mb-3.5">Tautan Cepat</h3>
+            <ul className="space-y-2.5 text-xs text-text-muted">
               <li>
-                <Link href="/" className="hover:text-primary transition-colors">
+                <Link href="/" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Beranda
                 </Link>
               </li>
               <li>
-                <Link href="/map" className="hover:text-primary transition-colors">
+                <Link href="/#peta-laporan" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Peta Laporan
                 </Link>
               </li>
               <li>
-                <Link href="/budget" className="hover:text-primary transition-colors">
+                <Link href="/budget" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Transparansi APBD
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="hover:text-primary transition-colors">
+                <Link href="/login" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Masuk / Daftar
                 </Link>
               </li>
@@ -55,15 +55,15 @@ export function Footer() {
 
           {/* Legal & Info */}
           <div>
-            <h3 className="font-semibold text-sm text-text mb-3">Legal & Informasi</h3>
-            <ul className="space-y-2 text-xs text-text-muted">
+            <h3 className="font-semibold text-sm text-text mb-3.5">Legal & Informasi</h3>
+            <ul className="space-y-2.5 text-xs text-text-muted">
               <li>
-                <Link href="/kebijakan-privasi" className="hover:text-primary transition-colors">
+                <Link href="/kebijakan-privasi" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Kebijakan Privasi
                 </Link>
               </li>
               <li>
-                <Link href="/syarat-ketentuan" className="hover:text-primary transition-colors">
+                <Link href="/syarat-ketentuan" className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all">
                   Syarat & Ketentuan
                 </Link>
               </li>
@@ -74,7 +74,7 @@ export function Footer() {
                   href="https://github.com/Ngab-Rio/Noto-PATI"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-primary transition-colors inline-flex items-center gap-1"
+                  className="hover:text-primary transition-colors inline-flex items-center gap-1 hover:gap-1.5 transition-all"
                 >
                   GitHub Repository
                   <span className="text-[10px]">↗</span>
@@ -85,7 +85,7 @@ export function Footer() {
         </div>
 
         {/* Copyright */}
-        <div className="pt-4 text-center">
+        <div className="pt-6 text-center">
           <p className="text-xs text-text-muted">
             © {currentYear} {APP_CONFIG.name}. 
           </p>

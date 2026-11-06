@@ -74,7 +74,7 @@ export function ReportCard({
   return (
     <article
       className={cn(
-        "group relative flex flex-col justify-between rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-xs transition-all hover:border-primary/40 hover:shadow-md",
+        "group relative flex flex-col justify-between rounded-xl border border-border bg-surface p-5 sm:p-6 shadow-sm hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-300",
         className
       )}
     >
@@ -83,11 +83,11 @@ export function ReportCard({
           <Link href={`/reports/${report.id}`} className="block overflow-hidden rounded-lg border border-border">
             <Image
               src={report.imageUrl}
-              alt="Foto kerusakan fasilitas publik"
+              alt={`Foto dokumentasi ${report.title}`}
               width={800}
               height={450}
               unoptimized
-              className="aspect-video w-full object-cover transition-transform group-hover:scale-[1.02]"
+              className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           </Link>
         )}
@@ -108,7 +108,7 @@ export function ReportCard({
 
         {/* Judul & Deskripsi Masalah */}
         <div>
-          <h3 className="text-lg font-semibold text-text group-hover:text-primary transition-colors line-clamp-2">
+          <h3 className="text-lg font-semibold text-text group-hover:text-primary transition-colors duration-300 line-clamp-2">
             <Link href={`/reports/${report.id}`} className="hover:underline">
               {report.title}
             </Link>
@@ -138,20 +138,21 @@ export function ReportCard({
         )}
       </div>
 
-      {/* Baris Tombol Aksi sesuai Mockup PDF */}
-      <div className="mt-5 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
+      {/* Baris Tombol Aksi - Mobile Optimized */}
+      <div className="mt-5 pt-4 border-t border-border space-y-3">
+        {/* Primary Actions Row */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Tombol Dukung Laporan */}
           <Button
             type="button"
             variant={supported ? "accent" : "outline"}
             size="sm"
             onClick={handleSupport}
-            className="gap-1.5"
+            className="gap-1.5 hover:scale-105 active:scale-95 transition-transform w-full sm:w-auto justify-center"
             aria-label={`Dukung laporan ini. Saat ini ${likes} dukungan`}
           >
-            <ThumbsUp className={cn("h-3.5 w-3.5", supported && "fill-current")} />
-            <span>{supported ? "Didukung" : "Dukung laporan"}</span>
+            <ThumbsUp className={cn("h-3.5 w-3.5 transition-transform", supported && "fill-current scale-110")} />
+            <span>{supported ? "Didukung" : "Dukung"}</span>
             <span className="ml-1 rounded-full bg-black/10 dark:bg-white/10 px-1.5 py-0.2 text-[10px] font-bold">
               {likes}
             </span>
@@ -164,59 +165,63 @@ export function ReportCard({
               variant="outline"
               size="sm"
               onClick={() => onViewMap(report.id)}
-              className="gap-1.5"
+              className="gap-1.5 hover:scale-105 active:scale-95 transition-transform w-full sm:w-auto justify-center"
             >
               <MapPin className="h-3.5 w-3.5 text-primary" />
               <span>Lihat di peta</span>
             </Button>
           ) : (
-            <Link href={`/map?reportId=${report.id}`}>
-              <Button variant="outline" size="sm" className="gap-1.5">
+            <Link href={`/map?reportId=${report.id}`} className="w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="gap-1.5 hover:scale-105 active:scale-95 transition-transform w-full justify-center">
                 <MapPin className="h-3.5 w-3.5 text-primary" />
                 <span>Lihat di peta</span>
               </Button>
             </Link>
           )}
 
-          {/* Tombol Khusus berdasarkan Status (Beri penilaian saat Selesai, Buka kembali bila perlu) */}
-          {report.status === "selesai" && (
+          {/* Tombol Detail (Primary / Primary Dark) - Mobile Prominent */}
+          <Link href={`/reports/${report.id}`} className="w-full sm:w-auto sm:ml-auto">
             <Button
-              type="button"
-              variant="accentSoft"
+              variant="primaryDark"
               size="sm"
-              onClick={() => onRate?.(report.id)}
-              className="gap-1.5 text-accent font-semibold"
+              className="gap-1 font-medium group-hover:bg-primary hover:scale-105 active:scale-95 transition-all w-full sm:w-auto justify-center"
             >
-              <Star className="h-3.5 w-3.5" />
-              <span>Beri penilaian</span>
+              <span>Lihat Detail</span>
+              <ChevronRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
             </Button>
-          )}
-
-          {(report.status === "selesai" || report.status === "ditutup") && onReopen && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => onReopen(report.id)}
-              className="gap-1.5 text-text-muted hover:text-accent"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Buka kembali</span>
-            </Button>
-          )}
+          </Link>
         </div>
 
-        {/* Tombol Detail (Primary / Primary Dark) */}
-        <Link href={`/reports/${report.id}`}>
-          <Button
-            variant="primaryDark"
-            size="sm"
-            className="gap-1 font-medium group-hover:bg-primary transition-colors"
-          >
-            <span>Detail</span>
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        </Link>
+        {/* Secondary Actions Row (Conditional) */}
+        {(report.status === "selesai" || report.status === "ditutup") && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            {report.status === "selesai" && (
+              <Button
+                type="button"
+                variant="accentSoft"
+                size="sm"
+                onClick={() => onRate?.(report.id)}
+                className="gap-1.5 text-accent font-semibold w-full sm:w-auto justify-center"
+              >
+                <Star className="h-3.5 w-3.5" />
+                <span>Beri penilaian</span>
+              </Button>
+            )}
+
+            {onReopen && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onReopen(report.id)}
+                className="gap-1.5 text-text-muted hover:text-accent w-full sm:w-auto justify-center"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                <span>Buka kembali</span>
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );

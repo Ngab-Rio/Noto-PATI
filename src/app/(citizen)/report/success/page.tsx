@@ -93,7 +93,7 @@ export default function ReportSuccessPage({
               </Button>
             </Link>
 
-            <Link href="/map" className="w-full sm:w-auto">
+            <Link href="/" className="w-full sm:w-auto">
               <Button variant="default" className="gap-2 w-full">
                 <MapPin className="h-4 w-4" />
                 <span>Lihat di Peta</span>

@@ -10,7 +10,6 @@ import type { AppRole } from "@/lib/auth/guards";
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
   { href: "/reports", label: "Laporan" },
-  { href: "/map", label: "Peta Laporan" },
   { href: "/budget", label: "Anggaran APBD" },
 ];
 
@@ -131,14 +130,14 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
         <div className="flex md:hidden items-center gap-2">
           <Link
             href="/report/new"
-            className="flex items-center gap-1 bg-primary text-text-on-primary text-xs font-medium px-2.5 py-1.5 rounded-lg shadow-xs"
+            className="flex items-center gap-1 bg-primary text-text-on-primary text-xs font-medium px-3 py-2.5 rounded-lg shadow-xs hover:bg-primary-dark transition-colors active:scale-95"
           >
             <span>Lapor</span>
           </Link>
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-text-muted hover:text-text rounded-lg hover:bg-primary-soft/50 focus:outline-none"
+            className="p-2.5 text-text-muted hover:text-text rounded-lg hover:bg-primary-soft/50 focus:outline-none transition-colors active:scale-95"
             aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" weight="regular" /> : <ListIcon  className="h-6 w-6" weight="regular" />}
