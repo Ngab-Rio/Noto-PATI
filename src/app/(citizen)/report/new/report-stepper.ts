@@ -1,4 +1,4 @@
-import { PATI_BOUNDARY } from "./pati-boundary";
+import { PATI_BOUNDARY } from "@/lib/geo/pati-boundary";
 
 export type ReportStep = 1 | 2 | 3;
 

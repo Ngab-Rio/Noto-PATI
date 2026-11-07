@@ -8,7 +8,7 @@
  * - Native WebGL clustering & crisp status-coded point markers
  * - Street (OSM) and Satellite basemap toggles
  * - Popup card with photo, status, category, and report detail link
- * - Viewport auto-fit to report bounds
+ * - Viewport stays fitted to the full Kabupaten Pati boundary
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,7 +16,6 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { ReportFeatureCollection } from "@/types/map";
-import { PATI_CENTER } from "@/types/map";
 import { DEFAULT_MAP_STATUSES } from "@/lib/reports/map-statuses";
 import { MAP_CONFIG, MAP_INITIAL_STYLE } from "./map-constants";
 import type {
@@ -25,10 +24,11 @@ import type {
   PublicReportsMapProps,
   ReportProperties,
 } from "./map-types";
-import { calculateBounds, isValidCoordinate } from "./map-utils";
+import { isValidCoordinate } from "./map-utils";
 import { buildPopupHTML } from "./map-popup";
 import {
   applyMapMode,
+  addBoundaryLayers,
   addReportLayers,
   removeReportLayers,
   setupMapInteractions,
@@ -49,7 +49,6 @@ export function PublicReportsMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const popupRef = useRef<maplibregl.Popup | null>(null);
-  const reportBoundsRef = useRef<maplibregl.LngLatBounds | null>(null);
   const layerHandlersRef = useRef<LayerEventHandler[]>([]);
   const onMarkerClickRef = useRef(onMarkerClick);
   onMarkerClickRef.current = onMarkerClick;
@@ -73,6 +72,8 @@ export function PublicReportsMap({
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
+    let handleStyleLoad: (() => void) | null = null;
+
     try {
       const mapInstance = new maplibregl.Map({
         container: mapContainer.current,
@@ -81,9 +82,16 @@ export function PublicReportsMap({
         zoom: MAP_CONFIG.defaultZoom,
         minZoom: MAP_CONFIG.minZoom,
         maxZoom: MAP_CONFIG.maxZoom,
+        maxBounds: MAP_CONFIG.maxBounds,
       });
 
       map.current = mapInstance;
+
+      handleStyleLoad = () => {
+        addBoundaryLayers(mapInstance);
+      };
+
+      mapInstance.on("style.load", handleStyleLoad);
 
       mapInstance.addControl(new maplibregl.NavigationControl(), "top-right");
       mapInstance.addControl(
@@ -95,6 +103,11 @@ export function PublicReportsMap({
       );
 
       mapInstance.on("load", () => {
+        addBoundaryLayers(mapInstance);
+        mapInstance.fitBounds(MAP_CONFIG.maxBounds, {
+          padding: 24,
+          duration: 0,
+        });
         setIsLoading(false);
       });
 
@@ -110,6 +123,9 @@ export function PublicReportsMap({
     return () => {
       const mapInstance = map.current;
       if (mapInstance) {
+        if (handleStyleLoad) {
+          mapInstance.off("style.load", handleStyleLoad);
+        }
         teardownMapInteractions(mapInstance, layerHandlersRef.current);
         popupRef.current?.remove();
         popupRef.current = null;
@@ -204,21 +220,6 @@ export function PublicReportsMap({
 
         setReportCount(validFeatures.length);
 
-        // Compute bounds and fit map
-        const coords = validFeatures.map(
-          (f) => f.geometry.coordinates as [number, number]
-        );
-        const bounds = calculateBounds(coords);
-        reportBoundsRef.current = bounds;
-
-        if (bounds && !cancelled) {
-          mapInstance.fitBounds(bounds, {
-            padding: { top: 80, bottom: 80, left: 80, right: 80 },
-            maxZoom: 15,
-            duration: 600,
-          });
-        }
-
         // Clean up previous layers & listeners
         popupRef.current?.remove();
         popupRef.current = null;
@@ -228,6 +229,7 @@ export function PublicReportsMap({
         if (cancelled) return;
 
         // Add native WebGL layers
+        addBoundaryLayers(mapInstance);
         addReportLayers(mapInstance, mapGeoJSON, mapModeRef.current);
 
         // Bind interactive events
@@ -311,34 +313,10 @@ export function PublicReportsMap({
     const mapInstance = map.current;
     if (!mapInstance) return;
 
-    const bounds = reportBoundsRef.current;
-    if (!bounds) {
-      mapInstance.flyTo({
-        center: PATI_CENTER,
-        zoom: MAP_CONFIG.defaultZoom,
-        duration: 700,
-      });
-      return;
-    }
-
-    const sw = bounds.getSouthWest();
-    const ne = bounds.getNorthEast();
-    const isSinglePoint =
-      Math.abs(ne.lng - sw.lng) < 0.001 && Math.abs(ne.lat - sw.lat) < 0.001;
-
-    if (isSinglePoint) {
-      mapInstance.flyTo({
-        center: bounds.getCenter(),
-        zoom: 15,
-        duration: 700,
-      });
-    } else {
-      mapInstance.fitBounds(bounds, {
-        padding: { top: 80, bottom: 80, left: 80, right: 80 },
-        maxZoom: 15,
-        duration: 700,
-      });
-    }
+    mapInstance.fitBounds(MAP_CONFIG.maxBounds, {
+      padding: 24,
+      duration: 700,
+    });
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -367,7 +345,11 @@ export function PublicReportsMap({
   // ---------------------------------------------------------------------------
   return (
     <div className="relative h-full w-full overflow-hidden bg-gray-100">
-      <div ref={mapContainer} className="h-full w-full" />
+      <div
+        ref={mapContainer}
+        data-testid="public-reports-map"
+        className="h-full w-full"
+      />
 
       {isLoading && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-white/80 backdrop-blur-xs">

@@ -328,6 +328,9 @@ flowchart TB
   - Pewarnaan titik berbasis status laporan yang konsisten dengan desain sistem.
   - Popup interaktif dengan foto thumbnail, nama jalan/lokasi, kategori, dan tombol detail.
   - Pergantian basemap (*Street OSM* vs *Satellite Imagery*).
+  - Mask inverse polygon berbasis boundary Kabupaten Pati yang menutup area di luar wilayah operasional, dengan outline dan label `Kabupaten Pati`.
+  - `maxBounds` dengan padding 0,02 derajat, `minZoom` 10, dan `fitBounds` awal ke wilayah Pati untuk menjaga fokus navigasi.
+  - Boundary, mask, dan label dipasang ulang pada event `style.load`; mask berada di bawah heatmap/klaster/titik sehingga interaksi data dan popup tetap berjalan.
   - Legenda adaptif per mode (kepadatan heatmap atau rentang klaster) plus warna status, terbaca di kedua basemap.
   - Default hanya status aktif yang tersedia di enum database: `diterima`, `diverifikasi`, `diproses`. Status `selesai`/`ditolak` hanya muncul jika difilter eksplisit; `ditutup`/`digabung` selalu dikecualikan. `dibuka_kembali` belum ada di enum `report_status` sehingga ditunda sampai migrasi skema disetujui.
   - Proyeksi data publik tidak pernah menyertakan `reporter_id`.
@@ -335,6 +338,7 @@ flowchart TB
   - Token warna kepadatan: `DENSITY_COLORS` di [`src/config/theme.ts`](file:///home/panther/Documents/Programming/noto-pati/src/config/theme.ts) (terpisah dari warna status).
   - Ambang klaster, tuning heatmap, dan builder ekspresi murni: [`src/components/map/map-density.ts`](file:///home/panther/Documents/Programming/noto-pati/src/components/map/map-density.ts).
   - Filter status default dan validasi status peta: [`src/lib/reports/map-statuses.ts`](file:///home/panther/Documents/Programming/noto-pati/src/lib/reports/map-statuses.ts).
+  - Geometri boundary bersama, builder inverse polygon `Polygon`/`MultiPolygon`, dan konstanta bounds: [`src/lib/geo/pati-boundary.ts`](file:///home/panther/Documents/Programming/noto-pati/src/lib/geo/pati-boundary.ts).
 - **Lokasi Komponen:**
   - Peta: [`src/components/map/PublicReportsMap.tsx`](file:///home/panther/Documents/Programming/noto-pati/src/components/map/PublicReportsMap.tsx)
   - Route Handler: [`src/app/api/reports/map/route.ts`](file:///home/panther/Documents/Programming/noto-pati/src/app/api/reports/map/route.ts)
