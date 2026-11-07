@@ -17,6 +17,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import type { ReportFeatureCollection } from "@/types/map";
 import { PATI_CENTER } from "@/types/map";
+import { DEFAULT_MAP_STATUSES } from "@/lib/reports/map-statuses";
 import { MAP_CONFIG, MAP_INITIAL_STYLE } from "./map-constants";
 import type {
   BasemapMode,
@@ -27,13 +28,16 @@ import type {
 import { calculateBounds, isValidCoordinate } from "./map-utils";
 import { buildPopupHTML } from "./map-popup";
 import {
+  applyMapMode,
   addReportLayers,
   removeReportLayers,
   setupMapInteractions,
   teardownMapInteractions,
 } from "./map-layers";
+import type { MapMode } from "./map-density";
 import { MapLegend } from "./components/MapLegend";
 import { MapBasemapControl } from "./components/MapBasemapControl";
+import { MapModeControl } from "./components/MapModeControl";
 import { MapReportBadge } from "./components/MapReportBadge";
 import { MapResetButton } from "./components/MapResetButton";
 
@@ -54,6 +58,14 @@ export function PublicReportsMap({
   const [error, setError] = useState<string | null>(null);
   const [reportCount, setReportCount] = useState(0);
   const [basemapMode, setBasemapMode] = useState<BasemapMode>("streets");
+  const [mapMode, setMapMode] = useState<MapMode>("heatmap");
+  const mapModeRef = useRef(mapMode);
+  mapModeRef.current = mapMode;
+
+  const legendStatuses =
+    filters?.statuses && filters.statuses.length > 0
+      ? filters.statuses
+      : DEFAULT_MAP_STATUSES;
 
   // ---------------------------------------------------------------------------
   // 1. Initialize MapLibre GL instance
@@ -125,6 +137,15 @@ export function PublicReportsMap({
       basemapMode === "satellite" ? "visible" : "none"
     );
   }, [basemapMode, isLoading]);
+
+  // ---------------------------------------------------------------------------
+  // 2b. Switch Map Mode (Heatmap vs Cluster)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const mapInstance = map.current;
+    if (!mapInstance || isLoading) return;
+    applyMapMode(mapInstance, mapMode);
+  }, [mapMode, isLoading]);
 
   // ---------------------------------------------------------------------------
   // 3. Fetch and Render Reports on Map
@@ -207,11 +228,19 @@ export function PublicReportsMap({
         if (cancelled) return;
 
         // Add native WebGL layers
-        addReportLayers(mapInstance, mapGeoJSON);
+        addReportLayers(mapInstance, mapGeoJSON, mapModeRef.current);
 
         // Bind interactive events
         layerHandlersRef.current = setupMapInteractions({
           map: mapInstance,
+          onHeatmapClick: (e) => {
+            const targetZoom = Math.min(mapInstance.getZoom() + 2, 15);
+            mapInstance.easeTo({
+              center: e.lngLat,
+              zoom: targetZoom,
+              duration: 500,
+            });
+          },
           onClusterClick: async (e) => {
             if (!e.features?.length) return;
             const feature = e.features[0];
@@ -352,11 +381,16 @@ export function PublicReportsMap({
       {!isLoading && (
         <>
           <MapReportBadge count={reportCount} />
+          <MapModeControl currentMode={mapMode} onChange={setMapMode} />
           <MapBasemapControl
             currentMode={basemapMode}
             onChange={setBasemapMode}
           />
-          <MapLegend reportCount={reportCount} />
+          <MapLegend
+            reportCount={reportCount}
+            mode={mapMode}
+            statuses={legendStatuses}
+          />
           <MapResetButton onReset={handleResetView} />
         </>
       )}

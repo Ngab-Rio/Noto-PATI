@@ -80,6 +80,32 @@ export const THEME_COLORS = {
   },
 } as const;
 
+/**
+ * Token warna kepadatan peta, terpisah dari warna status laporan.
+ * Ambang 2-5 (rendah), 6-20 (sedang), 21+ (tinggi).
+ * Teks putih pada low/high dan teks gelap pada mid lolos WCAG AA.
+ */
+export const DENSITY_COLORS = {
+  low: {
+    name: "Density/Low",
+    hex: "#2563EB",
+    label: "Rendah",
+    description: "2-5 laporan dalam satu klaster",
+  },
+  mid: {
+    name: "Density/Mid",
+    hex: "#CA8A04",
+    label: "Sedang",
+    description: "6-20 laporan dalam satu klaster",
+  },
+  high: {
+    name: "Density/High",
+    hex: "#DC2626",
+    label: "Tinggi",
+    description: "21+ laporan dalam satu klaster",
+  },
+} as const;
+
 export type ReportStatusKey =
   | "diterima"
   | "diverifikasi"

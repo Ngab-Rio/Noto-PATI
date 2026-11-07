@@ -36,30 +36,6 @@ export const STATUS_LABELS: Record<string, string> = {
   ditolak: "Ditolak",
 };
 
-export const CLUSTER_COLOR_STOPS = [
-  "step",
-  ["get", "point_count"],
-  "#3B82F6", // < 10
-  10,
-  "#2563EB", // 10-49
-  50,
-  "#D97706", // 50-99
-  100,
-  "#DC2626", // >= 100
-] as const;
-
-export const CLUSTER_RADIUS_STOPS = [
-  "step",
-  ["get", "point_count"],
-  18, // < 10
-  10,
-  22, // 10-49
-  50,
-  26, // 50-99
-  100,
-  32, // >= 100
-] as const;
-
 export const MAP_INITIAL_STYLE: StyleSpecification = {
   version: 8,
   glyphs: "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf",
