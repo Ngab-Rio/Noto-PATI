@@ -1,9 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText, Filter, Plus, Search, X } from "lucide-react";
+import { FileText, Filter, Plus, X } from "lucide-react";
 
 import { ReportCard } from "@/components/shared/report-card";
 import { Button } from "@/components/ui/button";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   CATEGORY_LABELS,
   PUBLIC_STATUSES,
@@ -11,6 +20,7 @@ import {
   toReportItem,
 } from "@/lib/reports/public";
 import { Suspense } from "react";
+import { ReportFilters } from "./report-filters";
 
 const PAGE_SIZE = 6;
 
@@ -114,66 +124,19 @@ export default async function ReportsListPage({
             )}
           </div>
 
-          <form method="get" className="space-y-3 sm:space-y-0">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
-              <label className="relative flex-1">
-                <span className="sr-only">Cari laporan</span>
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
-                <input 
-                  name="search" 
-                  defaultValue={search} 
-                  placeholder="Cari judul atau lokasi laporan..." 
-                  className="w-full pl-9 pr-4 py-3 text-base rounded-lg border-2 border-border bg-background text-text focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
-                />
-              </label>
-
-              {/* Category Filter */}
-              <label className="relative w-full sm:w-56">
-                <span className="sr-only">Filter kategori</span>
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted pointer-events-none" />
-                <select 
-                  name="category" 
-                  defaultValue={category} 
-                  className="w-full pl-9 pr-4 py-3 text-base rounded-lg border-2 border-border bg-background text-text appearance-none cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                >
-                  <option value="">Semua Kategori</option>
-                  {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Status Filter */}
-              <label className="w-full sm:w-48">
-                <span className="sr-only">Filter status</span>
-                <select 
-                  name="status" 
-                  defaultValue={status} 
-                  className="w-full px-4 py-3 text-base rounded-lg border-2 border-border bg-background text-text appearance-none cursor-pointer focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                >
-                  <option value="">Semua Status</option>
-                  {PUBLIC_STATUSES.map((value) => (
-                    <option key={value} value={value}>{value}</option>
-                  ))}
-                </select>
-              </label>
-
-              {/* Submit Button */}
-              <Button 
-                type="submit" 
-                size="lg"
-                className="w-full sm:w-auto whitespace-nowrap shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                Terapkan Filter
-              </Button>
-            </div>
-
-            {/* Helper Text */}
-            <p className="text-xs text-text-muted mt-2">
-              💡 Tip: Gunakan filter untuk mempersempit pencarian laporan berdasarkan kategori dan status
-            </p>
-          </form>
+          <ReportFilters
+            category={category}
+            status={status}
+            search={search}
+            categoryOptions={[
+              { value: "", label: "Semua Kategori" },
+              ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+            ]}
+            statusOptions={[
+              { value: "", label: "Semua Status" },
+              ...PUBLIC_STATUSES.map((value) => ({ value, label: value })),
+            ]}
+          />
         </section>
 
         {/* Results Section */}
@@ -189,49 +152,63 @@ export default async function ReportsListPage({
           )}
         </Suspense>
 
-        {/* Pagination - Enhanced */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <nav className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-2" aria-label="Pagination laporan">
-            <Link 
-              href={query(page - 1)} 
-              aria-disabled={page === 1} 
-              className={page === 1 ? "pointer-events-none opacity-50 w-full sm:w-auto" : "w-full sm:w-auto"}
-              tabIndex={page === 1 ? -1 : undefined}
-            >
-              <Button 
-                variant="outline" 
-                disabled={page === 1}
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                ← Sebelumnya
-              </Button>
-            </Link>
-            
-            <span className="px-4 py-2 text-sm font-medium text-text bg-surface border border-border rounded-lg">
-              Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong>
-            </span>
-            
-            <Link 
-              href={query(page + 1)} 
-              aria-disabled={page === totalPages} 
-              className={page === totalPages ? "pointer-events-none opacity-50 w-full sm:w-auto" : "w-full sm:w-auto"}
-              tabIndex={page === totalPages ? -1 : undefined}
-            >
-              <Button 
-                variant="outline" 
-                disabled={page === totalPages}
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                Selanjutnya →
-              </Button>
-            </Link>
-          </nav>
+          <Pagination className="mt-8" aria-label="Pagination laporan">
+            <PaginationContent className="flex-wrap justify-center">
+              <PaginationItem>
+                <PaginationPrevious
+                  href={query(page - 1)}
+                  aria-disabled={page === 1}
+                  tabIndex={page === 1 ? -1 : undefined}
+                  className={page === 1 ? "pointer-events-none opacity-50" : undefined}
+                />
+              </PaginationItem>
+
+              {getPaginationItems(page, totalPages).map((item, index) => (
+                <PaginationItem key={`${item}-${index}`}>
+                  {item === "ellipsis" ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink href={query(item)} isActive={item === page}>
+                      {item}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+
+              <PaginationItem>
+                <PaginationNext
+                  href={query(page + 1)}
+                  aria-disabled={page === totalPages}
+                  tabIndex={page === totalPages ? -1 : undefined}
+                  className={page === totalPages ? "pointer-events-none opacity-50" : undefined}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
       </div>
     </div>
   );
+}
+
+type PaginationItemValue = number | "ellipsis";
+
+function getPaginationItems(currentPage: number, totalPages: number): PaginationItemValue[] {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 4) {
+    return [1, 2, 3, 4, 5, "ellipsis", totalPages];
+  }
+
+  if (currentPage >= totalPages - 3) {
+    return [1, "ellipsis", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+
+  return [1, "ellipsis", currentPage - 1, currentPage, currentPage + 1, "ellipsis", totalPages];
 }
 
 /**

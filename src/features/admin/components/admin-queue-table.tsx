@@ -7,11 +7,11 @@ import {
   Users,
   Timer,
   ChevronRight,
-  Filter,
   AlertTriangle,
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import type { AdminReportItem } from "../types";
 
 interface AdminQueueTableProps {
@@ -182,19 +182,17 @@ export function AdminQueueTable({ initialReports }: AdminQueueTableProps) {
           </div>
 
           <div className="relative">
-            <select
+            <Combobox
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-8 pl-2.5 pr-6 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary appearance-none cursor-pointer"
-            >
-              <option value="all">Semua Kategori</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <Filter className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-text-muted pointer-events-none" />
+              onValueChange={setSelectedCategory}
+              aria-label="kategori laporan"
+              searchPlaceholder="Cari kategori..."
+              className="h-8 w-44 text-xs"
+              options={[
+                { value: "all", label: "Semua Kategori" },
+                ...categories.map((category) => ({ value: category, label: category })),
+              ]}
+            />
           </div>
         </div>
       </div>
