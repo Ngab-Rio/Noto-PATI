@@ -93,4 +93,22 @@ test.describe("public map density modes", () => {
     await expect(page.getByText("2-5 laporan")).toBeVisible();
     await expect(page.getByText("21+ laporan")).toBeVisible();
   });
+
+  test("keeps the map mounted when switching basemaps", async ({ page }) => {
+    const map = page.getByTestId("public-reports-map");
+    const streets = page.getByRole("button", { name: "Peta", exact: true });
+    const satellite = page.getByRole("button", {
+      name: "Satelit",
+      exact: true,
+    });
+
+    await expect(map.locator("canvas")).toBeVisible();
+    await satellite.click();
+    await expect(satellite).toHaveAttribute("aria-pressed", "true");
+    await expect(map.locator("canvas")).toBeVisible();
+
+    await streets.click();
+    await expect(streets).toHaveAttribute("aria-pressed", "true");
+    await expect(map.locator("canvas")).toBeVisible();
+  });
 });

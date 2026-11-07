@@ -54,6 +54,7 @@ test.describe("AI assistance in report form", () => {
     expect(analysisRequests).toBe(0);
     await analyzeButton.click();
     await requestStarted;
+    await page.getByRole("button", { name: "Lanjut ke Detail" }).click();
 
     const title = page.getByPlaceholder(/Lampu penerangan jalan mati/i);
     await title.fill("Judul yang sudah ditulis pengguna");
@@ -68,6 +69,8 @@ test.describe("AI assistance in report form", () => {
     await expect(description).toHaveValue("Terlihat lubang pada permukaan jalan dalam foto.");
     await description.fill("Deskripsi yang sudah diedit oleh pengguna.");
     await expect(description).toHaveValue("Deskripsi yang sudah diedit oleh pengguna.");
+    await page.getByRole("button", { name: "Kembali" }).click();
+    await expect(page.getByRole("heading", { name: "Foto Kerusakan" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Analisis dengan AI" })).toBeVisible();
     expect(analysisRequests).toBe(1);
   });
@@ -88,6 +91,7 @@ test.describe("AI assistance in report form", () => {
     await page.getByRole("button", { name: "Analisis dengan AI" }).click();
 
     await expect(page.getByText(/Analisis AI gagal.*lanjutkan secara manual/i)).toBeVisible();
+    await page.getByRole("button", { name: "Lanjut ke Detail" }).click();
     const title = page.getByPlaceholder(/Lampu penerangan jalan mati/i);
     await title.fill("Judul manual tetap dapat digunakan");
     await expect(title).toHaveValue("Judul manual tetap dapat digunakan");
@@ -141,6 +145,7 @@ test.describe("AI assistance in report form", () => {
       buffer: TEST_PNG,
     });
     await geocodeStarted;
+    await page.getByRole("button", { name: "Lanjut ke Detail" }).click();
 
     const location = page.getByPlaceholder(/Jalan Raya Pati-Tayu/i);
     await location.fill("Lokasi yang sudah dikoreksi pengguna");
@@ -187,6 +192,9 @@ test.describe("AI assistance in report form", () => {
       buffer: TEST_PNG,
     });
 
+    await expect(page.getByAltText("Foto 1")).toBeVisible();
+    await page.getByRole("button", { name: "Lanjut ke Detail" }).click();
+
     const location = page.getByPlaceholder(/Jalan Raya Pati-Tayu/i);
     await expect(location).toHaveValue("Jalan Contoh, Kecamatan Pati, Kabupaten Pati");
     await expect(page.getByText(/melalui OpenStreetMap/)).toBeVisible();
@@ -214,7 +222,8 @@ test.describe("AI assistance in report form", () => {
 
     await expect(page.getByAltText("Foto 1")).toBeVisible();
     await expect(page.getByText(/Izin lokasi ditolak/)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Coba deteksi lokasi lagi" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Analisis dengan AI" })).toBeVisible();
+    await page.getByRole("button", { name: "Lanjut ke Detail" }).click();
+    await expect(page.getByRole("button", { name: "Coba deteksi lokasi lagi" })).toBeVisible();
   });
 });

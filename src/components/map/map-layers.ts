@@ -14,6 +14,72 @@ import {
   type MapMode,
 } from "./map-density";
 import type { LayerEventHandler } from "./map-types";
+import {
+  PATI_MASK_FEATURE,
+  PATI_OUTLINE_FEATURE,
+} from "@/lib/geo/pati-boundary";
+import { MAP_CONFIG } from "./map-constants";
+
+const BOUNDARY_SOURCE_IDS = ["pati-mask", "pati-boundary"];
+const BOUNDARY_LAYER_IDS = ["pati-mask", "pati-outline", "pati-label"];
+
+export function removeBoundaryLayers(map: maplibregl.Map): void {
+  for (const layerId of BOUNDARY_LAYER_IDS) {
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+  }
+  for (const sourceId of BOUNDARY_SOURCE_IDS) {
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+  }
+}
+
+export function addBoundaryLayers(map: maplibregl.Map): void {
+  removeBoundaryLayers(map);
+
+  map.addSource("pati-mask", {
+    type: "geojson",
+    data: PATI_MASK_FEATURE,
+  });
+  map.addSource("pati-boundary", {
+    type: "geojson",
+    data: PATI_OUTLINE_FEATURE,
+  });
+  map.addLayer({
+    id: "pati-mask",
+    type: "fill",
+    source: "pati-mask",
+    paint: {
+      "fill-color": MAP_CONFIG.maskColor,
+      "fill-opacity": MAP_CONFIG.maskOpacity,
+    },
+  });
+  map.addLayer({
+    id: "pati-outline",
+    type: "line",
+    source: "pati-boundary",
+    paint: {
+      "line-color": "#2F5F95",
+      "line-width": 2,
+      "line-opacity": 0.95,
+    },
+  });
+  map.addLayer({
+    id: "pati-label",
+    type: "symbol",
+    source: "pati-boundary",
+    layout: {
+      "symbol-placement": "point",
+      "text-field": ["get", "label"],
+      "text-font": ["Noto Sans Regular"],
+      "text-size": 13,
+      "text-allow-overlap": true,
+    },
+    paint: {
+      "text-color": "#1F2D3D",
+      "text-halo-color": "#FFFFFF",
+      "text-halo-width": 2,
+    },
+  });
+}
 
 const REPORT_LAYER_IDS = [
   "heatmap",
