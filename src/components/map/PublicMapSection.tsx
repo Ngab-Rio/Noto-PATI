@@ -74,6 +74,7 @@ export function PublicMapSection({
           <button
             type="button"
             onClick={() => toggleStatus("diterima")}
+            aria-pressed={selectedStatuses.includes("diterima")}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 ${
               selectedStatuses.includes("diterima")
                 ? "bg-blue-600 text-white shadow-sm"
@@ -86,6 +87,7 @@ export function PublicMapSection({
           <button
             type="button"
             onClick={() => toggleStatus("diverifikasi")}
+            aria-pressed={selectedStatuses.includes("diverifikasi")}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 ${
               selectedStatuses.includes("diverifikasi")
                 ? "bg-purple-600 text-white shadow-sm"
@@ -98,6 +100,7 @@ export function PublicMapSection({
           <button
             type="button"
             onClick={() => toggleStatus("diproses")}
+            aria-pressed={selectedStatuses.includes("diproses")}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 ${
               selectedStatuses.includes("diproses")
                 ? "bg-amber-600 text-white shadow-sm"
@@ -110,6 +113,7 @@ export function PublicMapSection({
           <button
             type="button"
             onClick={() => toggleStatus("selesai")}
+            aria-pressed={selectedStatuses.includes("selesai")}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 ${
               selectedStatuses.includes("selesai")
                 ? "bg-green-600 text-white shadow-sm"
@@ -122,6 +126,7 @@ export function PublicMapSection({
           <button
             type="button"
             onClick={() => toggleStatus("ditolak")}
+            aria-pressed={selectedStatuses.includes("ditolak")}
             className={`text-xs px-2.5 py-1.5 rounded-lg font-medium transition-all hover:scale-105 active:scale-95 ${
               selectedStatuses.includes("ditolak")
                 ? "bg-red-600 text-white shadow-sm"

@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
+import { resolveMapStatuses } from "@/lib/reports/map-statuses";
 import type {
   ReportFeatureCollection,
   ReportFeature,
@@ -21,45 +22,20 @@ import type {
 
 export const dynamic = "force-dynamic";
 
-/**
- * Statuses that should NOT appear on the public map.
- * "digabung" reports are folded into their parent — showing them
- * would create a duplicate damage point on the map.
- */
-const EXCLUDED_STATUSES = ["digabung"] as const;
-
-/**
- * Statuses eligible for the public map.
- */
-const PUBLISHABLE_STATUSES = [
-  "diterima",
-  "diverifikasi",
-  "diproses",
-  "selesai",
-  "ditolak",
-] as const;
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const searchParams = request.nextUrl.searchParams;
 
-    // Parse filters from query params
-    const rawStatuses = searchParams.get("statuses")?.split(",") ?? [];
-    const requestedStatuses = rawStatuses.filter(
-      (s) =>
-        PUBLISHABLE_STATUSES.includes(s as (typeof PUBLISHABLE_STATUSES)[number]) &&
-        !EXCLUDED_STATUSES.includes(s as (typeof EXCLUDED_STATUSES)[number])
-    ) as MapFilters["statuses"];
+    // Parse filters from query params. Default only includes active statuses.
+    const requestedStatuses = searchParams.get("statuses")?.split(",") ?? [];
+    const statusFilter = resolveMapStatuses(requestedStatuses);
 
     const filters: MapFilters = {
       categories: searchParams.get("categories")?.split(",") as
         | ReportFeature["properties"]["category"][]
         | undefined,
-      statuses:
-        requestedStatuses && requestedStatuses.length > 0
-          ? requestedStatuses
-          : undefined,
+      statuses: statusFilter as MapFilters["statuses"],
       kecamatan: searchParams.get("kecamatan") || undefined,
       dateFrom: searchParams.get("dateFrom") || undefined,
       dateTo: searchParams.get("dateTo") || undefined,
@@ -83,16 +59,12 @@ export async function GET(request: NextRequest) {
       )
       .not("latitude", "is", null)
       .not("longitude", "is", null)
-      .in("status", PUBLISHABLE_STATUSES)
+      .in("status", statusFilter)
       .order("created_at", { ascending: false });
 
     // Apply filters
     if (filters.categories && filters.categories.length > 0) {
       query = query.in("category", filters.categories);
-    }
-
-    if (filters.statuses && filters.statuses.length > 0) {
-      query = query.in("status", filters.statuses);
     }
 
     if (filters.dateFrom) {

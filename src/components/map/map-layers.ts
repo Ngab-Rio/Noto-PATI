@@ -1,22 +1,57 @@
 import maplibregl from "maplibre-gl";
 import type { ReportFeatureCollection } from "@/types/map";
+import { STATUS_COLORS } from "./map-constants";
 import {
-  CLUSTER_COLOR_STOPS,
-  CLUSTER_RADIUS_STOPS,
-  STATUS_COLORS,
-} from "./map-constants";
+  HEATMAP_WEIGHT_EXPRESSION,
+  buildClusterColorExpression,
+  buildClusterRadiusExpression,
+  buildClusterTextColorExpression,
+  buildClusterTextSizeExpression,
+  buildHeatmapColorExpression,
+  buildHeatmapIntensityExpression,
+  buildHeatmapOpacityExpression,
+  buildHeatmapRadiusExpression,
+  type MapMode,
+} from "./map-density";
 import type { LayerEventHandler } from "./map-types";
 
 const REPORT_LAYER_IDS = [
+  "heatmap",
   "clusters",
   "cluster-count",
   "unclustered-point-halo",
   "unclustered-point",
   "unclustered-point-dot",
-  "unclustered-point-icon",
-  "unclustered-point-stroke",
   "reports-layer",
 ];
+
+const STATUS_COLOR_EXPRESSION = [
+  "match",
+  ["get", "status"],
+  "diterima",
+  STATUS_COLORS.diterima,
+  "diverifikasi",
+  STATUS_COLORS.diverifikasi,
+  "diproses",
+  STATUS_COLORS.diproses,
+  "selesai",
+  STATUS_COLORS.selesai,
+  "ditolak",
+  STATUS_COLORS.ditolak,
+  "#4B5563",
+] as unknown as maplibregl.ExpressionSpecification;
+
+function fadeInNearZoom(value: number): maplibregl.ExpressionSpecification {
+  return [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    13,
+    0,
+    15,
+    value,
+  ] as unknown as maplibregl.ExpressionSpecification;
+}
 
 /**
  * Removes all report marker and cluster layers and source safely.
@@ -30,18 +65,61 @@ export function removeReportLayers(map: maplibregl.Map): void {
   if (map.getSource("reports")) {
     map.removeSource("reports");
   }
+  if (map.getSource("reports-heat")) {
+    map.removeSource("reports-heat");
+  }
+}
+
+function setLayerVisibility(
+  map: maplibregl.Map,
+  layerId: string,
+  visible: boolean
+): void {
+  if (!map.getLayer(layerId)) return;
+  map.setLayoutProperty(layerId, "visibility", visible ? "visible" : "none");
 }
 
 /**
- * Configures the GeoJSON source and renders native WebGL cluster and marker layers.
- * Using native circle layers ensures 100% reliable rendering without reliance on
+ * Applies mode-specific layer visibility and point opacity.
+ * Heatmap fades out near zoom 15 while status points fade in.
+ */
+export function applyMapMode(map: maplibregl.Map, mode: MapMode): void {
+  const isHeatmap = mode === "heatmap";
+
+  setLayerVisibility(map, "heatmap", isHeatmap);
+  setLayerVisibility(map, "clusters", !isHeatmap);
+  setLayerVisibility(map, "cluster-count", !isHeatmap);
+
+  const haloOpacity = isHeatmap ? fadeInNearZoom(0.28) : 0.28;
+  const pointOpacity = isHeatmap ? fadeInNearZoom(1) : 1;
+  const dotOpacity = isHeatmap ? fadeInNearZoom(0.95) : 0.95;
+
+  if (map.getLayer("unclustered-point-halo")) {
+    map.setPaintProperty(
+      "unclustered-point-halo",
+      "circle-opacity",
+      haloOpacity
+    );
+  }
+  if (map.getLayer("unclustered-point")) {
+    map.setPaintProperty("unclustered-point", "circle-opacity", pointOpacity);
+  }
+  if (map.getLayer("unclustered-point-dot")) {
+    map.setPaintProperty("unclustered-point-dot", "circle-opacity", dotOpacity);
+  }
+}
+
+/**
+ * Configures the GeoJSON sources and renders native WebGL heatmap, cluster,
+ * and marker layers. Using native layers keeps rendering reliable without
  * external images or font glyph loading.
  */
 export function addReportLayers(
   map: maplibregl.Map,
-  geojson: ReportFeatureCollection
+  geojson: ReportFeatureCollection,
+  mode: MapMode
 ): void {
-  // Add clustered GeoJSON source
+  // Clustered source for cluster mode
   map.addSource("reports", {
     type: "geojson",
     data: geojson,
@@ -51,18 +129,39 @@ export function addReportLayers(
     clusterMinPoints: 2,
   });
 
-  // Layer 1: Cluster circles with dynamic size & color
+  // Unclustered source so the heatmap reads individual reports
+  map.addSource("reports-heat", {
+    type: "geojson",
+    data: geojson,
+  });
+
+  // Layer 0: Native GPU heatmap
+  map.addLayer({
+    id: "heatmap",
+    type: "heatmap",
+    source: "reports-heat",
+    paint: {
+      "heatmap-weight":
+        HEATMAP_WEIGHT_EXPRESSION as unknown as maplibregl.ExpressionSpecification,
+      "heatmap-intensity": buildHeatmapIntensityExpression(),
+      "heatmap-radius": buildHeatmapRadiusExpression(),
+      "heatmap-opacity": buildHeatmapOpacityExpression(),
+      "heatmap-color": buildHeatmapColorExpression(),
+    },
+  });
+
+  // Layer 1: Cluster circles with density-based size & color
   map.addLayer({
     id: "clusters",
     type: "circle",
     source: "reports",
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": CLUSTER_COLOR_STOPS as unknown as maplibregl.ExpressionSpecification,
-      "circle-radius": CLUSTER_RADIUS_STOPS as unknown as maplibregl.ExpressionSpecification,
+      "circle-color": buildClusterColorExpression(),
+      "circle-radius": buildClusterRadiusExpression(),
       "circle-stroke-width": 3,
       "circle-stroke-color": "#FFFFFF",
-      "circle-opacity": 0.9,
+      "circle-opacity": 1,
     },
   });
 
@@ -76,21 +175,11 @@ export function addReportLayers(
       layout: {
         "text-field": "{point_count}",
         "text-font": ["Noto Sans Regular"],
-        "text-size": [
-          "step",
-          ["get", "point_count"],
-          12,
-          10,
-          13,
-          50,
-          14,
-          100,
-          16,
-        ],
+        "text-size": buildClusterTextSizeExpression(),
         "text-allow-overlap": true,
       },
       paint: {
-        "text-color": "#FFFFFF",
+        "text-color": buildClusterTextColorExpression(),
       },
     });
   } catch (err) {
@@ -115,21 +204,7 @@ export function addReportLayers(
         18,
         16,
       ],
-      "circle-color": [
-        "match",
-        ["get", "status"],
-        "diterima",
-        STATUS_COLORS.diterima,
-        "diverifikasi",
-        STATUS_COLORS.diverifikasi,
-        "diproses",
-        STATUS_COLORS.diproses,
-        "selesai",
-        STATUS_COLORS.selesai,
-        "ditolak",
-        STATUS_COLORS.ditolak,
-        "#4B5563",
-      ],
+      "circle-color": STATUS_COLOR_EXPRESSION,
       "circle-opacity": 0.28,
     },
   });
@@ -152,21 +227,7 @@ export function addReportLayers(
         18,
         10,
       ],
-      "circle-color": [
-        "match",
-        ["get", "status"],
-        "diterima",
-        STATUS_COLORS.diterima,
-        "diverifikasi",
-        STATUS_COLORS.diverifikasi,
-        "diproses",
-        STATUS_COLORS.diproses,
-        "selesai",
-        STATUS_COLORS.selesai,
-        "ditolak",
-        STATUS_COLORS.ditolak,
-        "#4B5563",
-      ],
+      "circle-color": STATUS_COLOR_EXPRESSION,
       "circle-stroke-width": 2.5,
       "circle-stroke-color": "#FFFFFF",
       "circle-opacity": 1,
@@ -195,19 +256,23 @@ export function addReportLayers(
       "circle-opacity": 0.95,
     },
   });
+
+  applyMapMode(map, mode);
 }
 
 /**
- * Registers click and hover interactions for clusters and unclustered points.
+ * Registers click and hover interactions for heatmap, clusters, and points.
  */
 export function setupMapInteractions({
   map,
   onMarkerClick,
   onClusterClick,
+  onHeatmapClick,
 }: {
   map: maplibregl.Map;
   onMarkerClick: (e: maplibregl.MapLayerMouseEvent) => void;
   onClusterClick: (e: maplibregl.MapLayerMouseEvent) => void;
+  onHeatmapClick: (e: maplibregl.MapLayerMouseEvent) => void;
 }): LayerEventHandler[] {
   const setPointer = () => {
     map.getCanvas().style.cursor = "pointer";
@@ -217,9 +282,12 @@ export function setupMapInteractions({
   };
 
   const handlers: LayerEventHandler[] = [
+    { event: "click", layerId: "heatmap", handler: onHeatmapClick },
     { event: "click", layerId: "clusters", handler: onClusterClick },
     { event: "click", layerId: "unclustered-point", handler: onMarkerClick },
     { event: "click", layerId: "unclustered-point-halo", handler: onMarkerClick },
+    { event: "mouseenter", layerId: "heatmap", handler: setPointer },
+    { event: "mouseleave", layerId: "heatmap", handler: resetPointer },
     { event: "mouseenter", layerId: "clusters", handler: setPointer },
     { event: "mouseleave", layerId: "clusters", handler: resetPointer },
     { event: "mouseenter", layerId: "unclustered-point", handler: setPointer },
