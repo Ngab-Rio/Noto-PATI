@@ -4,12 +4,14 @@ import {
   IconBuildings,
   IconCalendar,
   IconChartBar,
-  IconCheckCircle,
   IconFileText,
   IconInfo,
   IconWarningCircle,
 } from "@/components/shared/icons";
 import { createClient } from "@/lib/supabase/server";
+import { buildRevenueFlowCategories } from "@/features/apbd/revenue-flow";
+import { BudgetOverview } from "./budget-overview";
+import { RevenueFlow } from "./revenue-flow";
 
 export const metadata: Metadata = {
   title: "Transparansi Anggaran APBD · Noto PATI",
@@ -83,9 +85,10 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-async function getApbdData(): Promise<{
+async function getApbdData(budgetYear?: number): Promise<{
   report: ApbdReport | null;
   reports: ApbdReport[];
+  availableYears: number[];
   accounts: ApbdAccount[];
   error: string | null;
 }> {
@@ -103,15 +106,24 @@ async function getApbdData(): Promise<{
     return {
       report: null,
       reports: [],
+      availableYears: [],
       accounts: [],
       error: `Data APBD belum dapat dimuat: ${reportError.message}`,
     };
   }
 
-  const report = (reports?.[0] ?? null) as ApbdReport | null;
+  const allReports = (reports ?? []) as ApbdReport[];
+  const availableYears = [...new Set(allReports.map((item) => item.budget_year))].sort(
+    (a, b) => b - a,
+  );
+  const selectedReports =
+    budgetYear && availableYears.includes(budgetYear)
+      ? allReports.filter((item) => item.budget_year === budgetYear)
+      : allReports;
+  const report = selectedReports[0] ?? null;
 
   if (!report) {
-    return { report: null, reports: [], accounts: [], error: null };
+    return { report: null, reports: allReports, availableYears, accounts: [], error: null };
   }
 
   const { data: accounts, error: accountError } = await supabase
@@ -123,7 +135,8 @@ async function getApbdData(): Promise<{
   if (accountError) {
     return {
       report: null,
-      reports: reports as ApbdReport[],
+      reports: selectedReports,
+      availableYears,
       accounts: [],
       error: `Ringkasan tersedia, tetapi rincian akun gagal dimuat: ${accountError.message}`,
     };
@@ -131,7 +144,8 @@ async function getApbdData(): Promise<{
 
   return {
     report,
-    reports: (reports ?? []) as ApbdReport[],
+    reports: selectedReports,
+    availableYears,
     accounts: accounts ?? [],
     error: null,
   };
@@ -156,118 +170,99 @@ function DataState({
   );
 }
 
-function SummaryMetric({
-  label,
-  budget,
-  realized,
-  tone = "text-text",
-}: {
-  label: string;
-  budget: number | string | null;
-  realized: number | string | null;
-  tone?: string;
-}) {
-  const budgetAmount = toAmount(budget);
-  const realizedAmount = toAmount(realized);
-  const progress = budgetAmount > 0 ? (realizedAmount / budgetAmount) * 100 : 0;
-
+function BudgetAccountsChart({ accounts }: { accounts: ApbdAccount[] }) {
   return (
-    <div className="group relative isolate overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-xs">
-      <span
-        className="pointer-events-none absolute -right-2 -top-3 z-0 select-none text-[clamp(5rem,10vw,8rem)] font-black leading-none tracking-[-0.09em] text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-60 group-focus-within:opacity-60 [-webkit-text-stroke:1px_var(--color-primary)]"
-        aria-hidden="true"
-      >
-        {formatPercent(progress)}
-      </span>
-      <div className="relative z-10">
-      <p className="text-sm font-semibold text-text-muted">{label}</p>
-      <p className={`mt-2 text-2xl font-bold tracking-tight ${tone}`}>
-        {formatCompactCurrency(budget)}
-      </p>
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-        <div>
-          <dt className="text-text-muted">Pagu anggaran</dt>
-          <dd className="mt-1 font-semibold tabular-nums text-text">{formatCurrency(budget)}</dd>
-        </div>
-        <div>
-          <dt className="text-text-muted">Realisasi</dt>
-          <dd className="mt-1 font-semibold tabular-nums text-text">{formatCurrency(realized)}</dd>
-        </div>
-      </dl>
-      <div className="mt-4" aria-label={`${label} terealisasi ${formatPercent(progress)}`}>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-text-muted">Sudah terealisasi</span>
-          <span className="font-semibold tabular-nums text-text">{formatPercent(progress)}</span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-primary-soft" aria-hidden="true">
-          <div
-            className="h-full rounded-full bg-primary transition-[width]"
-            style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
-          />
-        </div>
-      </div>
-      </div>
-    </div>
-  );
-}
-
-function AccountStrip({
-  account,
-  total,
-}: {
-  account: ApbdAccount;
-  total: number;
-}) {
-  const budget = toAmount(account.anggaran);
-  const share = total > 0 ? (budget / total) * 100 : 0;
-
-  return (
-    <div className="group relative isolate overflow-hidden rounded-2xl border border-border bg-surface p-4">
-      <span
-        className="pointer-events-none absolute -right-2 -top-2 z-0 select-none text-[clamp(4rem,8vw,6rem)] font-black leading-none tracking-[-0.09em] text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-60 group-focus-within:opacity-60 [-webkit-text-stroke:1px_var(--color-primary)]"
-        aria-hidden="true"
-      >
-        {formatCompactCurrency(budget)}
-      </span>
-      <div className="relative z-10">
-        <div className="flex items-start justify-between gap-4">
-        <p className="font-semibold text-text">{account.akun}</p>
-        <p className="shrink-0 text-right text-sm font-bold tabular-nums text-primary">
-          {formatCompactCurrency(budget)}
+    <section aria-labelledby="accounts-chart-heading" className="space-y-4">
+      <div>
+        <h3 id="accounts-chart-heading" className="text-lg font-bold text-text">
+          Perbandingan rencana dan uang tercatat
+        </h3>
+        <p className="mt-1 max-w-[68ch] text-sm leading-6 text-text-muted">
+          Setiap batang membandingkan satu kelompok dengan rencananya sendiri. Batang penuh berarti
+          100% rencana; warna menunjukkan bagian yang sudah tercatat.
         </p>
-        </div>
-      <div className="mt-3 h-2 overflow-hidden rounded-full bg-primary-soft" aria-hidden="true">
-        <div
-          className="h-full rounded-full bg-primary"
-          style={{ width: `${Math.min(Math.max(share, 0), 100)}%` }}
-        />
       </div>
-      <div className="mt-2 flex justify-between gap-3 text-xs text-text-muted">
-        <span>{formatPercent(share)} dari total pendapatan</span>
-        <span>Realisasi {formatPercent(account.persentase)}</span>
-      </div>
-      </div>
-    </div>
+
+      <ul className="grid gap-x-8 divide-y divide-border border-y border-border sm:grid-cols-2 sm:divide-y-0">
+        {accounts.map((account) => {
+          const budget = toAmount(account.anggaran);
+          const realized = toAmount(account.realisasi);
+          const progress = budget > 0 ? (realized / budget) * 100 : null;
+          const fillWidth = progress === null ? 0 : Math.min(Math.max(progress, 0), 100);
+          const progressLabel =
+            progress === null
+              ? "Belum ada rencana"
+              : `${formatPercent(progress)}${progress > 100 ? ", melebihi rencana" : ""}`;
+
+          return (
+            <li
+              key={account.row_index}
+              className={`min-w-0 py-3 ${
+                account.is_total_row ? "bg-primary-soft/30 px-2 font-semibold" : ""
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm text-text">{account.akun}</span>
+                <span className="shrink-0 text-right text-xs font-semibold tabular-nums text-text">
+                  {progressLabel}
+                </span>
+              </div>
+              <p className="mt-1 flex flex-wrap gap-x-3 text-xs tabular-nums text-text-muted">
+                <span>Rencana {formatCompactCurrency(budget)}</span>
+                <span>Tercatat {formatCompactCurrency(realized)}</span>
+              </p>
+              <div
+                className="mt-2 h-2 overflow-hidden rounded-full bg-primary-soft"
+                role="meter"
+                aria-label={`Bagian rencana yang sudah tercatat untuk ${account.akun}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={fillWidth}
+                aria-valuetext={`${progressLabel}. Rencana ${formatCurrency(budget)}. Tercatat ${formatCurrency(realized)}.`}
+              >
+                <div
+                  className="h-full rounded-full bg-primary"
+                  style={{ width: `${fillWidth}%` }}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="text-xs leading-5 text-text-muted">
+        Batang menunjukkan perbandingan, bukan bagian dari satu total bersama. Baris total merangkum
+        rincian di bawahnya, jadi jangan menjumlahkan keduanya. Nominal lengkap ada di tabel.
+      </p>
+    </section>
   );
 }
 
-export default async function BudgetPage() {
-  const { report, reports, accounts, error } = await getApbdData();
-  const budgetProgress =
-    report && toAmount(report.total_belanja_anggaran) > 0
-      ? (toAmount(report.total_belanja_realisasi) / toAmount(report.total_belanja_anggaran)) * 100
-      : 0;
+export default async function BudgetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tahun?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const requestedYearValue = Array.isArray(params.tahun) ? params.tahun[0] : params.tahun;
+  const requestedYear =
+    requestedYearValue && /^\d{4}$/.test(requestedYearValue)
+      ? Number(requestedYearValue)
+      : undefined;
+  const { report, reports, availableYears, accounts, error } =
+    await getApbdData(requestedYear);
+  const revenueCategories = buildRevenueFlowCategories(accounts);
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-8">
         <header className="border-b border-border pb-6">
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-text sm:text-4xl">
-            Uang kota untuk siapa?
+            Uang daerah: dari mana dan untuk apa?
           </h1>
           <p className="mt-3 max-w-[68ch] text-pretty text-sm leading-6 text-text-muted sm:text-base">
-            Mari telusuri dari mana pendapatan Kabupaten Pati berasal, ke mana anggaran diarahkan,
-            dan berapa yang sudah terealisasi. Angka disajikan apa adanya dari sumber resmi.
+            Lihat dari mana uang daerah berasal, rencana penggunaannya, dan berapa yang sudah
+            tercatat masuk atau dibelanjakan. Angka diambil dari laporan resmi.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-text-muted">
             <span className="inline-flex items-center gap-2">
@@ -292,111 +287,45 @@ export default async function BudgetPage() {
           />
         ) : (
           <>
-            <section aria-labelledby="origin-heading" className="space-y-4">
-              <div>
-                <h2 id="origin-heading" className="text-xl font-bold text-text">
-                  Dari mana uang kota berasal?
-                </h2>
-                <p className="mt-1 max-w-[68ch] text-pretty text-sm leading-6 text-text-muted">
-                  Berikut beberapa sumber pendapatan yang tercatat dalam snapshot APBD ini.
-                  Bar menunjukkan bagian pagu setiap akun dibandingkan total pendapatan daerah.
-                </p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {accounts
-                  .filter((account) =>
-                    ["PAD", "Pajak Daerah", "Retribusi Daerah", "TKDD", "Pendapatan Lainnya"].some(
-                      (name) => account.akun === name,
-                    ),
-                  )
-                  .slice(0, 4)
-                  .map((account) => (
-                    <AccountStrip
-                      key={account.row_index}
-                      account={account}
-                      total={toAmount(report.total_pendapatan_anggaran)}
-                    />
-                  ))}
-              </div>
-              <p className="text-xs leading-5 text-text-muted">
-                Tidak semua sumber pendapatan ditampilkan di bagian ringkas ini. Lihat rincian
-                akun di bawah untuk data lengkap dari dokumen sumber.
-              </p>
-            </section>
+            <BudgetOverview
+              snapshot={{
+                budgetYear: report.budget_year,
+                periodName: report.period_name,
+                totalPendapatanAnggaran: toAmount(report.total_pendapatan_anggaran),
+                totalPendapatanRealisasi: toAmount(report.total_pendapatan_realisasi),
+                totalBelanjaAnggaran: toAmount(report.total_belanja_anggaran),
+                totalBelanjaRealisasi: toAmount(report.total_belanja_realisasi),
+              }}
+              availableYears={availableYears}
+            />
 
-            <section aria-labelledby="snapshot-heading" className="space-y-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 id="snapshot-heading" className="text-xl font-bold text-text">
-                    Ringkasan APBD {report.budget_year}
-                  </h2>
-                  <p className="mt-1 text-sm text-text-muted">
-                    {report.pemda_name} · laporan sampai {report.period_name}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-text-muted">
-                  <IconCalendar className="h-4 w-4" aria-hidden="true" />
-                  <span>Diperbarui {formatDate(report.fetched_at)}</span>
-                </div>
-              </div>
-              <div className="grid gap-5 md:grid-cols-3">
-                <SummaryMetric
-                  label="Pendapatan daerah"
-                  budget={report.total_pendapatan_anggaran}
-                  realized={report.total_pendapatan_realisasi}
-                  tone="text-primary"
-                />
-                <SummaryMetric
-                  label="Belanja daerah"
-                  budget={report.total_belanja_anggaran}
-                  realized={report.total_belanja_realisasi}
-                />
-                <SummaryMetric
-                  label="Pembiayaan daerah"
-                  budget={report.total_pembiayaan_anggaran}
-                  realized={report.total_pembiayaan_realisasi}
-                  tone="text-accent"
-                />
-              </div>
-              <div className="group relative isolate overflow-hidden border-y border-primary/20 bg-primary-soft/35 px-5 py-6 sm:px-6">
-                <p
-                  className="pointer-events-none absolute -right-3 -top-5 z-0 select-none text-[clamp(7rem,22vw,15rem)] font-black leading-none tracking-[-0.09em] text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-60 group-focus-within:opacity-60 [-webkit-text-stroke:1px_var(--color-primary)]"
-                  aria-hidden="true"
-                >
-                  {formatPercent(budgetProgress)}
-                </p>
-                <div className="relative z-10 max-w-[68ch]">
-                  <p className="text-sm font-semibold text-text">APBD dalam 30 detik</p>
-                  <p className="mt-2 max-w-[58ch] text-pretty text-sm leading-6 text-text-muted">
-                  Sampai <strong className="text-text">{report.period_name}</strong>, belanja
-                  daerah yang sudah tercatat adalah{" "}
-                  <strong className="text-text">
-                    {formatCurrency(report.total_belanja_realisasi)}
-                  </strong>{" "}
-                  dari pagu{" "}
-                  <strong className="text-text">
-                    {formatCurrency(report.total_belanja_anggaran)}
-                  </strong>
-                  . Artinya, sekitar{" "}
-                  <strong className="text-primary">
-                    {formatPercent(budgetProgress)}
-                  </strong>{" "}
-                  dari rencana belanja sudah terealisasi. Ini adalah posisi pencatatan pada
-                  periode tersebut, bukan penilaian baik atau buruknya program.
-                  </p>
-                </div>
-              </div>
-            </section>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-text-muted">
+              <span>{report.pemda_name}</span>
+              <span className="inline-flex items-center gap-2">
+                <IconCalendar className="h-4 w-4" aria-hidden="true" />
+                <span>Diperbarui {formatDate(report.fetched_at)}</span>
+              </span>
+            </div>
 
-            {reports.length > 1 && (
-              <section aria-labelledby="timeline-heading" className="space-y-4">
+            <details className="group border-y border-border">
+              <summary className="cursor-pointer py-4 text-sm font-semibold text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                Lihat diagram sumber pendapatan dan rincian APBD
+              </summary>
+              <div className="space-y-8 pb-6">
+                <RevenueFlow
+                  total={toAmount(report.total_pendapatan_anggaran)}
+                  categories={revenueCategories}
+                />
+
+                {reports.length > 1 && (
+                  <section aria-labelledby="timeline-heading" className="space-y-4">
                 <div>
                   <h2 id="timeline-heading" className="flex items-center gap-2 text-xl font-bold text-text">
                     <IconCalendar className="h-5 w-5 text-primary" aria-hidden="true" />
                     Perkembangan laporan bulanan
                   </h2>
                   <p className="mt-1 text-sm leading-6 text-text-muted">
-                    Ikuti perubahan realisasi belanja dari periode ke periode. Angka ini hanya
+                    Ikuti perubahan jumlah belanja yang tercatat dari periode ke periode. Angka ini hanya
                     membandingkan snapshot yang tersedia di database.
                   </p>
                 </div>
@@ -416,29 +345,45 @@ export default async function BudgetPage() {
                           <div className="h-full rounded-full bg-primary" style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }} />
                         </div>
                         <p className="mt-3 text-xs text-text-muted">
-                          Realisasi {formatCompactCurrency(period.total_belanja_realisasi)}
+                          Tercatat {formatCompactCurrency(period.total_belanja_realisasi)} dibelanjakan
                         </p>
                       </div>
                     );
                   })}
                 </div>
               </section>
-            )}
+                )}
 
-            <section className="rounded-2xl border border-primary/20 bg-primary-soft/40 p-5 sm:p-6" aria-labelledby="guide-heading">
-              <div className="flex gap-3">
-                <IconCheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <section className="border-y border-border py-5" aria-labelledby="guide-heading">
+              <h2 id="guide-heading" className="font-bold text-text">Arti istilah dalam laporan</h2>
+              <dl className="mt-3 grid gap-x-8 gap-y-4 text-sm leading-6 sm:grid-cols-2">
                 <div>
-                  <h2 id="guide-heading" className="font-bold text-text">Cara membaca angka di sini</h2>
-                  <p className="mt-1 max-w-[68ch] text-pretty text-sm leading-6 text-text-muted">
-                    <strong className="text-text">Pagu/anggaran</strong> adalah rencana maksimal
-                    yang ditetapkan. <strong className="text-text">Realisasi</strong> adalah jumlah
-                    yang sudah tercatat sampai periode laporan. Persentase menunjukkan perbandingan
-                    realisasi terhadap pagu—bukan penilaian kualitas program.
-                  </p>
+                  <dt className="font-semibold text-text">Pos atau akun</dt>
+                  <dd className="text-text-muted">
+                    Nama kelompok dalam laporan, misalnya pajak atau belanja pegawai. Bukan nama
+                    proyek atau lokasi tertentu.
+                  </dd>
                 </div>
-              </div>
-            </section>
+                <div>
+                  <dt className="font-semibold text-text">Pagu atau rencana dana</dt>
+                  <dd className="text-text-muted">
+                    Batas dana yang direncanakan untuk suatu kelompok.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-text">Realisasi atau sudah tercatat</dt>
+                  <dd className="text-text-muted">
+                    Jumlah yang tercatat sudah diterima atau dibelanjakan sampai {report.period_name}.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-text">Capaian atau bagian dari rencana</dt>
+                  <dd className="text-text-muted">
+                    Persentase realisasi dibanding pagu. Ini bukan nilai keberhasilan program.
+                  </dd>
+                </div>
+              </dl>
+                </section>
 
             <section aria-labelledby="near-heading" className="space-y-5">
               <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
@@ -447,17 +392,17 @@ export default async function BudgetPage() {
                     Anggaran yang dekat denganmu
                   </h2>
                   <p className="mt-2 max-w-[68ch] text-pretty text-sm leading-6 text-text-muted">
-                    Nama akun di bawah membantu menghubungkan angka APBD dengan layanan publik
+                    Nama kelompok di bawah membantu menghubungkan angka APBD dengan layanan publik
                     yang sehari-hari kita rasakan. Namun data ini masih berada pada tingkat
-                    Kabupaten Pati—belum menunjukkan desa, kecamatan, lokasi proyek, atau penerima
+                    Kabupaten Pati, dan belum menunjukkan desa, kecamatan, lokasi proyek, atau penerima
                     manfaat tertentu.
                   </p>
                 </div>
                 <div className="max-w-sm rounded-xl bg-primary-soft/60 p-4 text-sm leading-6 text-text">
                   <p className="font-semibold">Yang bisa kita pastikan</p>
                   <p className="mt-1 text-text-muted">
-                    Ini adalah pagu dan realisasi akun resmi, bukan bukti bahwa satu proyek tertentu
-                    dibiayai dari akun tersebut.
+                    Angka ini adalah rencana dan catatan resmi per kelompok, bukan bukti bahwa satu
+                    proyek tertentu dibiayai dari kelompok tersebut.
                   </p>
                 </div>
               </div>
@@ -471,23 +416,23 @@ export default async function BudgetPage() {
                         {formatCompactCurrency(account.anggaran)}
                       </p>
                       <p className="mt-1 text-xs text-text-muted">
-                        Realisasi {formatPercent(account.persentase)} dari pagu
+                        {formatPercent(account.persentase)} dari rencana sudah tercatat
                       </p>
                     </div>
                   ))}
               </div>
-            </section>
+                </section>
 
             <section aria-labelledby="detail-heading" className="space-y-4">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h2 id="detail-heading" className="flex items-center gap-2 text-xl font-bold text-text">
                     <IconBuildings className="h-5 w-5 text-primary" aria-hidden="true" />
-                    Rincian pos dalam laporan
+                    Rincian kelompok anggaran
                   </h2>
                   <p className="mt-1 max-w-[68ch] text-pretty text-sm leading-6 text-text-muted">
-                    {accounts.length} baris akun dari dokumen sumber. Gunakan total ringkasan di atas
-                    untuk melihat jumlah keseluruhan.
+                    {accounts.length} kelompok dari laporan resmi. Total keseluruhan ada di ringkasan
+                    atas.
                   </p>
                 </div>
                 <a
@@ -508,40 +453,43 @@ export default async function BudgetPage() {
                   description="Ringkasan APBD sudah tersedia, tetapi baris akun belum tersimpan untuk periode ini."
                 />
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-xs">
-                  <table className="w-full min-w-[680px] text-left text-sm">
-                    <caption className="sr-only">
-                      Rincian akun APBD {report.budget_year} sampai {report.period_name}
-                    </caption>
-                    <thead className="border-b border-border bg-primary-soft/35 text-xs uppercase tracking-wide text-text">
-                      <tr>
-                        <th scope="col" className="px-4 py-3 font-semibold">Pos anggaran</th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold">Pagu</th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold">Realisasi</th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold">Capaian</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {accounts.map((account) => (
-                        <tr key={account.row_index} className={account.is_total_row ? "bg-primary-soft/20" : "hover:bg-primary-soft/10"}>
-                          <th scope="row" className={`px-4 py-3.5 text-text ${account.is_total_row ? "font-bold" : "font-medium"}`}>
-                            {account.akun}
-                            {account.is_total_row && (
-                              <span className="ml-2 inline-flex items-center rounded-full border border-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary">
-                                Total utama
-                              </span>
-                            )}
-                          </th>
-                          <td className="px-4 py-3.5 text-right tabular-nums text-text">{formatCurrency(account.anggaran)}</td>
-                          <td className="px-4 py-3.5 text-right tabular-nums text-text">{formatCurrency(account.realisasi)}</td>
-                          <td className="px-4 py-3.5 text-right font-semibold tabular-nums text-primary">{formatPercent(account.persentase)}</td>
+                <>
+                  <BudgetAccountsChart accounts={accounts} />
+                  <div className="overflow-x-auto rounded-2xl border border-border bg-surface shadow-xs">
+                    <table className="w-full min-w-[680px] text-left text-sm">
+                      <caption className="sr-only">
+                        Rincian akun APBD {report.budget_year} sampai {report.period_name}
+                      </caption>
+                      <thead className="border-b border-border bg-primary-soft/35 text-xs uppercase tracking-wide text-text">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 font-semibold">Kelompok anggaran</th>
+                          <th scope="col" className="px-4 py-3 text-right font-semibold">Rencana dana</th>
+                          <th scope="col" className="px-4 py-3 text-right font-semibold">Sudah tercatat</th>
+                          <th scope="col" className="px-4 py-3 text-right font-semibold">Bagian rencana</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {accounts.map((account) => (
+                          <tr key={account.row_index} className={account.is_total_row ? "bg-primary-soft/20" : "hover:bg-primary-soft/10"}>
+                            <th scope="row" className={`px-4 py-3.5 text-text ${account.is_total_row ? "font-bold" : "font-medium"}`}>
+                              {account.akun}
+                              {account.is_total_row && (
+                                <span className="ml-2 inline-flex items-center rounded-full border border-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                  Total utama
+                                </span>
+                              )}
+                            </th>
+                            <td className="px-4 py-3.5 text-right tabular-nums text-text">{formatCurrency(account.anggaran)}</td>
+                            <td className="px-4 py-3.5 text-right tabular-nums text-text">{formatCurrency(account.realisasi)}</td>
+                            <td className="px-4 py-3.5 text-right font-semibold tabular-nums text-primary">{formatPercent(account.persentase)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
-            </section>
+                </section>
 
             <footer className="border-t border-border pt-5 text-xs leading-5 text-text-muted">
               <p>
@@ -555,7 +503,9 @@ export default async function BudgetPage() {
               <p className="mt-2">
                 Catatan: baris induk dan anak berasal dari sumber yang sama, sehingga jangan menjumlahkan seluruh baris tabel.
               </p>
-            </footer>
+                </footer>
+              </div>
+            </details>
           </>
         )}
       </div>

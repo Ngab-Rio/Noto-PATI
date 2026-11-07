@@ -47,11 +47,22 @@ describe("report stepper validation", () => {
       }),
     );
 
-    expect(errors).toHaveProperty("detailLocation");
+    expect(errors.detailLocation).toMatch(/Coba deteksi lokasi perangkat lagi/i);
     expect(errors).toHaveProperty("title");
     expect(errors).toHaveProperty("category");
     expect(errors).toHaveProperty("description");
     expect(errors).toHaveProperty("location");
+  });
+
+  it("asks the user to retry when automatic location text is missing", () => {
+    const errors = validateReportStep(
+      2,
+      makeData({ detailLocation: "" }),
+    );
+
+    expect(errors.detailLocation).toBe(
+      "Alamat otomatis belum ditemukan. Coba deteksi lokasi perangkat lagi.",
+    );
   });
 
   it("blocks locations outside Kabupaten Pati on step 2", () => {

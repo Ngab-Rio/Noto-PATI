@@ -44,7 +44,7 @@ interface ReportFormData {
   locationCapturedAt: string | null;
 }
 
-type AiSuggestionField = "title" | "category" | "description" | "detailLocation";
+type AiSuggestionField = "title" | "category" | "description";
 
 const CATEGORIES = [
   { value: "jalan", label: "Jalan Berlubang / Rusak", dinas: "Bina Marga - DPUTR" },
@@ -65,22 +65,6 @@ const JPEG_QUALITY = 0.82;
 const SUBMISSION_TIMEOUT_MS = 45000;
 const MOCK_LOCATION_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_MOCK_LOCATION === "true";
-
-function MockLocationNotice() {
-  if (!MOCK_LOCATION_ENABLED) {
-    return null;
-  }
-
-  return (
-    <div
-      role="status"
-      className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
-    >
-      <strong>Mode simulasi lokasi aktif.</strong> Form memakai koordinat acak di dalam Kabupaten Pati agar bisa diuji dari luar wilayah. Set{" "}
-      <code>NEXT_PUBLIC_ENABLE_MOCK_LOCATION=false</code> untuk mengaktifkan validasi wilayah asli.
-    </div>
-  );
-}
 
 function compressPhoto(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -218,9 +202,7 @@ export function ReportForm() {
       return nextErrors;
     });
     setIsResolvingLocation(false);
-    setLocationMessage(
-      `Mode simulasi lokasi aktif: koordinat acak dalam Kabupaten Pati (${latitude.toFixed(5)}, ${longitude.toFixed(5)}) digunakan untuk pengujian.`,
-    );
+    setLocationMessage("");
 
     if (resolveAddress) {
       void resolveLocation(latitude, longitude);
@@ -247,7 +229,7 @@ export function ReportForm() {
 
     // Check if geolocation is supported
     if (!navigator.geolocation) {
-      setLocationMessage("Perangkat atau browser tidak mendukung lokasi. Silakan isi alamat secara manual.");
+      setLocationMessage("Perangkat atau browser ini tidak mendukung deteksi lokasi. Gunakan perangkat dengan GPS.");
       return;
     }
 
@@ -411,19 +393,15 @@ export function ReportForm() {
       clearTimeout(timeoutId);
 
       const payload: unknown = await response.json();
-      console.log('[resolveLocation] API response:', { ok: response.ok, status: response.status, payload });
+      console.log('[resolveLocation] API response:', { ok: response.ok, status: response.status });
 
       if (!response.ok) {
-        const message = payload && typeof payload === "object"
-          && "message" in payload && typeof payload.message === "string"
-          ? payload.message
-          : "Alamat otomatis tidak tersedia. Silakan isi lokasi secara manual.";
-        throw new Error(message);
+        throw new Error(`Reverse geocoding failed with status ${response.status}.`);
       }
 
       if (!payload || typeof payload !== "object"
         || !("address" in payload) || typeof payload.address !== "string") {
-        throw new Error("Alamat otomatis tidak valid. Silakan isi lokasi secara manual.");
+        throw new Error("Reverse geocoding returned an invalid address.");
       }
       const address = payload.address;
       console.log('[resolveLocation] Got address:', address);
@@ -433,32 +411,23 @@ export function ReportForm() {
         return;
       }
 
-      if (!manuallyEditedFieldsRef.current.has("detailLocation")) {
-        console.log('[resolveLocation] Updating detailLocation field');
-        setFormData((current) => {
-          if (current.detailLocation.trim() || manuallyEditedFieldsRef.current.has("detailLocation")) {
-            console.log('[resolveLocation] Field already filled or manually edited, skipping');
-            return current;
-          }
-          console.log('[resolveLocation] Setting detailLocation to:', address);
-          return { ...current, detailLocation: address };
-        });
-        setAiFilledFields((current) => new Set(current).add("detailLocation"));
-        setErrors((current) => {
-          const next = { ...current };
-          delete next.detailLocation;
-          return next;
-        });
+      if (address.trim().length < 20) {
+        throw new Error("Reverse geocoding returned an address that is too short.");
       }
-      setLocationMessage("Lokasi perkiraan dari koordinat GPS melalui OpenStreetMap; periksa dan edit sebelum mengirim.");
+
+      setFormData((current) => ({ ...current, detailLocation: address }));
+      setErrors((current) => {
+        const next = { ...current };
+        delete next.detailLocation;
+        return next;
+      });
+      setLocationMessage("Alamat perkiraan ditemukan (OpenStreetMap)");
     } catch (error) {
       console.error('[resolveLocation] Error:', error);
       if (requestId === geocodeRequestIdRef.current) {
         const message = error instanceof Error && error.name === "AbortError"
-          ? "Pencarian alamat terlalu lama. Silakan coba lagi atau isi lokasi secara manual."
-          : error instanceof Error
-            ? error.message
-            : "Alamat otomatis tidak tersedia. Silakan isi lokasi secara manual.";
+          ? "Pencarian alamat memerlukan waktu lebih lama. Coba deteksi lokasi perangkat lagi."
+          : "Alamat otomatis belum ditemukan. Pastikan izin lokasi aktif, lalu coba deteksi lokasi perangkat lagi.";
         setLocationMessage(message);
       }
     } finally {
@@ -468,12 +437,30 @@ export function ReportForm() {
     }
   };
 
-  const requestDeviceLocation = () => {
+  const requestDeviceLocation = (refresh = false) => {
     if (
       locationCapturePendingRef.current
-      || (formData.latitude !== null && formData.longitude !== null)
+      || (!refresh && formData.latitude !== null && formData.longitude !== null)
     ) {
       return;
+    }
+
+    if (refresh) {
+      capturedLocationRef.current = null;
+      setFormData((current) => ({
+        ...current,
+        detailLocation: "",
+        latitude: null,
+        longitude: null,
+        locationAccuracyM: null,
+        locationCapturedAt: null,
+      }));
+      setErrors((current) => {
+        const next = { ...current };
+        delete next.detailLocation;
+        delete next.location;
+        return next;
+      });
     }
 
     if (!window.isSecureContext) {
@@ -481,7 +468,7 @@ export function ReportForm() {
       return;
     }
     if (!navigator.geolocation) {
-      setLocationMessage("Perangkat atau browser tidak mendukung lokasi. Silakan isi alamat secara manual.");
+      setLocationMessage("Perangkat atau browser ini tidak mendukung deteksi lokasi. Gunakan perangkat dengan GPS.");
       return;
     }
 
@@ -918,8 +905,6 @@ export function ReportForm() {
                         {locationMessage}
                       </p>
                     )}
-                    <MockLocationNotice />
-
                     {formData.photos.length === 0 ? (
                       <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -1051,10 +1036,8 @@ export function ReportForm() {
                 {activeStep === 2 && (
                   <div className="mt-5 space-y-6">
                     <p className="text-sm text-text-muted">
-                      Jelaskan lokasi kerusakan dengan detail alamat, nama jalan, dan patokan yang jelas. Semua field bertanda bintang wajib diisi.
+                      Pastikan izin lokasi aktif dan Anda berada di dekat titik kerusakan.
                     </p>
-
-                    <MockLocationNotice />
 
                     {photoAnalysis && (
                       <div className="rounded-lg border border-primary/20 bg-primary-soft/30 p-3">
@@ -1071,22 +1054,25 @@ export function ReportForm() {
                     )}
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-text block">
-                        Detail Alamat / Lokasi Kerusakan <span className="text-red-600">*</span>
+                      <label htmlFor="report-device-location" className="text-sm font-medium text-text block">
+                        Perkiraan alamat dari GPS
                       </label>
                       <textarea
+                        id="report-device-location"
                         value={formData.detailLocation}
-                        onChange={(e) => {
-                          markFieldAsManuallyEdited("detailLocation");
-                          setFormData({ ...formData, detailLocation: e.target.value });
-                          const newErrors = { ...errors };
-                          delete newErrors.detailLocation;
-                          setErrors(newErrors);
-                        }}
-                        rows={4}
-                        placeholder="Contoh: Jalan Raya Pati-Tayu KM 12, Kecamatan Gabus, depan Pasar Desa Tanjang, sebelah Masjid Al-Ikhlas"
-                        className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed"
+                        readOnly
+                        aria-readonly="true"
+                        aria-invalid={errors.detailLocation ? "true" : "false"}
+                        aria-describedby={errors.detailLocation
+                          ? "report-device-location-help report-device-location-error"
+                          : "report-device-location-help"}
+                        rows={3}
+                        placeholder="Alamat akan diisi otomatis setelah lokasi perangkat ditemukan."
+                        className="w-full resize-none rounded-lg border border-border bg-primary-soft/20 px-3.5 py-2.5 text-sm leading-relaxed text-text read-only:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                       />
+                      <p id="report-device-location-help" className="text-xs text-text-muted">
+                        Alamat perkiraan diisi otomatis dari GPS dan tidak dapat diedit. Jika titiknya keliru, ambil ulang lokasi perangkat.
+                      </p>
                       {isResolvingLocation && (
                         <p role="status" className="text-xs text-text-muted">
                           Mencari perkiraan alamat dari koordinat GPS...
@@ -1111,10 +1097,14 @@ export function ReportForm() {
                         </p>
                       )}
                       {formData.photos.length > 0
-                        && (formData.latitude === null || formData.longitude === null)
+                        && (
+                          formData.latitude === null
+                          || formData.longitude === null
+                          || !formData.detailLocation.trim()
+                        )
                         && !isResolvingLocation && (
-                          <Button type="button" variant="outline" onClick={requestDeviceLocation} className="min-h-11">
-                            Coba deteksi lokasi lagi
+                          <Button type="button" variant="outline" onClick={() => requestDeviceLocation(true)} className="min-h-11">
+                            Coba deteksi lokasi perangkat lagi
                           </Button>
                         )}
                       {locationOutsidePati ? (
@@ -1127,15 +1117,9 @@ export function ReportForm() {
                       ) : errors.location ? (
                         <p data-error className="text-xs text-red-600">{errors.location}</p>
                       ) : null}
-                      {aiFilledFields.has("detailLocation") && (
-                        <p className="text-xs text-primary">Perkiraan alamat otomatis dari GPS · dapat diedit</p>
-                      )}
                       {errors.detailLocation && (
-                        <p data-error className="text-xs text-red-600">{errors.detailLocation}</p>
+                        <p id="report-device-location-error" data-error className="text-xs text-red-600">{errors.detailLocation}</p>
                       )}
-                      <p className="text-xs text-text-muted">
-                        💡 Tips: Sertakan nama kecamatan, desa/kelurahan, nama jalan, nomor KM (jika ada), dan patokan bangunan terdekat
-                      </p>
                     </div>
 
                     <div className="space-y-2">

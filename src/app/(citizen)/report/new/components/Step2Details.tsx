@@ -19,7 +19,7 @@ interface Step2DetailsProps {
   isResolvingLocation: boolean;
   locationMessage: string;
   onFieldChange: (field: string, value: string) => void;
-  onRequestLocation: () => void;
+  onRequestLocation: (refresh?: boolean) => void;
   onBack: () => void;
   onNext: () => void;
 }
@@ -202,24 +202,24 @@ export function Step2Details({
         <div className="space-y-2 pt-4 border-t border-border">
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-4 w-4 text-primary" />
-            <label className="text-sm font-medium text-text">
-              Lokasi Kerusakan <span className="text-red-600">*</span>
+            <label htmlFor="report-location-readonly" className="text-sm font-medium text-text">
+              Alamat perkiraan dari GPS <span className="text-red-600">*</span>
             </label>
           </div>
           <textarea
+            id="report-location-readonly"
             value={formData.detailLocation}
-            onChange={(e) => onFieldChange("detailLocation", e.target.value)}
-            rows={4}
-            placeholder="Contoh: Jalan Raya Pati-Tayu KM 12, Kecamatan Gabus, depan Pasar Desa Tanjang, sebelah Masjid Al-Ikhlas"
-            className={`w-full px-3.5 py-2.5 text-sm rounded-lg border-2 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 text-text leading-relaxed transition-colors ${
-              aiFilledFields.has("detailLocation")
-                ? "border-primary/40 bg-primary-soft/20"
-                : errors.detailLocation
-                  ? "border-red-500"
-                  : "border-border"
+            readOnly
+            aria-readonly="true"
+            rows={3}
+            placeholder="Alamat akan diisi otomatis setelah lokasi perangkat ditemukan."
+            className={`w-full resize-none px-3.5 py-2.5 text-sm rounded-lg border-2 bg-primary-soft/20 text-text leading-relaxed transition-colors ${
+              errors.detailLocation ? "border-red-500" : "border-border"
             }`}
             aria-invalid={errors.detailLocation ? "true" : "false"}
-            aria-describedby={errors.detailLocation ? "detailLocation-error" : undefined}
+            aria-describedby={errors.detailLocation
+              ? "report-location-help detailLocation-error"
+              : "report-location-help"}
             aria-required="true"
           />
           {isResolvingLocation && (
@@ -231,17 +231,11 @@ export function Step2Details({
           {locationMessage && (
             <p className="text-xs text-text-muted">{locationMessage}</p>
           )}
-          {formData.latitude === null && !isResolvingLocation && (
-            <Button type="button" variant="outline" size="sm" onClick={onRequestLocation}>
+          {(formData.latitude === null || !formData.detailLocation.trim()) && !isResolvingLocation && (
+            <Button type="button" variant="outline" size="sm" onClick={() => onRequestLocation(true)}>
               <MapPin className="h-4 w-4 mr-2" />
-              Aktifkan Lokasi GPS
+              Coba deteksi lokasi perangkat lagi
             </Button>
-          )}
-          {aiFilledFields.has("detailLocation") && (
-            <div className="flex items-center gap-1.5 text-xs text-primary">
-              <IconSparkle className="h-3 w-3" />
-              <span className="font-medium">Otomatis dari GPS</span>
-            </div>
           )}
           {errors.detailLocation && (
             <p id="detailLocation-error" className="text-xs text-red-600" role="alert">
@@ -254,8 +248,8 @@ export function Step2Details({
               <span>{errors.location}</span>
             </div>
           )}
-          <p className="text-xs text-text-muted">
-            💡 Tips: Sertakan nama kecamatan, desa/kelurahan, nama jalan, dan patokan terdekat
+          <p id="report-location-help" className="text-xs text-text-muted">
+            Alamat perkiraan diisi otomatis dari GPS dan tidak dapat diedit. Jika titiknya keliru, ambil ulang lokasi perangkat.
           </p>
         </div>
       </div>
