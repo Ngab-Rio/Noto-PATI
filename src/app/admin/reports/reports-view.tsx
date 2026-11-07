@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
+import { Combobox } from "@/components/ui/combobox";
 import type { AdminReportItem } from "@/features/admin/types";
 
 interface ReportsViewProps {
@@ -120,44 +121,46 @@ export function ReportsView({
 
           {/* Quick Filters */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Status Select */}
-            <select
+            <Combobox
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="h-9 px-3 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="all">Semua Status</option>
-              <option value="diterima">Diterima</option>
-              <option value="diverifikasi">Diverifikasi</option>
-              <option value="diproses">Diproses</option>
-              <option value="selesai">Selesai</option>
-              <option value="ditolak">Ditolak</option>
-            </select>
+              onValueChange={setSelectedStatus}
+              aria-label="status laporan"
+              searchPlaceholder="Cari status..."
+              className="h-9 w-44 text-xs"
+              options={[
+                { value: "all", label: "Semua Status" },
+                { value: "diterima", label: "Diterima" },
+                { value: "diverifikasi", label: "Diverifikasi" },
+                { value: "diproses", label: "Diproses" },
+                { value: "selesai", label: "Selesai" },
+                { value: "ditolak", label: "Ditolak" },
+              ]}
+            />
 
-            {/* Category Select */}
-            <select
+            <Combobox
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="h-9 px-3 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="all">Semua Kategori</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              onValueChange={setSelectedCategory}
+              aria-label="kategori laporan"
+              searchPlaceholder="Cari kategori..."
+              className="h-9 w-48 text-xs"
+              options={[
+                { value: "all", label: "Semua Kategori" },
+                ...categories.map((category) => ({ value: category, label: category })),
+              ]}
+            />
 
-            {/* Sort Order */}
-            <select
+            <Combobox
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "newest" | "supports" | "due")}
-              className="h-9 px-3 text-xs rounded-lg border border-border bg-surface text-text focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="newest">Terbaru</option>
-              <option value="supports">Dukungan Terbanyak</option>
-              <option value="due">Urgensi / Batas SLA</option>
-            </select>
+              onValueChange={(value) => setSortBy(value as "newest" | "supports" | "due")}
+              aria-label="urutan laporan"
+              searchPlaceholder="Cari urutan..."
+              className="h-9 w-52 text-xs"
+              options={[
+                { value: "newest", label: "Terbaru" },
+                { value: "supports", label: "Dukungan Terbanyak" },
+                { value: "due", label: "Urgensi / Batas SLA" },
+              ]}
+            />
 
             {/* Overdue Checkbox Toggle */}
             <button
