@@ -1,5 +1,7 @@
 import type { StyleSpecification } from "maplibre-gl";
 import { PATI_CENTER } from "@/types/map";
+import { THEME_COLORS } from "@/config/theme";
+import { PATI_MAP_BOUNDS } from "@/lib/geo/pati-boundary";
 
 export const CATEGORY_LABELS: Record<string, string> = {
   jalan: "Jalan Berlubang / Rusak",
@@ -89,6 +91,9 @@ export const MAP_INITIAL_STYLE: StyleSpecification = {
 export const MAP_CONFIG = {
   defaultCenter: PATI_CENTER,
   defaultZoom: 11,
-  minZoom: 7,
+  minZoom: 10,
   maxZoom: 18.5,
+  maxBounds: PATI_MAP_BOUNDS,
+  maskColor: THEME_COLORS.neutral.background.hex,
+  maskOpacity: 0.9,
 };

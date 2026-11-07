@@ -219,3 +219,115 @@ export const PATI_BOUNDARY: ReadonlyArray<readonly [number, number]> = [
   [111.238348, -6.703469], [111.237817, -6.698558], [111.235432, -6.698379],
   [111.235570, -6.695513], [111.233655, -6.691387], [111.234176, -6.687284],
 ];
+
+export type Position = [number, number];
+export type PolygonCoordinates = readonly (readonly Position[])[];
+export type BoundaryGeometry =
+  | { type: "Polygon"; coordinates: PolygonCoordinates }
+  | { type: "MultiPolygon"; coordinates: readonly PolygonCoordinates[] };
+
+export const PATI_BOUNDARY_BOUNDS = {
+  north: -6.410399,
+  south: -7.001991,
+  east: 111.270875,
+  west: 110.802585,
+} as const;
+
+export const PATI_MAP_BOUNDS: [[number, number], [number, number]] = [
+  [PATI_BOUNDARY_BOUNDS.west - 0.02, PATI_BOUNDARY_BOUNDS.south - 0.02],
+  [PATI_BOUNDARY_BOUNDS.east + 0.02, PATI_BOUNDARY_BOUNDS.north + 0.02],
+];
+
+const WORLD_RING: readonly Position[] = [
+  [-180, -90],
+  [180, -90],
+  [180, 90],
+  [-180, 90],
+  [-180, -90],
+];
+
+function ringArea(ring: readonly Position[]): number {
+  return ring.reduce((area, [longitude, latitude], index) => {
+    const [nextLongitude, nextLatitude] = ring[(index + 1) % ring.length];
+    return area + longitude * nextLatitude - nextLongitude * latitude;
+  }, 0);
+}
+
+function closeRing(ring: readonly Position[]): Position[] {
+  if (ring.length === 0) return [];
+  const [firstLongitude, firstLatitude] = ring[0];
+  const [lastLongitude, lastLatitude] = ring[ring.length - 1];
+  const first: Position = [firstLongitude, firstLatitude];
+  const last: Position = [lastLongitude, lastLatitude];
+  return first[0] === last[0] && first[1] === last[1]
+    ? [...ring]
+    : [...ring, first];
+}
+
+function orientRing(ring: readonly Position[], clockwise: boolean): Position[] {
+  const closed = closeRing(ring);
+  const isClockwise = ringArea(closed) < 0;
+  return isClockwise === clockwise ? closed : [...closed].reverse();
+}
+
+function normalizePolygon(polygon: PolygonCoordinates): Position[][] {
+  return polygon.map((ring, index) => orientRing(ring, index > 0));
+}
+
+function geometryPolygons(geometry: BoundaryGeometry): PolygonCoordinates[] {
+  return geometry.type === "Polygon"
+    ? [geometry.coordinates]
+    : [...geometry.coordinates];
+}
+
+export function buildInversePolygon(
+  geometry: BoundaryGeometry,
+): {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: Record<string, never>;
+    geometry: { type: "Polygon"; coordinates: Position[][] };
+  }>;
+} {
+  const outerRings: Position[][] = [];
+  const islandRings: Position[][] = [];
+
+  for (const polygon of geometryPolygons(geometry)) {
+    const rings = normalizePolygon(polygon);
+    if (rings[0]) outerRings.push(rings[0]);
+    islandRings.push(...rings.slice(1).map((ring) => orientRing(ring, false)));
+  }
+
+  const createFeature = (coordinates: Position[][]) => ({
+    type: "Feature" as const,
+    properties: {},
+    geometry: { type: "Polygon" as const, coordinates },
+  });
+
+  return {
+    type: "FeatureCollection",
+    features: [
+      createFeature([orientRing(WORLD_RING, false), ...outerRings]),
+      ...islandRings.map((ring) => createFeature([ring])),
+    ],
+  };
+}
+
+export const PATI_BOUNDARY_GEOMETRY: BoundaryGeometry = {
+  type: "Polygon",
+  coordinates: [
+    PATI_BOUNDARY.map(([longitude, latitude]) => [longitude, latitude]),
+  ],
+};
+
+export const PATI_MASK_FEATURE = buildInversePolygon(PATI_BOUNDARY_GEOMETRY);
+
+export const PATI_OUTLINE_FEATURE = {
+  type: "Feature" as const,
+  properties: { label: "Kabupaten Pati" },
+  geometry: {
+    type: "Polygon" as const,
+    coordinates: normalizePolygon(PATI_BOUNDARY_GEOMETRY.coordinates),
+  },
+};
