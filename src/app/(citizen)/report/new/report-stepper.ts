@@ -112,9 +112,9 @@ export function validateReportStep(
 
   if (step === 2) {
     if (!data.detailLocation.trim()) {
-      errors.detailLocation = "Isi detail lokasi kerusakan";
+      errors.detailLocation = "Alamat otomatis belum ditemukan. Coba deteksi lokasi perangkat lagi.";
     } else if (data.detailLocation.trim().length < 20) {
-      errors.detailLocation = "Detail lokasi minimal 20 karakter untuk kejelasan";
+      errors.detailLocation = "Alamat otomatis terlalu singkat. Coba deteksi lokasi perangkat lagi.";
     }
 
     if (data.latitude === null || data.longitude === null) {

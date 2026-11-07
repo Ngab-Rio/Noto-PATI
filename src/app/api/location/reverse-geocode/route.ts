@@ -74,7 +74,7 @@ export async function GET(request: Request) {
   }
   if (!reservation.allowed) {
     return NextResponse.json(
-      { ok: false, message: "Pencarian alamat sedang sibuk. Silakan isi lokasi secara manual." },
+      { ok: false, message: "Pencarian alamat sedang sibuk. Coba deteksi lokasi perangkat lagi." },
       { status: 429, headers: { "Retry-After": "1" } },
     );
   }
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 
     if (!response.ok) {
       console.error("OpenStreetMap reverse geocoding failed.", { status: response.status });
-      return jsonError("Alamat belum dapat ditemukan. Silakan isi lokasi secara manual.", 503);
+      return jsonError("Alamat belum dapat ditemukan. Coba deteksi lokasi perangkat lagi.", 503);
     }
 
     const payload: unknown = await response.json();
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
       ? payload.display_name
       : null;
     if (typeof address !== "string" || !address.trim()) {
-      return jsonError("Alamat belum dapat ditemukan. Silakan isi lokasi secara manual.", 404);
+      return jsonError("Alamat belum dapat ditemukan. Coba deteksi lokasi perangkat lagi.", 404);
     }
 
     const displayAddress = address.trim().slice(0, 500);
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
         code: cacheError.code,
         message: cacheError.message,
       });
-      return jsonError("Alamat ditemukan tetapi tidak dapat disimpan. Silakan isi lokasi secara manual.", 503);
+      return jsonError("Alamat ditemukan tetapi belum dapat disimpan. Coba deteksi lokasi perangkat lagi.", 503);
     }
 
     return NextResponse.json({
@@ -129,10 +129,10 @@ export async function GET(request: Request) {
   } catch (error) {
     if (error instanceof FetchTimeoutError) {
       console.error("Reverse geocoding request timed out.", error);
-      return jsonError("Pencarian alamat terlalu lama. Silakan isi lokasi secara manual.", 504);
+      return jsonError("Pencarian alamat terlalu lama. Coba deteksi lokasi perangkat lagi.", 504);
     }
 
     console.error("Reverse geocoding request failed.", error);
-    return jsonError("Alamat belum dapat ditemukan. Silakan isi lokasi secara manual.", 503);
+    return jsonError("Alamat belum dapat ditemukan. Coba deteksi lokasi perangkat lagi.", 503);
   }
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ReportForm } from "./ReportForm";
+import { ReportDeviceGate } from "./ReportDeviceGate";
 
 export const metadata: Metadata = {
   title: "Buat Laporan Infrastruktur · Noto PATI",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function NewReportPage() {
-  return <ReportForm />;
+  return <ReportDeviceGate />;
 }
