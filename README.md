@@ -18,15 +18,15 @@ dilakukan di server menggunakan polygon PostGIS yang di-seed melalui data
 
 ### Alur utama aplikasi
 
-1. Pengunjung dapat melihat landing page, daftar laporan, detail laporan, peta, dan anggaran.
-2. Pengunjung dapat membuat laporan anonim; warga yang login memperoleh riwayat laporan.
-3. Form laporan mengambil foto kamera, lokasi perangkat, kategori, judul, dan deskripsi.
-4. Server memvalidasi data dan lokasi, lalu menyimpan laporan ke Supabase.
-5. Foto disimpan di bucket privat dan ditampilkan melalui signed URL.
-6. Analisis foto AI bersifat opsional; pengguna tetap dapat mengisi form secara manual.
+1. Pengunjung dapat menjelajahi daftar dan detail laporan publik, peta, edukasi, serta data APBD.
+2. Laporan dapat dikirim secara anonim atau oleh warga yang masuk; warga terautentikasi juga dapat melihat laporan miliknya.
+3. Form laporan mendukung kategori, judul, deskripsi, hingga tiga foto kamera, dan lokasi perangkat.
+4. Server memvalidasi masukan dan memastikan titik laporan berada di wilayah Kabupaten Pati sebelum menyimpan laporan ke Supabase.
+5. Foto disimpan di bucket privat dan disajikan melalui signed URL sesuai kebutuhan akses.
+6. Warga terautentikasi dapat mendukung laporan warga lain dan memberi ulasan pada laporan yang memenuhi syarat.
+7. Admin mengelola verifikasi dan tindak lanjut laporan melalui dashboard terlindungi.
+8. Analisis foto AI bersifat opsional; warga tetap dapat menyelesaikan pelaporan secara manual.
 
-> **Catatan data:** sebagian data laporan, tindak lanjut, dan angka anggaran pada prototipe
-> masih bersifat simulasi dan diberi label di antarmuka.
 
 
 
@@ -152,10 +152,15 @@ Halaman penting setelah server berjalan:
 | `/` | Landing page |
 | `/report/new` | Form laporan anonim/authenticated |
 | `/map` | Peta laporan publik |
-| `/reports` | Daftar laporan publik |
-| `/budget` | Halaman transparansi anggaran |
-| `/login` | Login warga |
-| `/admin` | Area admin yang masih dalam pengembangan |
+| `/reports` dan `/reports/list` | Daftar laporan publik dan penelusuran laporan |
+| `/reports/[id]` | Detail, linimasa, dan status laporan |
+| `/my-reports` | Riwayat laporan warga yang masuk |
+| `/care` | Direktori edukasi fasilitas publik |
+| `/budget` | Transparansi data APBD |
+| `/login` dan `/register` | Autentikasi warga |
+| `/admin` | Dashboard admin (khusus role admin) |
+| `/admin/reports` | Antrean dan pengelolaan laporan |
+| `/admin/map` | Peta laporan untuk admin |
 
 ---
 
@@ -174,7 +179,7 @@ Aplikasi divalidasi saat startup oleh `src/config/env.client.ts` dan `src/config
 | `AI_VISION_BASE_URL` | **Server Only** | Opsional | Base URL OpenAI-compatible vision API (tanpa /chat/completions) | `https://api.openai.com/v1` |
 | `AI_VISION_API_KEY` | **Server Only** | Opsional | API key untuk vision provider (Rahasia) | `sk-...` atau `gsk_...` |
 | `AI_VISION_MODEL` | **Server Only** | Opsional | Model name untuk vision analysis | `gpt-4-vision-preview` |
-| `AI_ANALYSIS_ALLOWED_ORIGINS` | **Server Only** | ⚠️ **TEMPORARY** | **Dev-only:** Origins tambahan untuk tunnel testing (akan dihapus di production) | `https://tunnel.example` |
+| `AI_ANALYSIS_ALLOWED_ORIGINS` | **Server Only** |  **TEMPORARY** | **Dev-only:** Origins tambahan untuk tunnel testing (akan dihapus di production) | `https://tunnel.example` |
 
 >  **Catatan Penting:**  
 > - **`AI_ANALYSIS_ALLOWED_ORIGINS`** adalah variable **SEMENTARA** hanya untuk development dengan tunnel (ngrok, VS Code dev tunnels).  
@@ -198,33 +203,50 @@ Aplikasi divalidasi saat startup oleh `src/config/env.client.ts` dan `src/config
 | `npm run test:e2e` | Menjalankan pengujian end-to-end browser dengan Playwright |
 | `npm run seed:region` | Memasukkan polygon Kabupaten Pati ke database |
 | `npm run disable:region` | Menonaktifkan/menghapus region Pati dari database development |
+| `npm run scrape:apbd` | Mengambil snapshot data APBD melalui skrip operasional |
+| `npm run import:apbd` | Mengimpor data APBD ke database melalui skrip operasional |
 
 ---
 
-## Progress Project
+## Fitur yang Sudah Diimplementasikan
 
-### Sudah tersedia
+### Pelaporan dan akun warga
 
-- Landing page mobile-first dengan hero visual isometrik Kabupaten Pati.
-- Registrasi/login email dan Google melalui Supabase Auth.
-- Pelaporan anonim maupun authenticated.
-- Pengambilan foto kamera maksimal 3 file dan kompresi client-side.
-- Pengambilan lokasi perangkat dan reverse geocoding opsional.
-- Validasi lokasi server-side dengan PostGIS `ST_Covers`.
-- Penyimpanan foto privat dan signed URL.
-- Daftar, detail, dan peta laporan publik.
-- Clustering marker melalui MapLibre.
-- Analisis foto AI opsional dengan rate limit, timeout, dan fallback manual.
-- Test Vitest untuk konfigurasi theme dan kontrak AI.
+- Pelaporan dapat dibuat oleh pengunjung tanpa akun maupun warga yang masuk dengan email atau Google melalui Supabase Auth.
+- Form laporan mendukung kategori infrastruktur, judul, deskripsi, hingga tiga foto kamera, kompresi foto di sisi klien, dan lokasi perangkat.
+- Lokasi laporan divalidasi di server terhadap polygon Kabupaten Pati menggunakan PostGIS; reverse geocoding tersedia sebagai bantuan informasi lokasi.
+- Foto laporan disimpan di storage privat dan disajikan menggunakan signed URL.
+- Analisis foto berbasis AI tersedia secara opsional dengan pembatasan request dan fallback ke pengisian manual.
+- Warga yang masuk dapat melihat riwayat laporannya sendiri.
 
-### Sedang dikembangkan atau belum tersedia
+### Penelusuran, dukungan, dan status laporan
 
-- Dashboard admin untuk verifikasi, penolakan, penggabungan, dan perubahan status laporan.
-- Transisi status lengkap beserta SLA dan eskalasi.
-- Dukungan laporan, rating, dan pengajuan buka kembali.
+- Daftar publik mendukung pencarian, filter, pengurutan, serta halaman detail laporan.
+- Peta publik menampilkan lokasi laporan dengan marker terklaster, mode heatmap, filter status, dan pilihan basemap.
+- Detail laporan menampilkan status dan linimasa pembaruan. Perubahan status publik dapat diterima melalui Supabase Realtime; tampilan tetap menyediakan status koneksi/fallback jika pembaruan langsung tidak tersedia.
+- Warga terautentikasi dapat mendukung laporan milik warga lain. Satu akun hanya dapat mendukung laporan yang sama sekali, dan identitas pendukung tidak ditampilkan ke publik.
+- Warga terautentikasi dapat memberi satu ulasan pada laporan yang telah selesai sesuai aturan akses; ringkasan rating ditampilkan pada laporan yang memiliki penilaian.
+- Laporan duplikat dapat digabungkan, dan data dukungan laporan terkait digunakan dalam pengurutan perhatian warga.
 
-Status di atas menggambarkan kondisi kode saat ini; detail scope dan kriteria penerimaan
-tersedia di [`docs/PRODUCT_SCOPE.md`](./docs/PRODUCT_SCOPE.md).
+### Edukasi dan transparansi anggaran
+
+- Noto PATI Care menyediakan materi edukasi berdasarkan kategori kerusakan, beserta panduan keselamatan warga.
+- Kategori yang belum memiliki materi khusus—termasuk vandalisme—menggunakan panduan umum fasilitas publik pada konteks edukasi laporan.
+- Halaman APBD menyajikan snapshot data anggaran dan realisasi beserta periode dan sumber yang tersedia di database.
+
+### Pengelolaan admin
+
+- Area admin dilindungi pemeriksaan autentikasi dan role admin.
+- Dashboard merangkum laporan berdasarkan status, tenggat SLA, antrean, dan aktivitas terbaru.
+- Admin dapat meninjau detail laporan, memverifikasi atau menolak laporan, menggabungkan duplikat, memperbarui status sesuai transisi, serta mencatat tindak lanjut dan bukti penyelesaian.
+- Daftar laporan admin mendukung pencarian, filter status/kategori/SLA, pengurutan, dan ekspor CSV.
+- Peta admin menampilkan laporan dan ringkasan status untuk kebutuhan pemantauan.
+
+### Pengalaman dan kualitas aplikasi
+
+- Halaman publik dan admin memiliki tampilan responsif untuk penggunaan di perangkat mobile.
+- Navigasi internal menampilkan indikator saat perpindahan halaman berlangsung; fallback loading menggunakan skeleton dan status yang dapat diumumkan teknologi bantu.
+- Pengujian otomatis tersedia melalui Vitest, dengan perintah typecheck, lint, build, dan E2E yang disediakan di NPM scripts.
 
 
 ## Dokumentasi Terkait
@@ -233,6 +255,10 @@ Untuk pemahaman mendalam tentang standar dan alur kerja teknis, silakan baca:
 * [**`docs/TESTING.md`**](./docs/TESTING.md) — Panduan pengujian, alur quality gate, dan cheatsheet testing.
 * [**`docs/ADMIN_SETUP.md`**](./docs/ADMIN_SETUP.md) — Cara membuat user admin dan mengakses dashboard administrasi.
 * [**`docs/ADMIN_TESTING_GUIDE.md`**](./docs/ADMIN_TESTING_GUIDE.md) — Testing admin access control dan role-based permissions.
+* [**`docs/AUTHENTICATION.md`**](./docs/AUTHENTICATION.md) — Autentikasi, role, dan aturan akses warga/admin.
+* [**`docs/PUBLIC_MAP.md`**](./docs/PUBLIC_MAP.md) — Peta publik, endpoint data, dan batasan privasi.
+* [**`docs/NOTO_PATI_CARE.md`**](./docs/NOTO_PATI_CARE.md) — Cakupan konten dan prinsip keselamatan Noto PATI Care.
+* [**`docs/SLA_TIMELINE.md`**](./docs/SLA_TIMELINE.md) — Linimasa status dan perhitungan SLA laporan.
 * [**`ARCHITECTURE.md`**](./ARCHITECTURE.md) — Rincian arsitektur 4 lapisan, batasan server/client, dan aturan database.
 * [**`DEVELOPMENT.md`**](./DEVELOPMENT.md) — Konvensi pengembangan lokal, standar kode, dan error handling.
 * [**`PRD.md`**](./PRD.md) — Product Requirement Document (kebutuhan produk dan kriteria penerimaan).
