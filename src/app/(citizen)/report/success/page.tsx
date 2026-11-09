@@ -6,8 +6,11 @@ import {
   IconFileText,
   IconMapPin,
   IconBookOpen,
+  IconEnvelope,
 } from "@/components/shared/icons";
 import { Button } from "@/components/ui/button";
+import { isMissingAuthSessionError } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 import {
   VisualEducationCard,
   VisualEducationCardSkeleton,
@@ -31,6 +34,16 @@ export default async function ReportSuccessPage({
   searchParams,
 }: ReportSuccessPageProps) {
   const { reportId, ticket, category } = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError && !isMissingAuthSessionError(authError)) {
+    throw new Error(`Gagal memeriksa sesi pengguna: ${authError.message}`);
+  }
+
   const ticketNumber =
     ticket || (reportId ? `NP-${reportId.slice(0, 8).toUpperCase()}` : "NP-PATI-BARU");
 
@@ -68,6 +81,49 @@ export default async function ReportSuccessPage({
               Simpan nomor tiket ini untuk memantau pembaruan status dan SLA penanganan di lapangan.
             </p>
           </div>
+
+          <section className="border-t border-border pt-5 text-left">
+            <div className="flex items-start gap-3">
+              <IconEnvelope
+                aria-hidden="true"
+                className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                weight="regular"
+              />
+              <div className="space-y-1">
+                <h2 className="text-sm font-bold text-text">
+                  Notifikasi perubahan status lewat email
+                </h2>
+                {user ? (
+                  <p className="text-sm leading-relaxed text-text-muted">
+                    Rancangan ini menyiapkan pembaruan status laporan ke email akun Anda.
+                    Pengiriman email belum aktif di prototipe ini.
+                  </p>
+                ) : (
+                  <p className="text-sm leading-relaxed text-text-muted">
+                    Laporan ini dikirim tanpa akun, jadi belum terhubung ke notifikasi email.
+                    Masuk atau daftar agar laporan berikutnya tersimpan di akun dan dapat
+                    disiapkan untuk menerima pembaruan status. Pantau laporan ini dengan
+                    nomor tiket di atas.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {!user && (
+              <div className="mt-4 flex flex-col gap-2 pl-8 sm:flex-row">
+                <Link href="/login?next=%2Fmy-reports">
+                  <Button variant="default" size="sm" className="w-full font-semibold sm:w-auto">
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/register?next=%2Fmy-reports">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    Daftar
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </section>
 
           {/* Action Navigation Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

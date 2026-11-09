@@ -26,7 +26,7 @@ Noto PATI adalah web mobile-first untuk melaporkan kerusakan infrastruktur publi
 | Jenis pengguna | Akun | Yang boleh dilakukan |
 |---|---|---|
 | **Pengunjung** | Tidak perlu | Membuat laporan anonim; melihat daftar/detail laporan publik, linimasa publik, dan halaman Anggaran |
-| **Warga** | Opsional (email/Google via Supabase Auth) | Membuat laporan, melihat laporan sendiri; (P1) mendukung laporan, memberi rating, mengajukan buka kembali |
+| **Warga** | Opsional (email/Google via Supabase Auth) | Membuat laporan, melihat laporan sendiri; (P1) mendukung laporan, memberi rating setelah selesai (akun terautentikasi), mengajukan buka kembali |
 | **Admin** | Role khusus, ditetapkan lewat proses administratif aman | Verifikasi, tolak (dengan alasan), gabung duplikat, ubah status, unggah bukti tindak lanjut |
 
 **Ketentuan pengguna:**
@@ -81,7 +81,7 @@ P1 **bukan syarat demo inti**. Dikerjakan hanya jika waktu tersisa, dan tidak bo
 |---|---|---|
 | 1 | Notifikasi email untuk kejadian penting (kegagalan email tidak menggagalkan laporan) | FR-13 |
 | 2 | Dukungan laporan: 1 dukungan per akun per laporan, bukan laporan sendiri | FR-11 |
-| 3 | Rating 1–5 setelah `Selesai` + permintaan buka kembali yang ditinjau Admin | FR-12 |
+| 3 | Rating 1–5 dan komentar dari akun Warga terautentikasi setelah `Selesai` (satu ulasan per akun, tidak dapat diubah) + permintaan buka kembali yang ditinjau Admin | FR-12 |
 | 4 | Analisis foto AI: usulan kategori + ringkasan visual; tidak boleh menghambat laporan manual | AI-01 |
 | 5 | Impor CSV anggaran + antarmuka verifikasi Admin (jika belum, data dimuat tim lewat proses terkontrol) | BG-02 |
 | 6 | PWA installable dengan cache **aset statis saja** | 5.2 |
@@ -123,8 +123,11 @@ P1 **bukan syarat demo inti**. Dikerjakan hanya jika waktu tersisa, dan tidak bo
 
 > **Status implementasi saat ini:** alur laporan anonim/authenticated, upload foto privat,
 > geolokasi, reverse geocoding, signed URL, peta publik, dan analisis foto AI opsional sudah
-> tersedia. Dashboard admin, transisi status lengkap, SLA, dukungan, rating, reopen, dan
-> anggaran berbasis database belum selesai.
+> tersedia. Fitur dukungan laporan tersedia untuk akun Warga terautentikasi: satu kali pada
+> laporan milik warga lain, dengan hitungan agregat yang tidak membocorkan identitas pendukung.
+> Penilaian 1–5 dan komentar untuk laporan selesai tersedia bagi akun Warga terautentikasi,
+> satu kali per akun dan ditampilkan publik tanpa identitas. Dashboard admin, transisi status
+> lengkap, SLA, reopen, dan anggaran berbasis database belum selesai.
 
 ### 6.1 Kriteria selesai MVP (demo layak jika semua lulus)
 1. Warga dapat daftar/masuk; pengguna tak berwenang tidak dapat mengakses dashboard Admin.

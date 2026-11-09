@@ -2,9 +2,11 @@ import "server-only";
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { isMissingAuthSessionError } from "@/lib/auth/session";
 import { normalizeReportStatus } from "@/config/theme";
 import { buildSearchOrFilter } from "@/lib/reports/search";
 import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
+import { getReportSupportSummaries } from "@/lib/reports/support";
 import type { ReportItemData } from "@/components/shared/report-card";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -32,6 +34,11 @@ export type PublicReport = {
   detail_location: string;
   status: string;
   created_at: string;
+  supportCount: number;
+  hasSupported: boolean;
+  isOwner: boolean;
+  canSupport: boolean;
+  isAuthenticated: boolean;
   image_url?: string;
 };
 
@@ -80,15 +87,37 @@ export async function getPublicReports(
     return { reports: [], total: 0 };
   }
 
-  const reports = (data ?? []) as PublicReport[];
-  const imageUrlByReport = await getFirstPhotoUrls(reports.map((report) => report.id));
+  const reportRows = (data ?? []) as Omit<
+    PublicReport,
+    "supportCount" | "hasSupported" | "isOwner" | "canSupport" | "isAuthenticated"
+  >[];
+  const [imageUrlByReport, supportSummaries, { data: authData, error: authError }] =
+    await Promise.all([
+      getFirstPhotoUrls(reportRows.map((report) => report.id)),
+      getReportSupportSummaries(reportRows.map((report) => report.id)),
+      supabase.auth.getUser(),
+    ]);
+
+  if (authError && !isMissingAuthSessionError(authError)) {
+    console.error("Failed to verify viewer for public reports", authError);
+    throw new Error(`Gagal memeriksa sesi pengguna: ${authError.message}`);
+  }
 
   return {
-    reports: reports.map((report) => ({
-      ...report,
-      image_url: imageUrlByReport.get(report.id),
-    })),
-    total: count ?? reports.length,
+    reports: reportRows.map((report) => {
+      const support = supportSummaries.get(report.id);
+      if (!support) {
+        throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
+      }
+
+      return {
+        ...report,
+        ...support,
+        isAuthenticated: Boolean(authData.user),
+        image_url: imageUrlByReport.get(report.id),
+      };
+    }),
+    total: count ?? reportRows.length,
   };
 }
 
@@ -161,7 +190,11 @@ export function toReportItem(report: PublicReport): ReportItemData {
     status: normalizeReportStatus(report.status),
     location: report.detail_location,
     date: new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", year: "numeric" }).format(new Date(report.created_at)),
-    supportCount: 0,
+    supportCount: report.supportCount,
+    hasSupported: report.hasSupported,
+    isOwner: report.isOwner,
+    canSupport: report.canSupport,
+    isAuthenticated: report.isAuthenticated,
     imageUrl: report.image_url,
   };
 }

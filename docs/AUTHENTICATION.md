@@ -108,7 +108,7 @@ RLS **wajib aktif** pada semua tabel yang dapat diakses melalui Supabase client.
 | `reports` | Baca hanya kolom/baris yang berstatus publik, **tanpa** `reporter_id` | Insert sebagai diri sendiri; baca laporan sendiri; baca publik | Baca semua; ubah status lewat jalur yang diizinkan |
 | `report_photos` | Hanya foto yang aman ditampilkan | Foto milik sendiri | Semua, termasuk bukti tindak lanjut |
 | `report_status_history` | Baca linimasa publik | Baca linimasa laporan terkait | Baca semua; **insert only** (append-only dari sisi aplikasi) |
-| `report_supports` | Tidak ada akses | Insert milik sendiri (1x) | Baca |
+| `report_supports` | Tidak ada akses langsung; hanya ringkasan jumlah dukungan | Dukungan melalui RPC terautentikasi (1x untuk laporan orang lain); tidak dapat membaca identitas pendukung | Baca ringkasan jumlah dukungan |
 | `report_ratings` | Tidak ada akses | Insert hanya oleh pelapor, hanya setelah `Selesai` | Baca |
 | `reopen_requests` | Tidak ada akses | Insert/baca milik sendiri | Baca; isi keputusan |
 | `sla_policies` | Baca (untuk label) | Baca | Kelola |
@@ -156,7 +156,7 @@ Catatan:
 7. Setiap perubahan status tercatat dengan waktu server dan identitas pelaku dari sesi.
 8. Warga tidak dapat mengubah/menghapus riwayat status.
 9. Respons publik tidak memuat `reporter_id` atau identitas pelapor.
-10. Dukungan ganda dan dukungan pada laporan sendiri ditolak (jika P1 aktif).
+10. Pengunjung tidak dapat mendukung; Warga hanya dapat mendukung laporan orang lain satu kali, ditegakkan oleh RPC server dan primary key database.
 11. Service role key tidak ditemukan di bundle klien maupun repository (diperiksa saat review deployment).
 12. Pengujian RLS lulus untuk tiga jenis pengguna (Pengunjung, Warga, Admin).
 

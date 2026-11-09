@@ -14,7 +14,7 @@ create table if not exists public.care_articles (
     impacts text[] not null default '{}',
     safety_actions text[] not null default '{}',
     prevention_steps text[] not null default '{}',
-    references jsonb not null default '[]'::jsonb,
+    "references" jsonb not null default '[]'::jsonb,
     reviewed_at timestamptz not null default now(),
     is_published boolean not null default true,
     read_time_minutes integer not null default 3,
@@ -60,7 +60,7 @@ insert into public.care_articles (
     impacts,
     safety_actions,
     prevention_steps,
-    references,
+    "references",
     reviewed_at,
     is_published,
     read_time_minutes
@@ -255,9 +255,8 @@ on conflict (slug) do update set
     impacts = excluded.impacts,
     safety_actions = excluded.safety_actions,
     prevention_steps = excluded.prevention_steps,
-    references = excluded.references,
+    "references" = excluded."references",
     reviewed_at = excluded.reviewed_at,
     is_published = excluded.is_published,
     read_time_minutes = excluded.read_time_minutes,
     updated_at = now();
-

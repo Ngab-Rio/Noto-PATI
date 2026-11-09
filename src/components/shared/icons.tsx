@@ -25,6 +25,7 @@ export {
   MagnifyingGlass as IconSearch,
   Calendar as IconCalendar,
   ShareNetwork as IconShare2,
+  EnvelopeSimple as IconEnvelope,
   ArrowsOut as IconMaximize2,
   CaretDown as IconCaretDown,
   CaretUp as IconCaretUp,

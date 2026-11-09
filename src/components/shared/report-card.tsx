@@ -1,11 +1,9 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
   MapPin,
-  ThumbsUp,
   RotateCcw,
   Star,
   Calendar,
@@ -15,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
+import { ReportSupportButton } from "@/features/reports/components/ReportSupportButton";
 import type { ReportStatusKey } from "@/config/theme";
 
 export interface ReportItemData {
@@ -27,6 +26,10 @@ export interface ReportItemData {
   location: string;
   date: string;
   supportCount: number;
+  hasSupported: boolean;
+  isOwner: boolean;
+  canSupport: boolean;
+  isAuthenticated: boolean;
   dinasTerkait?: string;
   officialNote?: string;
   imageUrl?: string;
@@ -35,7 +38,6 @@ export interface ReportItemData {
 export interface ReportCardProps {
   report: ReportItemData;
   className?: string;
-  onSupport?: (id: string) => void;
   onViewMap?: (id: string) => void;
   onRate?: (id: string) => void;
   onReopen?: (id: string) => void;
@@ -54,23 +56,10 @@ export interface ReportCardProps {
 export function ReportCard({
   report,
   className,
-  onSupport,
   onViewMap,
   onRate,
   onReopen,
 }: ReportCardProps) {
-  const [supported, setSupported] = React.useState(false);
-  const [likes, setLikes] = React.useState(report.supportCount);
-
-  const handleSupport = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!supported) {
-      setSupported(true);
-      setLikes((prev) => prev + 1);
-      onSupport?.(report.id);
-    }
-  };
-
   return (
     <article
       className={cn(
@@ -143,20 +132,17 @@ export function ReportCard({
         {/* Primary Actions Row */}
         <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           {/* Tombol Dukung Laporan */}
-          <Button
-            type="button"
-            variant={supported ? "accent" : "outline"}
+          <ReportSupportButton
+            reportId={report.id}
+            supportCount={report.supportCount}
+            hasSupported={report.hasSupported}
+            isOwner={report.isOwner}
+            canSupport={report.canSupport}
+            isAuthenticated={report.isAuthenticated}
+            returnTo={`/reports/${report.id}`}
             size="sm"
-            onClick={handleSupport}
-            className="gap-1.5 hover:scale-105 active:scale-95 transition-transform w-full sm:w-auto justify-center"
-            aria-label={`Dukung laporan ini. Saat ini ${likes} dukungan`}
-          >
-            <ThumbsUp className={cn("h-3.5 w-3.5 transition-transform", supported && "fill-current scale-110")} />
-            <span>{supported ? "Didukung" : "Dukung"}</span>
-            <span className="ml-1 rounded-full bg-black/10 dark:bg-white/10 px-1.5 py-0.2 text-[10px] font-bold">
-              {likes}
-            </span>
-          </Button>
+            buttonClassName="hover:scale-105 active:scale-95 transition-transform"
+          />
 
           {/* Tombol Lihat di Peta */}
           {onViewMap ? (
