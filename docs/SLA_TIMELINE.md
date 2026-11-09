@@ -24,6 +24,12 @@ Setiap perubahan status laporan dicatat ke tabel `report_status_history` secara 
 
 Stored procedure `admin_transition_report` menggunakan `SELECT … FOR UPDATE` pada baris laporan sebelum melakukan transisi. Ini mencegah dua admin mengubah status laporan yang sama secara bersamaan (race condition).
 
+### Pembaruan langsung untuk warga
+
+Detail laporan menerima perubahan status melalui Supabase Realtime tanpa perlu memuat ulang halaman. Trigger menyalin kolom yang aman untuk publik dari `report_status_history` ke `public_report_status_updates`. Salinan ini juga diisi dari riwayat yang sudah ada saat migrasi diterapkan, sehingga halaman dapat menyelaraskan data setelah koneksi tersambung.
+
+Tabel salinan tidak memuat `changed_by` atau `proof_image_url`. Akses tulis tetap hanya melalui trigger database; pengunjung hanya memiliki akses baca ke kolom publik.
+
 ```sql
 -- Contoh bagian kritis dalam stored procedure
 SELECT id, status, ... FROM reports WHERE id = p_report_id FOR UPDATE;
@@ -185,6 +191,7 @@ Foto laporan diambil melalui service role di server untuk membuat signed URL; se
 | `20261104161000_private_completion_evidence.sql` | Bucket bukti penyelesaian menjadi privat |
 | `20261104162000_publish_completion_evidence.sql` | Grant SELECT `proof_image_url` untuk halaman publik |
 | `20261106100000_protect_public_history_and_backfill_sla.sql` | Cabut grant tabel `report_status_history` (lindungi `changed_by`); backfill `verified_at` dan `handling_due_at` dari history nyata untuk laporan lama |
+| `20261109213000_add_live_public_report_status_updates.sql` | Membuat salinan aman untuk publik, menyinkronkan riwayat status, dan mengaktifkan Supabase Realtime |
 
 ### Backfill laporan lama
 
@@ -231,4 +238,3 @@ Keterbatasan lain:
 - **Tidak ada eskalasi** — sistem tidak mengirimkan notifikasi saat SLA terlampaui.
 - **Tidak ada integrasi OPD** — sistem tidak terhubung ke sistem internal dinas.
 - **Waktu server** — seluruh kalkulasi menggunakan `timestamptz` server Supabase; pastikan timezone server dikonfigurasi dengan benar.
-

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   Plus,
   FileText,
@@ -15,6 +15,7 @@ import { requireUser } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeReportStatus } from "@/config/theme";
 import { getReportSupportSummaries } from "@/lib/reports/support";
+import { getReportReviewRatings } from "@/lib/reports/reviews";
 
 const CATEGORY_LABELS: Record<string, string> = {
   jalan: "Jalan Berlubang / Rusak",
@@ -48,6 +49,10 @@ type StoredReport = {
   hasSupported: boolean;
   isOwner: boolean;
   canSupport: boolean;
+  rating?: {
+    reviewCount: number;
+    averageRating: number;
+  };
 };
 
 async function getUserReports(): Promise<StoredReport[]> {
@@ -68,16 +73,18 @@ async function getUserReports(): Promise<StoredReport[]> {
     StoredReport,
     "supportCount" | "hasSupported" | "isOwner" | "canSupport"
   >[];
-  const supportSummaries = await getReportSupportSummaries(
-    reportRows.map((report) => report.id),
-  );
+  const reportIds = reportRows.map((report) => report.id);
+  const [supportSummaries, reviewRatings] = await Promise.all([
+    getReportSupportSummaries(reportIds),
+    getReportReviewRatings(reportIds),
+  ]);
 
   return reportRows.map((report) => {
     const support = supportSummaries.get(report.id);
     if (!support) {
       throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
     }
-    return { ...report, ...support };
+    return { ...report, ...support, rating: reviewRatings.get(report.id) };
   });
 }
 
@@ -104,6 +111,7 @@ function toReportItem(report: StoredReport): ReportItemData {
     isOwner: report.isOwner,
     canSupport: report.canSupport,
     isAuthenticated: true,
+    rating: report.rating,
   };
 }
 

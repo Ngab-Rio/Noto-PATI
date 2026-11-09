@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cache } from "react";
 import { getSignedPhotoUrls, getSignedCompletionEvidenceUrls } from "@/lib/reports/signed-urls";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAdmin } from "@/lib/auth/guards";
@@ -8,6 +9,16 @@ import { normalizeReportStatus } from "@/config/theme";
 import type { AdminReportItem } from "./types";
 import { calculateReportSla, formatRemainingTime } from "@/domain/sla";
 import { getReportSupportSummaries } from "@/lib/reports/support";
+import type { ReportStatus } from "@/types/map";
+
+export const ADMIN_MAP_STATUSES = [
+  "diterima",
+  "diverifikasi",
+  "diproses",
+  "selesai",
+  "ditolak",
+  "digabung",
+] as const satisfies readonly ReportStatus[];
 
 const CATEGORY_KEYS: Record<string, AdminReportItem["categoryKey"]> = {
   jalan: "road_damage",
@@ -85,11 +96,14 @@ function toReportItem(
   signedUrls: Map<string, string>,
   proofSignedUrls: Map<string, string>,
   supportCount: number,
+  completedAtOverride?: string | null,
 ): AdminReportItem {
   const category = report.category.toLowerCase();
   const status = normalizeReportStatus(report.status);
   const completedAt =
-    history.find((entry) => entry.status === "selesai")?.created_at ?? null;
+    history.find((entry) => entry.status === "selesai")?.created_at ??
+    completedAtOverride ??
+    null;
   const sla = calculateReportSla(
     {
       status,
@@ -155,74 +169,53 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
   await requireAdmin();
   const admin = createAdminClient();
 
-  const [{ data: reports, error: reportsError }, { data: photos, error: photosError }, { data: history, error: historyError }] =
-    await Promise.all([
-      admin
-        .from("reports")
-        .select(
-          "id, ticket_number, reporter_id, category, title, description, detail_location, status, latitude, longitude, created_at, verification_due_at, handling_due_at, verified_at",
-        )
-        .order("created_at", { ascending: false }),
-      admin
-        .from("report_photos")
-        .select("id, report_id, storage_path, sort_order")
-        .order("sort_order", { ascending: true }),
-      admin
-        .from("report_status_history")
-        .select("id, report_id, status, changed_by, note, proof_image_url, created_at")
-        .order("created_at", { ascending: false }),
-    ]);
+  const { data: reports, error: reportsError } = await admin
+    .from("reports")
+    .select(
+      "id, ticket_number, reporter_id, category, title, description, detail_location, status, latitude, longitude, created_at, verification_due_at, handling_due_at, verified_at",
+    )
+    .order("created_at", { ascending: false });
 
   if (reportsError) throw new Error(`Gagal memuat laporan admin: ${reportsError.message}`);
-  if (photosError) throw new Error(`Gagal memuat foto laporan: ${photosError.message}`);
-  if (historyError) throw new Error(`Gagal memuat riwayat laporan: ${historyError.message}`);
 
   const reportRows = (reports ?? []) as ReportRow[];
-  const photoRows = (photos ?? []) as PhotoRow[];
-  const historyRows = (history ?? []) as HistoryRow[];
-  const supportSummaries = await getReportSupportSummaries(
-    reportRows.map((report) => report.id),
-    true,
-  );
-  const profileIds = [
-    ...new Set([
-      ...reportRows.map((report) => report.reporter_id),
-      ...historyRows.flatMap((entry) => (entry.changed_by ? [entry.changed_by] : [])),
-    ]),
-  ].filter(isUuid);
+  const reportIds = reportRows.map((report) => report.id);
+  const completedReportIds = reportRows
+    .filter((report) => normalizeReportStatus(report.status) === "selesai")
+    .map((report) => report.id);
+  const profileIds = [...new Set(reportRows.map((report) => report.reporter_id))]
+    .filter(isUuid);
 
-  const { data: profiles, error: profilesError } = profileIds.length
-    ? await admin.from("profiles").select("id, full_name, phone").in("id", profileIds)
-    : { data: [], error: null };
+  const [completionHistoryResult, supportSummaries, profilesResult] = await Promise.all([
+    completedReportIds.length
+      ? admin
+          .from("report_status_history")
+          .select("report_id, status, created_at")
+          .in("report_id", completedReportIds)
+          .eq("status", "selesai")
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    getReportSupportSummaries(reportIds, true),
+    profileIds.length
+      ? admin.from("profiles").select("id, full_name, phone").in("id", profileIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
 
-  if (profilesError) throw new Error(`Gagal memuat profil pelapor: ${profilesError.message}`);
-
-  const profileById = new Map(
-    ((profiles ?? []) as ProfileRow[]).map((profile) => [profile.id, profile]),
-  );
-  
-  // Generate signed URLs untuk foto laporan
-  const signedUrls = await getSignedPhotoUrls(photoRows.map((photo) => photo.storage_path));
-  
-  // Generate signed URLs untuk proof completion evidence
-  const proofPaths = historyRows
-    .map((entry) => entry.proof_image_url)
-    .filter((path): path is string => Boolean(path));
-  const proofSignedUrls = await getSignedCompletionEvidenceUrls(proofPaths);
-  
-  const photosByReport = new Map<string, PhotoRow[]>();
-  const historyByReport = new Map<string, HistoryRow[]>();
-
-  for (const photo of photoRows) {
-    const items = photosByReport.get(photo.report_id) ?? [];
-    items.push(photo);
-    photosByReport.set(photo.report_id, items);
+  if (completionHistoryResult.error) {
+    throw new Error(`Gagal memuat tanggal penyelesaian laporan: ${completionHistoryResult.error.message}`);
+  }
+  if (profilesResult.error) {
+    throw new Error(`Gagal memuat profil pelapor: ${profilesResult.error.message}`);
   }
 
-  for (const entry of historyRows) {
-    const items = historyByReport.get(entry.report_id) ?? [];
-    items.push(entry);
-    historyByReport.set(entry.report_id, items);
+  const profileById = new Map(
+    ((profilesResult.data ?? []) as ProfileRow[]).map((profile) => [profile.id, profile]),
+  );
+  const completedAtByReport = new Map<string, string>();
+  for (const row of completionHistoryResult.data ?? []) {
+    if (!completedAtByReport.has(row.report_id)) {
+      completedAtByReport.set(row.report_id, row.created_at);
+    }
   }
 
   return reportRows.map((report) => {
@@ -234,16 +227,177 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
     return toReportItem(
       report,
       profileById.get(report.reporter_id ?? ""),
-      photosByReport.get(report.id) ?? [],
-      historyByReport.get(report.id) ?? [],
-      signedUrls,
-      proofSignedUrls,
+      [],
+      [],
+      new Map(),
+      new Map(),
       support.supportCount,
+      completedAtByReport.get(report.id) ?? null,
     );
   });
 }
 
-export async function getAdminReport(id: string) {
-  const reports = await getAdminReports();
-  return reports.find((report) => report.id === id) ?? null;
+export async function getAdminRecentActivity(): Promise<
+  Array<{
+    id: string;
+    ticketNumber: string;
+    actor: string;
+    note: string | null;
+    timestamp: string;
+  }>
+> {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data: history, error: historyError } = await admin
+    .from("report_status_history")
+    .select("id, report_id, changed_by, note, created_at")
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (historyError) {
+    throw new Error(`Gagal memuat aktivitas admin terbaru: ${historyError.message}`);
+  }
+
+  const historyRows = history ?? [];
+  if (historyRows.length === 0) return [];
+
+  const reportIds = [...new Set(historyRows.map((entry) => entry.report_id))];
+  const { data: reports, error: reportsError } = await admin
+    .from("reports")
+    .select("id, ticket_number")
+    .in("id", reportIds);
+
+  if (reportsError) {
+    throw new Error(`Gagal memuat nomor tiket aktivitas admin: ${reportsError.message}`);
+  }
+
+  const ticketByReportId = new Map(
+    (reports ?? []).map((report) => [report.id, report.ticket_number]),
+  );
+
+  return historyRows.map((entry) => {
+    const ticketNumber = ticketByReportId.get(entry.report_id);
+    if (!ticketNumber) {
+      throw new Error(`Nomor tiket laporan ${entry.report_id} tidak ditemukan.`);
+    }
+
+    return {
+      id: entry.id,
+      ticketNumber,
+      actor: entry.changed_by ? "Pengguna terautentikasi" : "Sistem",
+      note: entry.note,
+      timestamp: formatDate(entry.created_at),
+    };
+  });
 }
+
+export async function getAdminMapSummary() {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const [statusCounts, locatedResult] = await Promise.all([
+    Promise.all(
+      ADMIN_MAP_STATUSES.map(async (status) => {
+        const { count, error } = await admin
+          .from("reports")
+          .select("id", { count: "exact", head: true })
+          .eq("status", status);
+
+        if (error) {
+          throw new Error(`Gagal menghitung laporan berstatus ${status}: ${error.message}`);
+        }
+
+        return { status, count: count ?? 0 };
+      }),
+    ),
+    admin
+      .from("reports")
+      .select("id", { count: "exact", head: true })
+      .gte("latitude", -90)
+      .lte("latitude", 90)
+      .gte("longitude", -180)
+      .lte("longitude", 180),
+  ]);
+
+  if (locatedResult.error) {
+    throw new Error(`Gagal menghitung laporan dengan koordinat valid: ${locatedResult.error.message}`);
+  }
+
+  const countsByStatus = new Map(
+    statusCounts.map(({ status, count }) => [status, count]),
+  );
+
+  return {
+    totalCount: statusCounts.reduce((total, item) => total + item.count, 0),
+    locatedCount: locatedResult.count ?? 0,
+    activeCount:
+      (countsByStatus.get("diterima") ?? 0)
+      + (countsByStatus.get("diverifikasi") ?? 0)
+      + (countsByStatus.get("diproses") ?? 0),
+    completedCount: countsByStatus.get("selesai") ?? 0,
+    statusCounts,
+  };
+}
+
+export const getAdminReport = cache(async (id: string) => {
+  await requireAdmin();
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("reports")
+    .select(
+      "id, ticket_number, reporter_id, category, title, description, detail_location, status, latitude, longitude, created_at, verification_due_at, handling_due_at, verified_at",
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw new Error(`Gagal memuat laporan admin: ${error.message}`);
+  if (!data) return null;
+
+  const report = data as ReportRow;
+  const [{ data: photos, error: photosError }, { data: history, error: historyError }, supportSummaries, profileResult] =
+    await Promise.all([
+      admin
+        .from("report_photos")
+        .select("id, report_id, storage_path, sort_order")
+        .eq("report_id", id)
+        .order("sort_order", { ascending: true }),
+      admin
+        .from("report_status_history")
+        .select("id, report_id, status, changed_by, note, proof_image_url, created_at")
+        .eq("report_id", id)
+        .order("created_at", { ascending: false }),
+      getReportSupportSummaries([id], true),
+      report.reporter_id
+        ? admin
+          .from("profiles")
+          .select("id, full_name, phone")
+          .eq("id", report.reporter_id)
+          .maybeSingle()
+        : Promise.resolve({ data: null, error: null }),
+    ]);
+
+  if (photosError) throw new Error(`Gagal memuat foto laporan: ${photosError.message}`);
+  if (historyError) throw new Error(`Gagal memuat riwayat laporan: ${historyError.message}`);
+  if (profileResult.error) throw new Error(`Gagal memuat profil pelapor: ${profileResult.error.message}`);
+
+  const support = supportSummaries.get(id);
+  if (!support) throw new Error(`Ringkasan dukungan laporan ${id} tidak ditemukan.`);
+
+  const photoRows = (photos ?? []) as PhotoRow[];
+  const historyRows = (history ?? []) as HistoryRow[];
+  const signedUrls = await getSignedPhotoUrls(photoRows.map((photo) => photo.storage_path));
+  const proofPaths = historyRows
+    .map((entry) => entry.proof_image_url)
+    .filter((path): path is string => Boolean(path));
+  const proofSignedUrls = await getSignedCompletionEvidenceUrls(proofPaths);
+
+  return toReportItem(
+    report,
+    profileResult.data as ProfileRow | undefined,
+    photoRows,
+    historyRows,
+    signedUrls,
+    proofSignedUrls,
+    support.supportCount,
+  );
+});

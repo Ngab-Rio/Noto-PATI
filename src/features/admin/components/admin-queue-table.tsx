@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   Search,
   Users,
@@ -173,12 +173,20 @@ export function AdminQueueTable({ initialReports }: AdminQueueTableProps) {
           <div className="relative flex-1 md:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
             <input
+              id="admin-queue-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-describedby="admin-queue-search-help"
               placeholder="Cari tiket, judul, lokasi..."
               className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             />
+            <label htmlFor="admin-queue-search" className="sr-only">
+              Cari laporan berdasarkan nomor tiket, judul, lokasi, atau nama pelapor
+            </label>
+            <span id="admin-queue-search-help" className="sr-only">
+              Antrean akan difilter saat Anda mengetik.
+            </span>
           </div>
 
           <div className="relative">

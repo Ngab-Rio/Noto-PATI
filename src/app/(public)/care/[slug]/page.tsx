@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { notFound } from "next/navigation";
 import {
   IconArrowRight,
@@ -306,4 +306,3 @@ export default async function CareArticleDetailPage({
     </div>
   );
 }
-

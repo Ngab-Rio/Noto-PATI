@@ -36,12 +36,19 @@ describe("Noto PATI Care Feature", () => {
   });
 
   describe("Metadata & Categories", () => {
-    it("harus mencakup lima kategori utama infrastruktur", () => {
-      expect(CARE_CATEGORIES).toHaveProperty("jalan");
-      expect(CARE_CATEGORIES).toHaveProperty("drainase");
-      expect(CARE_CATEGORIES).toHaveProperty("lampu");
-      expect(CARE_CATEGORIES).toHaveProperty("trotoar");
-      expect(CARE_CATEGORIES).toHaveProperty("jembatan");
+    it("harus mencakup seluruh kategori laporan infrastruktur", () => {
+      const reportCategories = [
+        "jalan",
+        "lampu",
+        "drainase",
+        "jembatan",
+        "tanggul",
+        "trotoar",
+        "rambu",
+        "lainnya",
+      ];
+
+      expect(Object.keys(CARE_CATEGORIES).sort()).toEqual(reportCategories.sort());
     });
 
     it("setiap kategori harus memiliki label dan dinas pengampu yang jelas", () => {
@@ -55,13 +62,34 @@ describe("Noto PATI Care Feature", () => {
   });
 
   describe("Fallback Data Integrity", () => {
-    it("minimal menyediakan satu materi kurasi untuk masing-masing dari 5 kategori utama", () => {
+    it("minimal menyediakan satu materi kurasi untuk setiap kategori laporan", () => {
       const categoriesInMock = new Set(FALLBACK_CARE_ARTICLES.map((a) => a.category));
-      expect(categoriesInMock.has("jalan")).toBe(true);
-      expect(categoriesInMock.has("drainase")).toBe(true);
-      expect(categoriesInMock.has("lampu")).toBe(true);
-      expect(categoriesInMock.has("trotoar")).toBe(true);
-      expect(categoriesInMock.has("jembatan")).toBe(true);
+      for (const category of Object.keys(CARE_CATEGORIES)) {
+        expect(categoriesInMock.has(category as keyof typeof CARE_CATEGORIES)).toBe(true);
+      }
+    });
+
+    it("menyediakan materi vandalisme yang dapat dicari warga", () => {
+      expect(
+        FALLBACK_CARE_ARTICLES.some(
+          (article) =>
+            article.slug === "vandalisme-fasilitas-publik" &&
+            article.category === "lainnya" &&
+            article.title.toLowerCase().includes("vandalisme")
+        )
+      ).toBe(true);
+    });
+
+    it("menyediakan panduan umum untuk kategori lainnya, termasuk laporan vandalisme", () => {
+      const generalGuide = FALLBACK_CARE_ARTICLES.find(
+        (article) => article.slug === "panduan-umum-fasilitas-publik"
+      );
+
+      expect(generalGuide?.category).toBe("lainnya");
+      expect(generalGuide?.title).toContain("Panduan Umum");
+      expect(generalGuide?.safetyActions.join(" ").toLowerCase()).toContain(
+        "jangan menyentuh"
+      );
     });
 
     it("setiap artikel harus memuat seluruh field edukasi yang disyaratkan", () => {

@@ -219,7 +219,7 @@ export default async function SettingsPage() {
       {/* Info Notice */}
       <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-4">
         <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-          <strong>💡 Catatan:</strong> Beberapa fitur masih dalam pengembangan dan akan segera tersedia. 
+          <strong>Catatan:</strong> Beberapa fitur masih dalam pengembangan dan akan segera tersedia.
           Kami terus meningkatkan pengalaman Anda di Noto PATI.
         </p>
       </div>

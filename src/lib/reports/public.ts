@@ -4,9 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingAuthSessionError } from "@/lib/auth/session";
 import { normalizeReportStatus } from "@/config/theme";
-import { buildSearchOrFilter } from "@/lib/reports/search";
+import { buildSearchOrFilter, normalizeSearchTerm } from "@/lib/reports/search";
 import { getSignedPhotoUrls } from "@/lib/reports/signed-urls";
 import { getReportSupportSummaries } from "@/lib/reports/support";
+import { getReportReviewRatings } from "@/lib/reports/reviews";
 import type { ReportItemData } from "@/components/shared/report-card";
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -21,6 +22,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export const PUBLIC_STATUSES = ["diterima", "diverifikasi", "diproses", "selesai", "ditolak"] as const;
+export const ACTIVE_PUBLIC_STATUSES = ["diterima", "diverifikasi", "diproses"] as const;
 
 const PUBLIC_REPORT_COLUMNS =
   "id, ticket_number, category, title, description, detail_location, status, created_at";
@@ -39,6 +41,12 @@ export type PublicReport = {
   isOwner: boolean;
   canSupport: boolean;
   isAuthenticated: boolean;
+  rating?: {
+    reviewCount: number;
+    averageRating: number;
+  };
+  groupSupportCount?: number;
+  mergedReportCount?: number;
   image_url?: string;
 };
 
@@ -48,11 +56,35 @@ export type PublicReportQuery = {
   search?: string;
   limit?: number;
   offset?: number;
+  sort?: "recent" | "attention";
 };
+
+type EngagementRanking = {
+  report_id: string;
+  group_support_count: number;
+  merged_report_count: number;
+  engagement_score: number;
+};
+
+type PublicReportRow = Pick<
+  PublicReport,
+  | "id"
+  | "ticket_number"
+  | "category"
+  | "title"
+  | "description"
+  | "detail_location"
+  | "status"
+  | "created_at"
+>;
 
 export async function getPublicReports(
   query: PublicReportQuery = {},
 ): Promise<{ reports: PublicReport[]; total: number }> {
+  if (query.sort === "attention") {
+    return getPublicEngagementReports(query);
+  }
+
   const supabase = await createClient();
 
   let request = supabase
@@ -89,12 +121,24 @@ export async function getPublicReports(
 
   const reportRows = (data ?? []) as Omit<
     PublicReport,
-    "supportCount" | "hasSupported" | "isOwner" | "canSupport" | "isAuthenticated"
+    | "supportCount"
+    | "hasSupported"
+    | "isOwner"
+    | "canSupport"
+    | "isAuthenticated"
+    | "groupSupportCount"
+    | "mergedReportCount"
   >[];
-  const [imageUrlByReport, supportSummaries, { data: authData, error: authError }] =
+  const [
+    imageUrlByReport,
+    supportSummaries,
+    reviewRatings,
+    { data: authData, error: authError },
+  ] =
     await Promise.all([
       getFirstPhotoUrls(reportRows.map((report) => report.id)),
       getReportSupportSummaries(reportRows.map((report) => report.id)),
+      getReportReviewRatings(reportRows.map((report) => report.id)),
       supabase.auth.getUser(),
     ]);
 
@@ -113,12 +157,143 @@ export async function getPublicReports(
       return {
         ...report,
         ...support,
+        rating: reviewRatings.get(report.id),
         isAuthenticated: Boolean(authData.user),
         image_url: imageUrlByReport.get(report.id),
       };
     }),
     total: count ?? reportRows.length,
   };
+}
+
+async function getPublicEngagementReports(
+  query: PublicReportQuery,
+): Promise<{ reports: PublicReport[]; total: number }> {
+  if (
+    query.status
+    && !ACTIVE_PUBLIC_STATUSES.includes(query.status as (typeof ACTIVE_PUBLIC_STATUSES)[number])
+  ) {
+    return { reports: [], total: 0 };
+  }
+
+  const supabase = await createClient();
+  const searchTerm = query.search ? normalizeSearchTerm(query.search) : null;
+  const limit = query.limit ?? 6;
+  const offset = query.offset ?? 0;
+  const [rankingResult, countResult] = await Promise.all([
+    supabase.rpc("get_public_report_engagement_rankings", {
+      p_category: query.category || null,
+      p_status: query.status || null,
+      p_search: searchTerm,
+      p_limit: limit,
+      p_offset: offset,
+    }),
+    getActiveReportCount(supabase, query, searchTerm),
+  ]);
+
+  if (rankingResult.error) {
+    console.error("Failed to fetch public report engagement ranking", rankingResult.error);
+    throw new Error(
+      `Gagal memuat urutan perhatian warga: ${rankingResult.error.message}`,
+    );
+  }
+
+  if (countResult.error) {
+    console.error("Failed to count active public reports", countResult.error);
+    throw new Error(`Gagal menghitung laporan aktif: ${countResult.error.message}`);
+  }
+
+  const rankings = (rankingResult.data ?? []) as EngagementRanking[];
+  const reportIds = rankings.map((ranking) => ranking.report_id);
+  const reportsResult = reportIds.length > 0
+    ? await supabase
+      .from("reports")
+      .select(PUBLIC_REPORT_COLUMNS)
+      .in("id", reportIds)
+    : { data: [], error: null };
+
+  if (reportsResult.error) {
+    console.error("Failed to fetch ranked public reports", reportsResult.error);
+    throw new Error(`Gagal memuat laporan terurut: ${reportsResult.error.message}`);
+  }
+
+  const rankedReportRows = (reportsResult.data ?? []) as PublicReportRow[];
+  const reportById = new Map(rankedReportRows.map((report) => [report.id, report]));
+  const orderedReports = rankings.map((ranking) => {
+    const report = reportById.get(ranking.report_id);
+    if (!report) {
+      throw new Error(`Laporan ${ranking.report_id} dari ranking tidak ditemukan.`);
+    }
+
+    return {
+      ...report,
+      groupSupportCount: Number(ranking.group_support_count),
+      mergedReportCount: Number(ranking.merged_report_count),
+    };
+  });
+
+  const [
+    imageUrlByReport,
+    supportSummaries,
+    reviewRatings,
+    { data: authData, error: authError },
+  ] =
+    await Promise.all([
+      getFirstPhotoUrls(reportIds),
+      getReportSupportSummaries(reportIds),
+      getReportReviewRatings(reportIds),
+      supabase.auth.getUser(),
+    ]);
+
+  if (authError && !isMissingAuthSessionError(authError)) {
+    console.error("Failed to verify viewer for public report ranking", authError);
+    throw new Error(`Gagal memeriksa sesi pengguna: ${authError.message}`);
+  }
+
+  return {
+    reports: orderedReports.map((report) => {
+      const support = supportSummaries.get(report.id);
+      if (!support) {
+        throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
+      }
+
+      return {
+        ...report,
+        ...support,
+        rating: reviewRatings.get(report.id),
+        isAuthenticated: Boolean(authData.user),
+        image_url: imageUrlByReport.get(report.id),
+      };
+    }),
+    total: countResult.count ?? 0,
+  };
+}
+
+async function getActiveReportCount(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  query: PublicReportQuery,
+  searchTerm: string | null,
+) {
+  let countQuery = supabase
+    .from("reports")
+    .select("id", { count: "exact", head: true })
+    .is("merged_into_report_id", null)
+    .in("status", [...ACTIVE_PUBLIC_STATUSES]);
+
+  if (query.category) {
+    countQuery = countQuery.eq("category", query.category);
+  }
+
+  if (query.status) {
+    countQuery = countQuery.eq("status", query.status);
+  }
+
+  const searchFilter = searchTerm ? buildSearchOrFilter(searchTerm) : null;
+  if (searchFilter) {
+    countQuery = countQuery.or(searchFilter);
+  }
+
+  return countQuery;
 }
 
 // Foto pertama selalu sort_order = 0 (unique per report, maksimal 3 foto).
@@ -195,6 +370,13 @@ export function toReportItem(report: PublicReport): ReportItemData {
     isOwner: report.isOwner,
     canSupport: report.canSupport,
     isAuthenticated: report.isAuthenticated,
+    engagement: report.groupSupportCount === undefined
+      || report.mergedReportCount === undefined
+      ? undefined
+      : {
+        groupSupportCount: report.groupSupportCount,
+        mergedReportCount: report.mergedReportCount,
+      },
     imageUrl: report.image_url,
   };
 }

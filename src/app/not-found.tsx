@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/shared/route-link';
 import { Home, Search, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 

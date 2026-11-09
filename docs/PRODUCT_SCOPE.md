@@ -85,6 +85,7 @@ P1 **bukan syarat demo inti**. Dikerjakan hanya jika waktu tersisa, dan tidak bo
 | 4 | Analisis foto AI: usulan kategori + ringkasan visual; tidak boleh menghambat laporan manual | AI-01 |
 | 5 | Impor CSV anggaran + antarmuka verifikasi Admin (jika belum, data dimuat tim lewat proses terkontrol) | BG-02 |
 | 6 | PWA installable dengan cache **aset statis saja** | 5.2 |
+| 7 | Urutan publik “Perhatian warga” berdasarkan dukungan unik dan laporan serupa yang digabung; bukan skor urgensi resmi dan tidak memakai ML | P1 |
 
 ---
 

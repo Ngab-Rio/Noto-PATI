@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildSearchOrFilter } from "./search";
+import { buildSearchOrFilter, normalizeSearchTerm } from "./search";
 
 describe("buildSearchOrFilter", () => {
   it("membangun filter or untuk judul dan lokasi", () => {
@@ -18,5 +18,12 @@ describe("buildSearchOrFilter", () => {
   it("mengembalikan null untuk pencarian kosong", () => {
     expect(buildSearchOrFilter("   ")).toBeNull();
     expect(buildSearchOrFilter("()")).toBeNull();
+  });
+});
+
+describe("normalizeSearchTerm", () => {
+  it("membersihkan karakter khusus PostgREST dan mengembalikan null untuk input kosong", () => {
+    expect(normalizeSearchTerm("a,b(c)")).toBe("a b c");
+    expect(normalizeSearchTerm("   ")).toBeNull();
   });
 });

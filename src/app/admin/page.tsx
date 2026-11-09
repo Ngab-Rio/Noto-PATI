@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   ClipboardList,
   Clock,
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  TrendingUp,
   Activity,
   ChevronRight,
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminQueueTable } from "@/features/admin/components/admin-queue-table";
-import { getAdminReports } from "@/features/admin/server-data";
+import {
+  getAdminRecentActivity,
+  getAdminReports,
+} from "@/features/admin/server-data";
 
 export const metadata: Metadata = {
   title: "Dashboard Admin · Noto PATI",
@@ -28,8 +30,6 @@ function StatCard({
   icon: Icon,
   iconBg,
   iconColor,
-  hasTrend,
-  trendValue,
 }: {
   label: string;
   value: string | number;
@@ -37,8 +37,6 @@ function StatCard({
   icon: React.ElementType;
   iconBg: string;
   iconColor: string;
-  hasTrend?: boolean;
-  trendValue?: number;
 }) {
   return (
     <div className="rounded-xl border border-border bg-surface p-5 shadow-xs transition-shadow hover:shadow-sm">
@@ -46,19 +44,6 @@ function StatCard({
         <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg}`}>
           <Icon className={`h-5 w-5 ${iconColor}`} />
         </div>
-        {hasTrend && trendValue !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-xs font-semibold ${
-              trendValue >= 0 ? "text-status-selesai-text" : "text-status-ditolak-text"
-            }`}
-          >
-            <TrendingUp className={`h-3.5 w-3.5 ${trendValue < 0 ? "rotate-180" : ""}`} />
-            <span>
-              {trendValue > 0 ? "+" : ""}
-              {trendValue}% bln ini
-            </span>
-          </div>
-        )}
       </div>
       <div className="mt-4">
         <div className="text-3xl font-bold text-text tracking-tight">{value}</div>
@@ -70,7 +55,10 @@ function StatCard({
 }
 
 export default async function AdminDashboardPage() {
-  const reports = await getAdminReports();
+  const [reports, recentActivity] = await Promise.all([
+    getAdminReports(),
+    getAdminRecentActivity(),
+  ]);
   const latestReports = reports.slice(0, 10);
   const pendingCount = reports.filter((r) => r.status === "diterima").length;
   const inProgressCount = reports.filter(
@@ -83,6 +71,7 @@ export default async function AdminDashboardPage() {
     ["diproses", "Diproses", "bg-status-diproses-bg", "text-status-diproses-text"],
     ["selesai", "Selesai", "bg-status-selesai-bg", "text-status-selesai-text"],
     ["ditolak", "Ditolak", "bg-status-ditolak-bg", "text-status-ditolak-text"],
+    ["digabung", "Digabung", "bg-status-digabung-bg", "text-status-digabung-text"],
   ].map(([status, label, bg, text]) => ({
     label,
     count: reports.filter((report) => report.status === status).length,
@@ -92,7 +81,7 @@ export default async function AdminDashboardPage() {
       ? Math.round((reports.filter((report) => report.status === status).length / reports.length) * 100)
       : 0,
   }));
-  const overdueCount = 0;
+  const overdueCount = reports.filter((report) => report.isOverdue).length;
 
   return (
     <div className="bg-background py-6 sm:py-8">
@@ -129,19 +118,19 @@ export default async function AdminDashboardPage() {
               <AlertTriangle className="h-5 w-5 text-status-ditolak-text shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-status-ditolak-text">
-                  Perhatian: {overdueCount} laporan telah melewati batas waktu SLA verifikasi (24 jam)
+                  Perhatian: {overdueCount} laporan telah melewati batas waktu SLA
                 </p>
                 <p className="text-xs text-status-ditolak-text/85 mt-0.5">
-                  Segera tinjau laporan yang ditandai merah agar tidak melanggar standar komitmen pelayanan publik.
+                  Tinjau laporan yang terlambat dan periksa tenggat verifikasi atau penanganannya.
                 </p>
               </div>
             </div>
-            <a href="#queue" className="shrink-0">
+            <Link href="/admin/reports?overdue=true" className="shrink-0">
               <Button size="sm" variant="destructive" className="gap-1.5 text-xs w-full sm:w-auto">
                 Lihat Laporan Terlambat
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
-            </a>
+            </Link>
           </div>
         )}
 
@@ -154,8 +143,6 @@ export default async function AdminDashboardPage() {
             icon={ClipboardList}
             iconBg="bg-primary-soft"
             iconColor="text-primary"
-            hasTrend
-            trendValue={14}
           />
           <StatCard
             label="Menunggu Verifikasi"
@@ -180,8 +167,6 @@ export default async function AdminDashboardPage() {
             icon={CheckCircle2}
             iconBg="bg-status-selesai-bg"
             iconColor="text-status-selesai-text"
-            hasTrend
-            trendValue={8}
           />
         </div>
 
@@ -214,7 +199,9 @@ export default async function AdminDashboardPage() {
             <div className="rounded-xl border border-border bg-surface p-4 shadow-xs sm:p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-text">Distribusi Status Laporan</h3>
-                <span className="text-xs text-text-muted font-medium">156 Total</span>
+                <span className="text-xs text-text-muted font-medium">
+                  {reports.length.toLocaleString("id-ID")} laporan
+                </span>
               </div>
 
               {/* Multi-segment Progress Bar */}
@@ -322,10 +309,7 @@ export default async function AdminDashboardPage() {
               </div>
 
               <div className="space-y-3.5">
-                {reports
-                  .flatMap((report) => report.timeline.map((event) => ({ report, event })))
-                  .slice(0, 5)
-                  .map(({ report, event }) => (
+                {recentActivity.map((event) => (
                   <div key={event.id} className="flex gap-2.5 items-start">
                     <div className="h-6 w-6 rounded-full bg-primary-soft flex items-center justify-center shrink-0 mt-0.5">
                       <Activity className="h-3 w-3 text-primary" />
@@ -336,7 +320,7 @@ export default async function AdminDashboardPage() {
                         <span className="text-text-muted">{event.note ?? "Perubahan status"}</span>
                       </p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-text-muted font-mono">{report.ticketNumber}</span>
+                        <span className="text-[10px] text-text-muted font-mono">{event.ticketNumber}</span>
                         <span className="text-[10px] text-text-muted">· {event.timestamp}</span>
                       </div>
                     </div>

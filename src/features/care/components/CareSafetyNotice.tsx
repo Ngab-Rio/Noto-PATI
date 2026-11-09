@@ -17,7 +17,7 @@ export function CareSafetyNotice({ customMessage }: CareSafetyNoticeProps) {
           </h4>
           <p className="text-xs sm:text-sm text-amber-900/90 leading-relaxed">
             {customMessage ??
-              "Materi ini ditujukan sebagai edukasi keselamatan dan langkah pengamanan awal. Jangan pernah mencoba melakukan perbaikan teknis fisik yang membahayakan diri sendiri (terutama instalasi listrik bertegangan, masuk saluran drainase dalam, atau memanjat struktur jembatan). Prioritaskan menjauhi area bahaya dan laporkan melalui Noto PATI agar ditindaklanjuti dinas teknis berwenang."}
+              "Materi ini untuk keselamatan awal, bukan panduan perbaikan teknis. Jangan menyentuh kabel, bagian tajam, atau bahan yang tidak dikenal; jangan masuk gorong-gorong, mendekati tanggul yang retak atau tergerus, maupun memanjat jembatan. Menjauhlah dari bahaya, ikuti arahan petugas, dan laporkan melalui Noto PATI."}
           </p>
           <div className="flex items-center gap-1.5 pt-1 text-[11px] text-amber-800/80 font-medium">
             <IconInfo className="h-3 w-3 shrink-0" />
@@ -28,4 +28,3 @@ export function CareSafetyNotice({ customMessage }: CareSafetyNoticeProps) {
     </div>
   );
 }
-

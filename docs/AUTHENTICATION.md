@@ -108,6 +108,7 @@ RLS **wajib aktif** pada semua tabel yang dapat diakses melalui Supabase client.
 | `reports` | Baca hanya kolom/baris yang berstatus publik, **tanpa** `reporter_id` | Insert sebagai diri sendiri; baca laporan sendiri; baca publik | Baca semua; ubah status lewat jalur yang diizinkan |
 | `report_photos` | Hanya foto yang aman ditampilkan | Foto milik sendiri | Semua, termasuk bukti tindak lanjut |
 | `report_status_history` | Baca linimasa publik | Baca linimasa laporan terkait | Baca semua; **insert only** (append-only dari sisi aplikasi) |
+| `public_report_status_updates` | Baca status publik tanpa identitas admin atau bukti privat | Baca status publik | Ditulis oleh trigger database |
 | `report_supports` | Tidak ada akses langsung; hanya ringkasan jumlah dukungan | Dukungan melalui RPC terautentikasi (1x untuk laporan orang lain); tidak dapat membaca identitas pendukung | Baca ringkasan jumlah dukungan |
 | `report_ratings` | Tidak ada akses | Insert hanya oleh pelapor, hanya setelah `Selesai` | Baca |
 | `reopen_requests` | Tidak ada akses | Insert/baca milik sendiri | Baca; isi keputusan |
@@ -117,6 +118,7 @@ RLS **wajib aktif** pada semua tabel yang dapat diakses melalui Supabase client.
 Catatan:
 - Identitas pelapor tidak boleh bocor lewat query publik. Gunakan view atau kolom terbatas untuk data publik.
 - Tabel riwayat status: tidak ada policy `UPDATE`/`DELETE` untuk Warga maupun Pengunjung.
+- Pembaruan langsung menggunakan tabel salinan `public_report_status_updates` yang hanya memuat ID laporan, status, catatan publik, dan waktu perubahan. Tabel ini dipublikasikan ke Supabase Realtime; kolom identitas admin dan bukti penyelesaian tidak ikut dikirim.
 - Kebijakan RLS **diuji terpisah** untuk Pengunjung, Warga, dan Admin (lihat bagian 8).
 
 ---

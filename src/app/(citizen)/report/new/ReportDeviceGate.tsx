@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { useEffect, useState } from "react";
 import { Home, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { APP_CONFIG } from "@/config/labels";
 
 /**

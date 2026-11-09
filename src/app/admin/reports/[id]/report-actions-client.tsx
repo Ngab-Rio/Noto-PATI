@@ -81,15 +81,15 @@ export function ReportActionsClient({
       });
 
       if (result.ok) {
-        alert("✅ " + result.message);
+        alert(result.message);
         router.refresh();
       } else {
         setError(result.message);
-        alert("❌ " + result.message);
+        alert(result.message);
       }
     } catch {
       setError("Terjadi kesalahan tidak terduga");
-      alert("❌ Terjadi kesalahan tidak terduga");
+      alert("Terjadi kesalahan tidak terduga");
     } finally {
       setIsLoading(false);
     }
@@ -117,17 +117,17 @@ export function ReportActionsClient({
       });
 
       if (result.ok) {
-        alert("✅ " + result.message);
+        alert(result.message);
         setShowRejectDialog(false);
         setRejectReason("");
         router.refresh();
       } else {
         setError(result.message);
-        alert("❌ " + result.message);
+        alert(result.message);
       }
     } catch {
       setError("Terjadi kesalahan tidak terduga");
-      alert("❌ Terjadi kesalahan tidak terduga");
+      alert("Terjadi kesalahan tidak terduga");
     } finally {
       setIsLoading(false);
     }
@@ -182,18 +182,18 @@ export function ReportActionsClient({
       });
 
       if (result.ok) {
-        alert("✅ " + result.message);
+        alert(result.message);
         router.refresh();
       } else {
         if (evidencePath) {
           await deleteCompletionEvidence(evidencePath, reportId);
         }
         setError(result.message);
-        alert("❌ " + result.message);
+        alert(result.message);
       }
     } catch {
       setError("Terjadi kesalahan tidak terduga");
-      alert("❌ Terjadi kesalahan tidak terduga");
+      alert("Terjadi kesalahan tidak terduga");
     } finally {
       setIsLoading(false);
     }

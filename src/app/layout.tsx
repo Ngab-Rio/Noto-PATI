@@ -18,8 +18,8 @@ export const metadata: Metadata = {
   description:
     "Web pelaporan infrastruktur warga dan transparansi data APBD 2025 Kabupaten Pati.",
   icons: {
-    icon: "/images/photos/pati_bandeng_state.avif",
-    apple: "/images/photos/pati_bandeng_state.avif",
+    icon: "/images/illustrations/map_pati.svg",
+    apple: "/images/illustrations/map_pati.svg",
   },
 };
 
