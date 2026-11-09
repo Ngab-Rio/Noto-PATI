@@ -163,6 +163,8 @@ The map only displays **public-safe** report information:
    - GeoJSON source caching
    - Efficient circle rendering
    - Conditional layer updates
+   - MapLibre diunduh saat peta mendekati viewport, bukan bersama JavaScript awal halaman
+   - Gestur dua jari mencegah interaksi peta mengganggu gulir pada perangkat sentuh
 
 3. **Network**
    - OSM tile caching by browser

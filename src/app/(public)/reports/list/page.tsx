@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
+import { redirect } from "next/navigation";
 import { FileText, Filter, Plus, X } from "lucide-react";
 
 import { ReportCard } from "@/components/shared/report-card";
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/pagination";
 import {
   CATEGORY_LABELS,
+  ACTIVE_PUBLIC_STATUSES,
   PUBLIC_STATUSES,
   getPublicReports,
   toReportItem,
@@ -32,12 +34,34 @@ export const metadata: Metadata = {
 export default async function ReportsListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; status?: string; search?: string; page?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    status?: string;
+    search?: string;
+    sort?: string;
+    page?: string;
+  }>;
 }) {
   const params = await searchParams;
   const category = params.category ?? "";
-  const status = params.status ?? "";
+  const sort = params.sort === "attention" ? "attention" : "recent";
+  const requestedStatus = params.status ?? "";
   const search = params.search ?? "";
+
+  if (
+    sort === "attention"
+    && requestedStatus
+    && !ACTIVE_PUBLIC_STATUSES.includes(
+      requestedStatus as (typeof ACTIVE_PUBLIC_STATUSES)[number],
+    )
+  ) {
+    const cleanParams = new URLSearchParams({ sort });
+    if (category) cleanParams.set("category", category);
+    if (search) cleanParams.set("search", search);
+    redirect(`/reports/list?${cleanParams.toString()}`);
+  }
+
+  const status = requestedStatus;
   const requestedPage = Number.parseInt(params.page ?? "1", 10);
 
   const loadPage = (pageNumber: number) =>
@@ -45,6 +69,7 @@ export default async function ReportsListPage({
       category,
       status,
       search,
+      sort,
       limit: PAGE_SIZE,
       offset: (pageNumber - 1) * PAGE_SIZE,
     });
@@ -67,11 +92,14 @@ export default async function ReportsListPage({
     if (search) values.set("search", search);
     if (category) values.set("category", category);
     if (status) values.set("status", status);
+    if (sort === "attention") values.set("sort", sort);
     values.set("page", String(nextPage));
     return `/reports/list?${values.toString()}`;
   };
 
-  const clearFiltersUrl = `/reports/list`;
+  const clearFiltersUrl = sort === "attention"
+    ? "/reports/list?sort=attention"
+    : "/reports/list";
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,16 +156,39 @@ export default async function ReportsListPage({
             category={category}
             status={status}
             search={search}
+            sort={sort}
             categoryOptions={[
               { value: "", label: "Semua Kategori" },
               ...Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
             ]}
             statusOptions={[
-              { value: "", label: "Semua Status" },
-              ...PUBLIC_STATUSES.map((value) => ({ value, label: value })),
+              { value: "", label: sort === "attention" ? "Semua Status Aktif" : "Semua Status" },
+              ...(sort === "attention" ? ACTIVE_PUBLIC_STATUSES : PUBLIC_STATUSES)
+                .map((value) => ({ value, label: value })),
             ]}
           />
         </section>
+
+        {sort === "attention" && (
+          <section
+            aria-labelledby="engagement-ranking-explanation"
+            className="mb-6 rounded-xl border border-primary/20 bg-primary-soft/50 p-4 sm:p-5"
+          >
+            <h2
+              className="text-sm font-bold text-text"
+              id="engagement-ranking-explanation"
+            >
+              Bagaimana urutan ini dihitung?
+            </h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-text-muted">
+              Urutan menyeimbangkan jumlah warga pendukung unik dan jumlah laporan serupa
+              yang digabung, masing-masing dengan bobot 50%. Keduanya dinormalisasi dengan
+              logaritma agar jumlah yang sangat besar tidak mendominasi sendiri. Hanya
+              laporan aktif yang ditampilkan. Ini menunjukkan perhatian warga, bukan
+              tingkat bahaya atau prioritas penanganan resmi.
+            </p>
+          </section>
+        )}
 
         {/* Results Section */}
         <Suspense fallback={<ReportListSkeleton />}>
@@ -148,7 +199,11 @@ export default async function ReportsListPage({
               ))}
             </div>
           ) : (
-            <EmptyState hasFilters={hasActiveFilters} clearFiltersUrl={clearFiltersUrl} />
+            <EmptyState
+              hasFilters={hasActiveFilters}
+              clearFiltersUrl={clearFiltersUrl}
+              isAttentionRanking={sort === "attention"}
+            />
           )}
         </Suspense>
 
@@ -214,7 +269,15 @@ function getPaginationItems(currentPage: number, totalPages: number): Pagination
 /**
  * Empty State Component - Enhanced
  */
-function EmptyState({ hasFilters, clearFiltersUrl }: { hasFilters: boolean; clearFiltersUrl: string }) {
+function EmptyState({
+  hasFilters,
+  clearFiltersUrl,
+  isAttentionRanking,
+}: {
+  hasFilters: boolean;
+  clearFiltersUrl: string;
+  isAttentionRanking: boolean;
+}) {
   return (
     <div className="rounded-2xl border-2 border-dashed border-border bg-surface p-8 sm:p-12 text-center">
       <div className="max-w-md mx-auto space-y-4">
@@ -223,13 +286,21 @@ function EmptyState({ hasFilters, clearFiltersUrl }: { hasFilters: boolean; clea
         </div>
         
         <h2 className="text-lg sm:text-xl font-bold text-text">
-          {hasFilters ? "Tidak Ada Laporan yang Cocok" : "Belum Ada Laporan"}
+          {hasFilters
+            ? "Tidak Ada Laporan yang Cocok"
+            : isAttentionRanking
+              ? "Belum Ada Laporan Aktif"
+              : "Belum Ada Laporan"}
         </h2>
         
         <p className="text-sm sm:text-base text-text-muted leading-relaxed">
-          {hasFilters 
-            ? "Tidak ditemukan laporan yang sesuai dengan filter Anda. Coba sesuaikan kriteria pencarian atau hapus filter." 
-            : "Jadilah warga pertama yang melaporkan kerusakan infrastruktur di wilayah Anda."
+          {hasFilters
+            ? isAttentionRanking
+              ? "Tidak ditemukan laporan aktif yang sesuai dengan filter Anda. Coba sesuaikan pencarian atau hapus filter."
+              : "Tidak ditemukan laporan yang sesuai dengan filter Anda. Coba sesuaikan kriteria pencarian atau hapus filter."
+            : isAttentionRanking
+              ? "Saat ini belum ada laporan aktif untuk ditampilkan dalam urutan Perhatian warga."
+              : "Jadilah warga pertama yang melaporkan kerusakan infrastruktur di wilayah Anda."
           }
         </p>
 

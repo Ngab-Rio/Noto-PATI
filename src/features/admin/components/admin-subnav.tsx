@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   List,
@@ -25,11 +26,6 @@ const ADMIN_LINKS = [
     label: "Peta Laporan",
     exact: false,
   },
-  {
-    href: "/budget",
-    label: "Data APBD",
-    exact: false,
-  },
 ];
 
 export function AdminSubnav() {
@@ -45,9 +41,14 @@ export function AdminSubnav() {
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-3">
           <Link href="/admin" className="flex shrink-0 items-center gap-2">
-            <span className="font-bold text-xl leading-tight tracking-tight text-text">
-              NOTOPATI
-            </span>
+            <Image
+              src="/images/logos/noto-pati-logo.svg"
+              alt="Noto PATI"
+              width={132}
+              height={49}
+              className="h-10 w-auto"
+              priority
+            />
             <span className="hidden rounded-md bg-primary-soft px-2 py-1 text-xs font-semibold text-primary sm:inline-flex">
               Admin
             </span>

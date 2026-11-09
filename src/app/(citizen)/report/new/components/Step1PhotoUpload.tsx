@@ -198,7 +198,7 @@ export function Step1PhotoUpload({
             </Button>
             {!isAnalyzing && (
               <p className="text-xs text-text-muted sm:flex-1">
-                💡 AI akan mengidentifikasi kategori dan mengisi detail laporan (~15-30 detik)
+                AI dapat membantu mengisi kategori dan detail laporan. Periksa kembali semua sarannya.
               </p>
             )}
           </div>
@@ -217,7 +217,7 @@ export function Step1PhotoUpload({
             </div>
             <div className="flex-1 space-y-3">
               <div>
-                <h3 className="font-bold text-text mb-1">✨ Analisis AI Selesai</h3>
+                <h3 className="font-bold text-text mb-1">Analisis AI selesai</h3>
                 <p className="text-sm text-text-muted">
                   AI telah menganalisis foto Anda. Periksa hasil di bawah dan konfirmasi jika sudah sesuai.
                 </p>
@@ -275,7 +275,7 @@ export function Step1PhotoUpload({
               </div>
 
               <p className="text-xs text-text-muted leading-relaxed">
-                ℹ️ Anda tetap bisa mengedit semua detail di langkah berikutnya
+                Anda tetap dapat mengedit semua detail pada langkah berikutnya.
               </p>
             </div>
           </div>

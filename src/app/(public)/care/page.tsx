@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { IconBookOpen, IconPlusCircle } from "@/components/shared/icons";
 import { Button } from "@/components/ui/button";
 import { getCareArticles } from "@/features/care/server-data";
@@ -9,11 +9,11 @@ import { CareDirectoryClient } from "./CareDirectoryClient";
 export const metadata: Metadata = {
   title: "Noto PATI Care · Pusat Edukasi Infrastruktur Publik",
   description:
-    "Pusat edukasi dan panduan keselamatan masyarakat mengenai kondisi kerusakan jalan, drainase, penerangan jalan, trotoar, dan jembatan di Kabupaten Pati.",
+    "Panduan keselamatan warga untuk jalan, drainase, PJU, jembatan, tanggul, rambu, trotoar, dan vandalisme fasilitas publik di Kabupaten Pati.",
   openGraph: {
     title: "Noto PATI Care · Pusat Edukasi Infrastruktur Publik",
     description:
-      "Kenali penyebab, dampak, dan tindakan aman dalam menghadapi kerusakan fasilitas publik di Kabupaten Pati.",
+      "Kenali tanda kerusakan fasilitas publik dan langkah aman untuk melaporkannya di Kabupaten Pati.",
   },
 };
 
@@ -73,7 +73,7 @@ export default async function CarePage() {
                 Katalog Materi Edukasi
               </h2>
               <p className="text-xs sm:text-sm text-text-muted">
-                Pilih kategori infrastruktur untuk mempelajari panduan teknis yang telah dikurasi.
+                Cari kondisi yang Anda temui untuk memahami risikonya dan langkah aman pelaporannya.
               </p>
             </div>
             <span className="text-xs font-mono text-text-muted bg-surface px-2.5 py-1 rounded-md border border-border">
@@ -87,4 +87,3 @@ export default async function CarePage() {
     </div>
   );
 }
-

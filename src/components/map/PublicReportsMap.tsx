@@ -83,6 +83,7 @@ export function PublicReportsMap({
         minZoom: MAP_CONFIG.minZoom,
         maxZoom: MAP_CONFIG.maxZoom,
         maxBounds: MAP_CONFIG.maxBounds,
+        cooperativeGestures: true,
       });
 
       map.current = mapInstance;
@@ -194,7 +195,8 @@ export function PublicReportsMap({
           params.set("dateTo", filters.dateTo);
         }
 
-        const res = await fetch(`/api/reports/map?${params.toString()}`, {
+        const mapEndpoint = adminMode ? "/api/admin/reports/map" : "/api/reports/map";
+        const res = await fetch(`${mapEndpoint}?${params.toString()}`, {
           signal: controller.signal,
         });
 

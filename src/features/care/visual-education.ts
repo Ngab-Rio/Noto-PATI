@@ -1,4 +1,5 @@
-import type { ComponentType, SVGProps } from "react";
+import { createElement, type ComponentType, type SVGProps } from "react";
+import { Landmark, Signpost, Waves } from "lucide-react";
 import type { ReportCategory } from "./types";
 import { RoadIllustration } from "./components/illustrations/RoadIllustration";
 import { DrainageIllustration } from "./components/illustrations/DrainageIllustration";
@@ -22,7 +23,18 @@ export interface VisualEducationData {
   fullArticleSlug: string;
   Illustration: ComponentType<SVGProps<SVGSVGElement>>;
   illustrationAlt: string;
+  visualKind?: "icon";
 }
+
+const WavesSymbol: ComponentType<SVGProps<SVGSVGElement>> = (props) => (
+  createElement(Waves, props)
+);
+const SignpostSymbol: ComponentType<SVGProps<SVGSVGElement>> = (props) => (
+  createElement(Signpost, props)
+);
+const LandmarkSymbol: ComponentType<SVGProps<SVGSVGElement>> = (props) => (
+  createElement(Landmark, props)
+);
 
 export const VISUAL_EDUCATION_REGISTRY: Record<string, VisualEducationData> = {
   jalan: {
@@ -130,20 +142,83 @@ export const VISUAL_EDUCATION_REGISTRY: Record<string, VisualEducationData> = {
     Illustration: BridgeIllustration,
     illustrationAlt: "Ilustrasi pilar jembatan sungai tergerus arus air dan tanda batas muatan",
   },
+  tanggul: {
+    category: "tanggul",
+    categoryLabel: "Tanggul & Pengendali Banjir",
+    title: "Waspadai Retakan dan Rembesan Tanggul",
+    summary:
+      "Retakan baru, rembesan yang membawa tanah, atau erosi pada tanggul perlu dilaporkan dari lokasi yang aman.",
+    impact: "Kerusakan yang berkembang dapat mengurangi perlindungan area di sekitar tanggul.",
+    safeActions: [
+      { iconType: "avoid", text: "Jangan mendekati retakan atau aliran air." },
+      { iconType: "avoid", text: "Jangan menutup rembesan atau menggali tanggul." },
+      { iconType: "report", text: "Laporkan lokasi dari tempat yang aman." },
+    ],
+    prevention: [
+      { iconType: "report", text: "Laporkan perubahan kecil sejak awal." },
+      { iconType: "avoid", text: "Hindari penggalian di tubuh tanggul." },
+      { iconType: "check", text: "Ikuti arahan evakuasi petugas setempat." },
+    ],
+    fullArticleSlug: "retakan-dan-rembesan-tanggul-sungai",
+    Illustration: WavesSymbol,
+    illustrationAlt: "Ikon gelombang air untuk panduan keselamatan tanggul sungai",
+    visualKind: "icon",
+  },
+  rambu: {
+    category: "rambu",
+    categoryLabel: "Rambu & Marka Jalan",
+    title: "Kenali Rambu dan Marka Rusak",
+    summary:
+      "Rambu hilang, tertutup, atau rusak serta marka yang memudar dapat membuat petunjuk jalan sulit dikenali.",
+    impact: "Pengguna jalan dapat terlambat melihat peringatan atau batas lajur.",
+    safeActions: [
+      { iconType: "avoid", text: "Jangan memperbaiki atau memindahkan rambu." },
+      { iconType: "avoid", text: "Jangan berhenti di lajur untuk memotret." },
+      { iconType: "report", text: "Laporkan lokasi dan arah jalan." },
+    ],
+    prevention: [
+      { iconType: "report", text: "Laporkan rambu tertutup sebelum tertabrak." },
+      { iconType: "check", text: "Sertakan patokan lokasi yang mudah dikenali." },
+      { iconType: "avoid", text: "Jangan menempelkan pengumuman pada rambu." },
+    ],
+    fullArticleSlug: "rambu-dan-marka-jalan-rusak",
+    Illustration: SignpostSymbol,
+    illustrationAlt: "Ikon penunjuk jalan untuk panduan rambu dan marka rusak",
+    visualKind: "icon",
+  },
+  lainnya: {
+    category: "lainnya",
+    categoryLabel: "Fasilitas Publik Lainnya",
+    title: "Kenali Kerusakan Fasilitas Publik",
+    summary:
+      "Kerusakan fasilitas dapat mengganggu fungsi dan keselamatan warga. Jaga jarak, catat kondisi yang terlihat, lalu laporkan.",
+    impact: "Bagian tidak stabil, tajam, atau beraliran listrik dapat membahayakan warga.",
+    safeActions: [
+      { iconType: "avoid", text: "Jauhi area rusak dan jangan menyentuhnya." },
+      { iconType: "avoid", text: "Jangan mencoba memperbaiki atau membersihkan bagian yang rusak." },
+      { iconType: "report", text: "Laporkan jenis fasilitas, lokasi, dan kondisi dari tempat aman." },
+    ],
+    prevention: [
+      { iconType: "report", text: "Sertakan kondisi yang terlihat dan patokan." },
+      { iconType: "check", text: "Ikuti arahan petugas atau pengelola." },
+      { iconType: "avoid", text: "Jangan membersihkan bahan tidak dikenal." },
+    ],
+    fullArticleSlug: "panduan-umum-fasilitas-publik",
+    Illustration: LandmarkSymbol,
+    illustrationAlt: "Ikon bangunan untuk panduan umum keselamatan fasilitas publik",
+    visualKind: "icon",
+  },
 };
 
 /**
  * Mengambil data edukasi visual berdasarkan kategori.
- * Jika kategori tidak dikenali (misal 'tanggul' atau 'rambu'), fallback ke kategori 'jalan'.
+ * Kategori laporan yang belum memiliki ilustrasi khusus menggunakan ikon tematik.
  */
 export function getVisualEducationForCategory(category: string): VisualEducationData | null {
   const normalizedKey = category.toLowerCase().trim();
   if (normalizedKey in VISUAL_EDUCATION_REGISTRY) {
     return VISUAL_EDUCATION_REGISTRY[normalizedKey];
   }
-  // Mapping kategori tambahan ke kategori terdekat
-  if (normalizedKey === "tanggul") return VISUAL_EDUCATION_REGISTRY.drainase;
-  if (normalizedKey === "rambu") return VISUAL_EDUCATION_REGISTRY.jalan;
   if (normalizedKey === "penerangan") return VISUAL_EDUCATION_REGISTRY.lampu;
 
   // Fallback umum aman
@@ -173,4 +248,3 @@ export function trackCareEvent(event: CareTrackingEvent, category: string, repor
     // Silent catch agar tidak mengganggu UI pengguna
   }
 }
-

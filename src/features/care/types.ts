@@ -34,7 +34,7 @@ export interface CareCategoryMeta {
   description: string;
 }
 
-export const CARE_CATEGORIES: Record<string, CareCategoryMeta> = {
+export const CARE_CATEGORIES: Record<ReportCategory, CareCategoryMeta> = {
   jalan: {
     key: "jalan",
     label: "Jalan & Aspal",
@@ -65,5 +65,22 @@ export const CARE_CATEGORIES: Record<string, CareCategoryMeta> = {
     dinas: "Bina Marga - DPUTR",
     description: "Mengenali integritas struktur jembatan sungai, gerusan air, dan batas muatan.",
   },
+  tanggul: {
+    key: "tanggul",
+    label: "Tanggul & Pengendali Banjir",
+    dinas: "Dinas SDA - DPUTR",
+    description: "Kenali retakan, rembesan, dan erosi pada tanggul serta langkah aman warga.",
+  },
+  rambu: {
+    key: "rambu",
+    label: "Rambu & Marka Jalan",
+    dinas: "Dishub Kab. Pati",
+    description: "Panduan menghadapi rambu hilang, rusak, tertutup, atau marka yang memudar.",
+  },
+  lainnya: {
+    key: "lainnya",
+    label: "Fasilitas Publik Lainnya",
+    dinas: "Dinas terkait",
+    description: "Panduan umum mengenali dan melaporkan kerusakan fasilitas publik dengan aman.",
+  },
 };
-

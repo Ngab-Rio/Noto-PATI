@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   IconArrowRight,
   IconClock,
@@ -110,4 +110,3 @@ export function CareCard({ article, compact = false }: CareCardProps) {
     </article>
   );
 }
-

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { IconLightbulb, IconArrowRight, IconSparkle } from "@/components/shared/icons";
 import { getCareRecommendationsForCategory } from "../server-data";
 import { CareCard } from "./CareCard";
@@ -60,4 +60,3 @@ export async function CareRelatedSection({
     </section>
   );
 }
-

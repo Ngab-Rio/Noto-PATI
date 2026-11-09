@@ -20,6 +20,7 @@ export const STATUS_COLORS: Record<string, string> = {
   diproses: "#D97706",
   selesai: "#16A34A",
   ditolak: "#DC2626",
+  digabung: "#594B86",
 };
 
 export const STATUS_BG_COLORS: Record<string, string> = {
@@ -28,6 +29,7 @@ export const STATUS_BG_COLORS: Record<string, string> = {
   diproses: "#FFFBEB",
   selesai: "#F0FDF4",
   ditolak: "#FEF2F2",
+  digabung: "#E9E5F3",
 };
 
 export const STATUS_LABELS: Record<string, string> = {
@@ -36,6 +38,7 @@ export const STATUS_LABELS: Record<string, string> = {
   diproses: "Diproses",
   selesai: "Selesai",
   ditolak: "Ditolak",
+  digabung: "Digabung",
 };
 
 export const MAP_INITIAL_STYLE: StyleSpecification = {

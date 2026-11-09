@@ -4,7 +4,9 @@ import {
   MapPin, 
   FileText, 
   CheckCircle,
-  AlertTriangle 
+  AlertTriangle,
+  Check,
+  X,
 } from "lucide-react";
 
 const TIPS_DATA = [
@@ -76,10 +78,10 @@ export function TipsCard() {
                   <Icon className="h-4 w-4 text-primary" />
                   <h4 className="text-sm font-semibold text-text">{section.title}</h4>
                 </div>
-                <ul className="space-y-1.5 pl-6">
+                <ul className="list-disc space-y-1.5 pl-6">
                   {section.items.map((item, itemIndex) => (
                     <li key={itemIndex} className="text-xs text-text-muted leading-relaxed">
-                      • {item}
+                      {item}
                     </li>
                   ))}
                 </ul>
@@ -101,10 +103,11 @@ export function TipsCard() {
               <CheckCircle className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">BOLEH</span>
             </div>
-            <ul className="space-y-1 pl-5">
+            <ul className="space-y-1">
               {DO_DONTS.do.map((item, index) => (
-                <li key={index} className="text-xs text-text-muted leading-relaxed">
-                  ✓ {item}
+                <li key={index} className="flex items-start gap-2 text-xs text-text-muted leading-relaxed">
+                  <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
@@ -116,10 +119,11 @@ export function TipsCard() {
               <AlertTriangle className="h-3.5 w-3.5" />
               <span className="text-xs font-semibold">JANGAN</span>
             </div>
-            <ul className="space-y-1 pl-5">
+            <ul className="space-y-1">
               {DO_DONTS.dont.map((item, index) => (
-                <li key={index} className="text-xs text-text-muted leading-relaxed">
-                  ✗ {item}
+                <li key={index} className="flex items-start gap-2 text-xs text-text-muted leading-relaxed">
+                  <X className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
@@ -129,7 +133,7 @@ export function TipsCard() {
         {/* Info Note */}
         <div className="mt-6 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 p-3">
           <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-            <strong>💡 Ingat:</strong> Laporan yang lengkap dan jelas akan mempercepat proses
+            <strong>Ingat:</strong> Laporan yang lengkap dan jelas akan mempercepat proses
             verifikasi dan tindak lanjut oleh dinas terkait.
           </p>
         </div>

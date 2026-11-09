@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import Image from "next/image";
 import { Suspense } from "react";
 import {
@@ -10,7 +10,6 @@ import {
   IconArrowRight,
   IconShare2,
 } from "@/components/shared/icons";
-import { StatusBadgeClient } from "@/components/shared/status-badge-client";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -19,7 +18,6 @@ import {
   getSignedPhotoUrls,
 } from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
-import { normalizeReportStatus } from "@/config/theme";
 import { isMissingAuthSessionError } from "@/lib/auth/session";
 import { calculateReportSla, formatRemainingTime, formatDueDate, type SlaState } from "@/domain/sla";
 import { RelatedReportsThread } from "@/features/reports/components/RelatedReportsThread";
@@ -28,6 +26,7 @@ import { getReportSupportSummaries } from "@/lib/reports/support";
 import { ReportSupportButton } from "@/features/reports/components/ReportSupportButton";
 import { getReportReviewSummary } from "@/lib/reports/reviews";
 import { ReportReviewSection } from "@/features/reports/reviews/ReportReviewSection";
+import { ReportStatusTracker } from "@/features/reports/components/ReportStatusTracker";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -59,7 +58,7 @@ export default async function ReportDetailPage({
       .maybeSingle(),
     supabase
       .from("report_status_history")
-      .select("id, status, note, created_at, proof_image_url")
+      .select("id, report_id, status, note, created_at, proof_image_url")
       .eq("report_id", id)
       .order("created_at", { ascending: true }),
     admin
@@ -244,7 +243,6 @@ export default async function ReportDetailPage({
               {/* Header: Status + Date */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-border">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <StatusBadgeClient status={normalizeReportStatus(report.status)} size="md" showIcon={true} />
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-soft text-primary-dark">
                     {report.category}
                   </span>
@@ -267,6 +265,18 @@ export default async function ReportDetailPage({
                   <span>{report.detail_location}</span>
                 </div>
               </div>
+
+              <ReportStatusTracker
+                reportId={report.id}
+                initialStatus={report.status}
+                initialUpdates={(history ?? []).map((item) => ({
+                  id: item.id,
+                  report_id: item.report_id,
+                  status: item.status,
+                  note: item.note,
+                  created_at: item.created_at,
+                }))}
+              />
 
               {/* Description */}
               <div className="space-y-2">
@@ -355,41 +365,6 @@ export default async function ReportDetailPage({
                 />
               )}
 
-              {/* Status History - Enhanced Timeline */}
-              <div className="space-y-3">
-                <h2 className="text-base font-semibold text-text">Riwayat Status</h2>
-                <div className="space-y-3">
-                  {(history ?? []).map((item, index) => (
-                    <div key={`${item.status}-${item.created_at}`} className="flex gap-4">
-                      {/* Timeline Indicator */}
-                      <div className="flex flex-col items-center">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft border-2 border-primary">
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                        </div>
-                        {index < (history?.length ?? 0) - 1 && (
-                          <div className="w-0.5 h-full bg-border mt-1" />
-                        )}
-                      </div>
-                      
-                      {/* Content */}
-                      <div className="flex-1 pb-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                          <StatusBadgeClient status={normalizeReportStatus(item.status)} size="sm" showIcon={true} />
-                          <time className="text-xs text-text-muted">
-                            {new Intl.DateTimeFormat("id-ID", { 
-                              dateStyle: "medium", 
-                              timeStyle: "short" 
-                            }).format(new Date(item.created_at))}
-                          </time>
-                        </div>
-                        {item.note && (
-                          <p className="text-sm text-text-muted leading-relaxed mt-1">{item.note}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </article>
           </div>
 
@@ -404,12 +379,6 @@ export default async function ReportDetailPage({
                 <div>
                   <dt className="text-text-muted mb-1">Nomor Tiket</dt>
                   <dd className="font-semibold text-text font-mono">{report.ticket_number}</dd>
-                </div>
-                <div>
-                  <dt className="text-text-muted mb-1">Status Saat Ini</dt>
-                  <dd>
-                    <StatusBadgeClient status={normalizeReportStatus(report.status)} size="sm" showIcon={true} />
-                  </dd>
                 </div>
                 <div>
                   <dt className="text-text-muted mb-1">Kategori</dt>

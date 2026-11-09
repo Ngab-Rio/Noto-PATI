@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   Search,
   Users,
@@ -15,6 +15,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import type { AdminReportItem } from "@/features/admin/types";
+import { buildAdminReportsCsv, sortAdminReports, type AdminReportSort } from "@/features/admin/report-list";
 
 interface ReportsViewProps {
   initialReports: AdminReportItem[];
@@ -35,14 +36,14 @@ export function ReportsView({
   );
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [sortBy, setSortBy] = useState<"newest" | "supports" | "due">("newest");
+  const [sortBy, setSortBy] = useState<AdminReportSort>("newest");
 
   const categories = useMemo(() => {
     return Array.from(new Set(initialReports.map((r) => r.category)));
   }, [initialReports]);
 
   const filteredReports = useMemo(() => {
-    return initialReports
+    const filtered = initialReports
       .filter((report) => {
         // Status filter
         if (selectedStatus !== "all" && report.status !== selectedStatus) {
@@ -72,19 +73,8 @@ export function ReportsView({
         }
 
         return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "supports") {
-          return b.supportCount - a.supportCount;
-        }
-        if (sortBy === "due") {
-          if (a.isOverdue && !b.isOverdue) return -1;
-          if (!a.isOverdue && b.isOverdue) return 1;
-          return 0;
-        }
-        // Default: newest
-        return b.id.localeCompare(a.id);
       });
+    return sortAdminReports(filtered, sortBy);
   }, [
     initialReports,
     selectedStatus,
@@ -102,6 +92,17 @@ export function ReportsView({
     setSortBy("newest");
   };
 
+  const handleExport = () => {
+    const csv = `\uFEFF${buildAdminReportsCsv(filteredReports)}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `rekap-laporan-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
   return (
     <div className="space-y-6">
       {/* ── Filters Bar ── */}
@@ -111,12 +112,20 @@ export function ReportsView({
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
             <input
+              id="admin-report-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-describedby="admin-report-search-help"
               placeholder="Cari nomor tiket (NP-2026-...), judul laporan, kecamatan, nama pelapor..."
               className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-border bg-surface text-text placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
             />
+            <label htmlFor="admin-report-search" className="sr-only">
+              Cari laporan berdasarkan nomor tiket, judul, lokasi, atau nama pelapor
+            </label>
+            <span id="admin-report-search-help" className="sr-only">
+              Hasil daftar akan difilter saat Anda mengetik.
+            </span>
           </div>
 
           {/* Quick Filters */}
@@ -134,6 +143,7 @@ export function ReportsView({
                 { value: "diproses", label: "Diproses" },
                 { value: "selesai", label: "Selesai" },
                 { value: "ditolak", label: "Ditolak" },
+                { value: "digabung", label: "Digabung" },
               ]}
             />
 
@@ -151,7 +161,7 @@ export function ReportsView({
 
             <Combobox
               value={sortBy}
-              onValueChange={(value) => setSortBy(value as "newest" | "supports" | "due")}
+              onValueChange={(value) => setSortBy(value as AdminReportSort)}
               aria-label="urutan laporan"
               searchPlaceholder="Cari urutan..."
               className="h-9 w-52 text-xs"
@@ -165,7 +175,9 @@ export function ReportsView({
             {/* Overdue Checkbox Toggle */}
             <button
               type="button"
-              onClick={() => setOnlyOverdue(!onlyOverdue)}
+              onClick={() => setOnlyOverdue((current) => !current)}
+              aria-pressed={onlyOverdue}
+              aria-label="Filter laporan yang melewati SLA"
               className={`h-9 px-3 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                 onlyOverdue
                   ? "bg-status-ditolak-bg border-status-ditolak-text/40 text-status-ditolak-text"
@@ -202,11 +214,12 @@ export function ReportsView({
           </div>
           <button
             type="button"
-            onClick={() => alert("Fitur ekspor CSV/Rekapitulasi laporan demo")}
-            className="flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold"
+            onClick={handleExport}
+            disabled={filteredReports.length === 0}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Ekspor Rekap Laporan</span>
+            <span>Ekspor {filteredReports.length} laporan</span>
           </button>
         </div>
       </div>

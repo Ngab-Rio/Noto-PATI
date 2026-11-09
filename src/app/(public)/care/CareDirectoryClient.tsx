@@ -20,13 +20,25 @@ export function CareDirectoryClient({ initialArticles }: CareDirectoryClientProp
         selectedCategory === "all" || article.category === selectedCategory;
 
       const query = searchQuery.trim().toLowerCase();
-      const matchSearch =
-        !query ||
-        article.title.toLowerCase().includes(query) ||
-        article.summary.toLowerCase().includes(query) ||
-        article.content.toLowerCase().includes(query) ||
-        article.causes.some((c) => c.toLowerCase().includes(query)) ||
-        article.safetyActions.some((s) => s.toLowerCase().includes(query));
+      const categoryMeta = CARE_CATEGORIES[article.category];
+      const searchableContent = [
+        article.title,
+        article.summary,
+        article.content,
+        categoryMeta.label,
+        categoryMeta.dinas,
+        ...article.causes,
+        ...article.impacts,
+        ...article.safetyActions,
+        ...article.preventionSteps,
+        ...article.references.flatMap((reference) => [
+          reference.title,
+          reference.source,
+        ]),
+      ]
+        .join(" ")
+        .toLowerCase();
+      const matchSearch = !query || searchableContent.includes(query);
 
       return matchCategory && matchSearch;
     });
@@ -120,4 +132,3 @@ export function CareDirectoryClient({ initialArticles }: CareDirectoryClientProp
     </div>
   );
 }
-

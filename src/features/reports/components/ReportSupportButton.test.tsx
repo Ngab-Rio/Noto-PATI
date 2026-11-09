@@ -2,13 +2,14 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockPush, mockSupportReport } = vi.hoisted(() => ({
+const { mockPush, mockRefresh, mockSupportReport } = vi.hoisted(() => ({
   mockPush: vi.fn(),
+  mockRefresh: vi.fn(),
   mockSupportReport: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
 }));
 vi.mock("@/features/reports/actions", () => ({
   supportReport: mockSupportReport,
@@ -32,7 +33,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 function renderSupportButton(
-  props: Partial<typeof defaultProps> = {},
+  props: Partial<typeof defaultProps> & { showCount?: boolean } = {},
 ): HTMLButtonElement {
   container = document.createElement("div");
   document.body.append(container);
@@ -84,6 +85,25 @@ describe("ReportSupportButton", () => {
     expect(container.textContent).toContain("Didukung");
     expect(container.textContent).toContain("3");
     expect(container.querySelector("button")?.disabled).toBe(true);
+  });
+
+  it("refreshes aggregated engagement metrics after supporting from a ranked list", async () => {
+    mockSupportReport.mockResolvedValue({
+      ok: true,
+      supportCount: 3,
+      hasSupported: true,
+    });
+    const button = renderSupportButton({
+      isAuthenticated: true,
+      canSupport: true,
+      showCount: false,
+    });
+
+    await act(async () => button.click());
+
+    expect(container.textContent).toContain("Didukung");
+    expect(container.textContent).not.toContain("2");
+    expect(mockRefresh).toHaveBeenCalledOnce();
   });
 
   it("prevents a resident from supporting their own report", async () => {

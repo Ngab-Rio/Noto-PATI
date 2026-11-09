@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ListIcon, X, User, SignOutIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
@@ -38,12 +39,15 @@ export function NavbarClient({ user, role }: NavbarClientProps) {
       <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand Logo & Title */}
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-0 group">
-            <div className="flex flex-col">
-              <span className="font-bold text-xl leading-tight tracking-tight text-text">
-                NOTOPATI
-              </span>
-            </div>
+          <Link href="/" className="flex shrink-0 items-center">
+            <Image
+              src="/images/logos/noto-pati-logo.svg"
+              alt="Noto PATI"
+              width={132}
+              height={49}
+              className="h-10 w-auto"
+              priority
+            />
           </Link>
         </div>
 

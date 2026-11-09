@@ -133,7 +133,6 @@ export function ReportForm() {
   const geocodeRequestIdRef = useRef(0);
   const locationCapturePendingRef = useRef(false);
   const manuallyEditedFieldsRef = useRef(new Set<AiSuggestionField>());
-  const capturedLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   const [formData, setFormData] = useState<ReportFormData>({
     photos: [],
@@ -164,10 +163,6 @@ export function ReportForm() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const didFocusStepRef = useRef(false);
 
-  const stepOneIsComplete =
-    Object.keys(validateReportStep(1, formData)).length === 0;
-  const stepTwoIsComplete =
-    Object.keys(validateReportStep(2, formData)).length === 0;
   const stepThreeIsComplete =
     Object.keys(validateReportStep(3, formData)).length === 0;
   const locationOutsidePati =
@@ -188,7 +183,6 @@ export function ReportForm() {
     const { latitude, longitude, accuracyM } = randomPatiLocation();
 
     locationCapturePendingRef.current = false;
-    capturedLocationRef.current = { latitude, longitude };
     setFormData((currentFormData) => ({
       ...currentFormData,
       latitude,
@@ -209,78 +203,11 @@ export function ReportForm() {
     }
   };
 
-  // Request location permission on component mount for mobile devices
+  // Use mock coordinates only in explicitly enabled development environments.
   useEffect(() => {
-    // Only request if location hasn't been captured yet
-    if (formData.latitude !== null && formData.longitude !== null) {
-      return;
-    }
-
-    if (MOCK_LOCATION_ENABLED) {
-      applyMockLocation(false);
-      return;
-    }
-
-    // Check if running in a secure context (HTTPS or localhost)
-    if (!window.isSecureContext) {
-      setLocationMessage("Akses lokasi membutuhkan HTTPS. Gunakan localhost atau buka aplikasi melalui URL HTTPS.");
-      return;
-    }
-
-    // Check if geolocation is supported
-    if (!navigator.geolocation) {
-      setLocationMessage("Perangkat atau browser ini tidak mendukung deteksi lokasi. Gunakan perangkat dengan GPS.");
-      return;
-    }
-
-    // Request location permission immediately
-    locationCapturePendingRef.current = true;
-    setIsResolvingLocation(true);
-    setLocationMessage("Meminta izin akses lokasi perangkat...");
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        locationCapturePendingRef.current = false;
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-
-        // Store in ref for immediate access (no closure issues)
-        capturedLocationRef.current = { latitude, longitude };
-
-        setFormData((currentFormData) => ({
-          ...currentFormData,
-          latitude,
-          longitude,
-          locationAccuracyM: Number.isFinite(position.coords.accuracy)
-            ? position.coords.accuracy
-            : null,
-          locationCapturedAt: new Date(position.timestamp).toISOString(),
-        }));
-        setErrors((currentErrors) => {
-          const nextErrors = { ...currentErrors };
-          delete nextErrors.location;
-          return nextErrors;
-        });
-        setLocationMessage("Lokasi perangkat berhasil ditangkap. Upload foto untuk analisis AI.");
-
-        // Don't auto-fill location text until user uploads a photo
-        // This prevents confusion when user hasn't seen the form yet
-      },
-      (error) => {
-        locationCapturePendingRef.current = false;
-        setIsResolvingLocation(false);
-        setLocationMessage(
-          error.code === 1
-            ? "Izin lokasi ditolak. Aktifkan izin lokasi di pengaturan browser lalu muat ulang halaman."
-            : error.code === 2
-              ? "Lokasi perangkat tidak tersedia. Periksa GPS atau jaringan lalu coba lagi."
-              : "Pencarian lokasi terlalu lama. Periksa GPS lalu coba lagi.",
-        );
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
-    );
+    if (MOCK_LOCATION_ENABLED) applyMockLocation(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
   // Keep browser Back/Forward in sync with the stepper without leaving the form.
   useEffect(() => {
@@ -437,30 +364,9 @@ export function ReportForm() {
     }
   };
 
-  const requestDeviceLocation = (refresh = false) => {
-    if (
-      locationCapturePendingRef.current
-      || (!refresh && formData.latitude !== null && formData.longitude !== null)
-    ) {
+  const requestDeviceLocation = () => {
+    if (locationCapturePendingRef.current) {
       return;
-    }
-
-    if (refresh) {
-      capturedLocationRef.current = null;
-      setFormData((current) => ({
-        ...current,
-        detailLocation: "",
-        latitude: null,
-        longitude: null,
-        locationAccuracyM: null,
-        locationCapturedAt: null,
-      }));
-      setErrors((current) => {
-        const next = { ...current };
-        delete next.detailLocation;
-        delete next.location;
-        return next;
-      });
     }
 
     if (!window.isSecureContext) {
@@ -480,9 +386,6 @@ export function ReportForm() {
         locationCapturePendingRef.current = false;
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
-
-        // Store in ref for immediate access
-        capturedLocationRef.current = { latitude, longitude };
 
         setFormData((currentFormData) => ({
           ...currentFormData,
@@ -564,21 +467,6 @@ export function ReportForm() {
       });
       setErrors(newErrors);
 
-      // If location already captured (from mount), trigger reverse geocode
-      // Otherwise, request device location
-      if (files.length > 0) {
-        // Use ref to avoid closure issues with state
-        const capturedLocation = capturedLocationRef.current;
-        if (capturedLocation) {
-          console.log('[ReportForm] Location already captured, triggering reverse geocode:', capturedLocation);
-          window.setTimeout(() => {
-            void resolveLocation(capturedLocation.latitude, capturedLocation.longitude);
-          }, 100);
-        } else {
-          console.log('[ReportForm] No location yet, requesting device location');
-          window.setTimeout(requestDeviceLocation, 0);
-        }
-      }
     } catch (error) {
       console.error("Photo compression error:", error);
       setErrors({ ...newErrors, photos: "Foto tidak dapat diproses di perangkat ini." });
@@ -892,19 +780,9 @@ export function ReportForm() {
                       Upload foto lokasi kerusakan. Pastikan foto jelas dan tidak mengandung wajah atau plat nomor kendaraan.
                     </p>
                     <p className="text-xs text-text-muted">
-                      Lokasi perangkat mulai dideteksi di latar belakang pada langkah ini. Analisis foto oleh AI hanya berjalan jika Anda menekan tombol analisis.
+                      Siapkan setidaknya satu foto. Izin lokasi baru diminta saat Anda memilih tombol lokasi pada langkah berikutnya. Analisis AI bersifat opsional.
                     </p>
 
-                    {isResolvingLocation && (
-                      <p role="status" className="text-xs text-text-muted">
-                        Mendeteksi lokasi perangkat di latar belakang...
-                      </p>
-                    )}
-                    {!isResolvingLocation && locationMessage && (
-                      <p role="status" className="text-xs text-text-muted">
-                        {locationMessage}
-                      </p>
-                    )}
                     {formData.photos.length === 0 ? (
                       <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-surface/50 transition-colors bg-background">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -1073,6 +951,19 @@ export function ReportForm() {
                       <p id="report-device-location-help" className="text-xs text-text-muted">
                         Alamat perkiraan diisi otomatis dari GPS dan tidak dapat diedit. Jika titiknya keliru, ambil ulang lokasi perangkat.
                       </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={requestDeviceLocation}
+                        disabled={isResolvingLocation}
+                        className="min-h-11"
+                      >
+                        {isResolvingLocation
+                          ? "Mencari lokasi..."
+                          : formData.latitude !== null && formData.longitude !== null
+                            ? "Ambil ulang lokasi"
+                            : "Gunakan lokasi saat ini"}
+                      </Button>
                       {isResolvingLocation && (
                         <p role="status" className="text-xs text-text-muted">
                           Mencari perkiraan alamat dari koordinat GPS...
@@ -1096,17 +987,6 @@ export function ReportForm() {
                           Akurasi lokasi di atas 100 m. Deteksi duplikat otomatis akan dilewati untuk laporan ini. Jika memungkinkan, ambil ulang lokasi di area terbuka.
                         </p>
                       )}
-                      {formData.photos.length > 0
-                        && (
-                          formData.latitude === null
-                          || formData.longitude === null
-                          || !formData.detailLocation.trim()
-                        )
-                        && !isResolvingLocation && (
-                          <Button type="button" variant="outline" onClick={() => requestDeviceLocation(true)} className="min-h-11">
-                            Coba deteksi lokasi perangkat lagi
-                          </Button>
-                        )}
                       {locationOutsidePati ? (
                         <div data-error className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-950/20 dark:text-red-300">
                           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -1175,8 +1055,9 @@ export function ReportForm() {
                         ))}
                       </select>
                       {selectedCategory && (
-                        <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                          ✓ Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong>
+                        <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                          <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span>Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong></span>
                         </p>
                       )}
                       {aiFilledFields.has("category") && (
@@ -1357,15 +1238,15 @@ export function ReportForm() {
                     <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                       {activeStep < 3 ? (
                         <>
-                          {!stepOneIsComplete || (activeStep === 2 && !stepTwoIsComplete) ? (
-                            <p className="text-xs text-text-muted sm:mr-2">
-                              Lengkapi field wajib untuk melanjutkan.
-                            </p>
-                          ) : null}
+                          <p className="text-xs text-text-muted sm:mr-2">
+                            {activeStep === 1
+                              ? "Unggah minimal satu foto untuk melanjutkan."
+                              : "Lengkapi lokasi, judul, kategori, dan deskripsi."}
+                          </p>
                           <Button
                             type="button"
                             onClick={handleNext}
-                            disabled={activeStep === 1 ? !stepOneIsComplete || isCompressing : !stepTwoIsComplete}
+                            disabled={isCompressing || isSubmitting}
                             variant="default"
                             size="lg"
                             className="gap-2 w-full sm:w-auto"

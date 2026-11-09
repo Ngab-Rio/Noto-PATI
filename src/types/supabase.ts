@@ -137,6 +137,29 @@ export interface Database {
           created_at?: string;
         };
       };
+      public_report_status_updates: {
+        Row: {
+          id: string;
+          report_id: string;
+          status: Database["public"]["Enums"]["report_status"];
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          report_id: string;
+          status: Database["public"]["Enums"]["report_status"];
+          note?: string | null;
+          created_at: string;
+        };
+        Update: {
+          id?: string;
+          report_id?: string;
+          status?: Database["public"]["Enums"]["report_status"];
+          note?: string | null;
+          created_at?: string;
+        };
+      };
       report_supports: {
         Row: {
           report_id: string;
@@ -343,6 +366,21 @@ export interface Database {
           can_support: boolean;
         }[];
       };
+      get_public_report_engagement_rankings: {
+        Args: {
+          p_category?: string | null;
+          p_limit?: number;
+          p_offset?: number;
+          p_search?: string | null;
+          p_status?: string | null;
+        };
+        Returns: {
+          engagement_score: number;
+          group_support_count: number;
+          merged_report_count: number;
+          report_id: string;
+        }[];
+      };
       support_report: {
         Args: {
           p_report_id: string;
@@ -362,6 +400,16 @@ export interface Database {
           viewer_has_reviewed: boolean;
           can_review: boolean;
           reviews: Json;
+        }[];
+      };
+      get_report_review_ratings: {
+        Args: {
+          p_report_ids: string[];
+        };
+        Returns: {
+          report_id: string;
+          review_count: number;
+          average_rating: number;
         }[];
       };
       submit_report_review: {

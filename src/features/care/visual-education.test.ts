@@ -4,6 +4,7 @@ import {
   VISUAL_EDUCATION_REGISTRY,
   trackCareEvent,
 } from "./visual-education";
+import { FALLBACK_CARE_ARTICLES } from "./mock-data";
 
 describe("Visual Contextual Education Feature", () => {
   beforeEach(() => {
@@ -12,11 +13,20 @@ describe("Visual Contextual Education Feature", () => {
     }
   });
 
-  describe("Kesesuaian Spesifikasi 5 Kategori Utama", () => {
-    const mainCategories = ["jalan", "drainase", "lampu", "trotoar", "jembatan"];
+  describe("Kesesuaian seluruh kategori laporan", () => {
+    const reportCategories = [
+      "jalan",
+      "drainase",
+      "lampu",
+      "trotoar",
+      "jembatan",
+      "tanggul",
+      "rambu",
+      "lainnya",
+    ];
 
-    it("harus memiliki data edukasi visual untuk kelima kategori", () => {
-      for (const cat of mainCategories) {
+    it("harus memiliki data edukasi visual yang sesuai untuk setiap kategori", () => {
+      for (const cat of reportCategories) {
         const data = getVisualEducationForCategory(cat);
         expect(data).not.toBeNull();
         expect(data?.category).toBe(cat);
@@ -67,8 +77,13 @@ describe("Visual Contextual Education Feature", () => {
     });
 
     it("setiap kategori harus menautkan ke fullArticleSlug yang valid", () => {
+      const articleSlugs = new Set(
+        FALLBACK_CARE_ARTICLES.map((article) => article.slug)
+      );
+
       for (const data of Object.values(VISUAL_EDUCATION_REGISTRY)) {
         expect(data.fullArticleSlug).toBeTruthy();
+        expect(articleSlugs.has(data.fullArticleSlug)).toBe(true);
       }
     });
   });
@@ -79,9 +94,33 @@ describe("Visual Contextual Education Feature", () => {
       expect(data?.category).toBe("lampu");
     });
 
-    it("dapat menangani kategori sekunder 'tanggul' dan memetakannya ke 'drainase'", () => {
-      const data = getVisualEducationForCategory("tanggul");
-      expect(data?.category).toBe("drainase");
+    it("menggunakan panduan umum untuk kategori fasilitas publik lainnya", () => {
+      expect(getVisualEducationForCategory("tanggul")?.fullArticleSlug).toBe(
+        "retakan-dan-rembesan-tanggul-sungai"
+      );
+      expect(getVisualEducationForCategory("rambu")?.fullArticleSlug).toBe(
+        "rambu-dan-marka-jalan-rusak"
+      );
+      expect(getVisualEducationForCategory("lainnya")?.fullArticleSlug).toBe(
+        "panduan-umum-fasilitas-publik"
+      );
+      expect(getVisualEducationForCategory("lainnya")?.categoryLabel).toBe(
+        "Fasilitas Publik Lainnya"
+      );
+      expect(getVisualEducationForCategory("lainnya")?.title).not.toContain(
+        "Vandalisme"
+      );
+    });
+
+    it("mengarahkan laporan vandalisme yang masuk kategori lainnya ke panduan umum", () => {
+      const reportCategory = "lainnya";
+      const vandalismArticle = FALLBACK_CARE_ARTICLES.find(
+        (article) => article.slug === "vandalisme-fasilitas-publik"
+      );
+      const education = getVisualEducationForCategory(reportCategory);
+
+      expect(vandalismArticle?.category).toBe(reportCategory);
+      expect(education?.fullArticleSlug).toBe("panduan-umum-fasilitas-publik");
     });
 
     it("dapat menangani kategori tak dikenal dengan fallback aman ke 'jalan' tanpa melempar error", () => {

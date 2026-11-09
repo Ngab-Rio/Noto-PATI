@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import {
   IconArrowRight,
   IconCheckCircle,
@@ -74,8 +74,22 @@ export function VisualEducationCard({
         {/* Visual-First Grid: Illustration + Short Explanation */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
           {/* Informative SVG Illustration */}
-          <div className="md:col-span-5 overflow-hidden rounded-xl border border-border bg-background shadow-2xs">
-            <Illustration className="w-full h-auto object-cover" />
+          <div
+            className={`md:col-span-5 overflow-hidden rounded-xl border border-border bg-background shadow-2xs ${
+              data.visualKind === "icon"
+                ? "flex aspect-[4/3] items-center justify-center bg-primary-soft/30"
+                : ""
+            }`}
+          >
+            {data.visualKind === "icon" ? (
+              <Illustration
+                role="img"
+                aria-label={data.illustrationAlt}
+                className="h-16 w-16 text-primary-dark"
+              />
+            ) : (
+              <Illustration className="w-full h-auto object-cover" />
+            )}
           </div>
 
           {/* Title, Summary & Impact */}
@@ -177,4 +191,3 @@ export function VisualEducationCardSkeleton() {
     </div>
   );
 }
-

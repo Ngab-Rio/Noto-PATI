@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { ArrowLeft, ClipboardList } from "lucide-react";
 import { ReportsView } from "./reports-view";
 import { getAdminReports } from "@/features/admin/server-data";

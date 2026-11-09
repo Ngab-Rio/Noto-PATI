@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { useRouter } from "next/navigation";
 import { Star } from "lucide-react";
 

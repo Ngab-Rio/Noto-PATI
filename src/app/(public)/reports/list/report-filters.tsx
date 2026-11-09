@@ -10,6 +10,7 @@ interface ReportFiltersProps {
   category: string;
   status: string;
   search: string;
+  sort: "recent" | "attention";
   categoryOptions: ComboboxOption[];
   statusOptions: ComboboxOption[];
 }
@@ -18,12 +19,26 @@ export function ReportFilters({
   category,
   status,
   search,
+  sort,
   categoryOptions,
   statusOptions,
 }: ReportFiltersProps) {
   return (
     <form method="get" className="space-y-3 sm:space-y-0">
       <div className="flex flex-col gap-3 sm:flex-row">
+        <label className="w-full sm:w-48">
+          <span className="sr-only">Urutkan laporan</span>
+          <select
+            aria-label="Urutkan laporan"
+            className="w-full cursor-pointer rounded-lg border-2 border-border bg-background px-3 py-3 text-base text-text transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            defaultValue={sort}
+            name="sort"
+          >
+            <option value="recent">Terbaru</option>
+            <option value="attention">Perhatian warga</option>
+          </select>
+        </label>
+
         <label className="relative flex-1">
           <span className="sr-only">Cari laporan</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -71,7 +86,7 @@ export function ReportFilters({
       </div>
 
       <p className="mt-2 text-xs text-text-muted">
-        💡 Tip: Gunakan filter untuk mempersempit pencarian laporan berdasarkan kategori dan status
+        Tip: gunakan filter untuk mempersempit pencarian berdasarkan kategori dan status.
       </p>
     </form>
   );

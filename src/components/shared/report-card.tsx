@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import Image from "next/image";
 import {
   MapPin,
@@ -9,6 +9,8 @@ import {
   Calendar,
   Building2,
   ChevronRight,
+  GitMerge,
+  UsersRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadgeClient } from "@/components/shared/status-badge-client";
@@ -30,6 +32,14 @@ export interface ReportItemData {
   isOwner: boolean;
   canSupport: boolean;
   isAuthenticated: boolean;
+  rating?: {
+    reviewCount: number;
+    averageRating: number;
+  };
+  engagement?: {
+    groupSupportCount: number;
+    mergedReportCount: number;
+  };
   dinasTerkait?: string;
   officialNote?: string;
   imageUrl?: string;
@@ -39,7 +49,6 @@ export interface ReportCardProps {
   report: ReportItemData;
   className?: string;
   onViewMap?: (id: string) => void;
-  onRate?: (id: string) => void;
   onReopen?: (id: string) => void;
 }
 
@@ -51,15 +60,23 @@ export interface ReportCardProps {
  * - Teks sekunder: Text/Secondary (#556577)
  * - Status laporan: StatusBadge WCAG AA
  * - Blok informasi: Primary/Soft (#E3EEF8)
- * - Tombol aksi: Dukung laporan, Lihat di peta, Beri penilaian, Buka kembali (Primary/Dark, Default, Soft, Accent)
+ * - Tombol aksi: Dukung laporan, Lihat di peta, Buka kembali; rating hanya ditampilkan sebagai ringkasan.
  */
 export function ReportCard({
   report,
   className,
   onViewMap,
-  onRate,
   onReopen,
 }: ReportCardProps) {
+  const formattedRating = report.rating
+    ? new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    }).format(report.rating.averageRating)
+    : null;
+  const hasRating = Boolean(report.rating && report.rating.reviewCount > 0);
+  const canReopen = report.status === "selesai" || report.status === "ditutup";
+
   return (
     <article
       className={cn(
@@ -113,6 +130,32 @@ export function ReportCard({
           <span className="truncate">{report.location}</span>
         </div>
 
+        {report.engagement && (
+          <dl
+            aria-label="Ringkasan perhatian warga"
+            className="space-y-1.5 text-xs font-medium text-text-muted"
+          >
+            <div className="flex items-center gap-2">
+              <dt className="sr-only">Pendukung unik dalam kelompok laporan</dt>
+              <dd className="flex items-center gap-1.5">
+                <UsersRound aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  {new Intl.NumberFormat("id-ID").format(report.engagement.groupSupportCount)} warga mendukung
+                </span>
+              </dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <dt className="sr-only">Laporan serupa yang digabung</dt>
+              <dd className="flex items-center gap-1.5">
+                <GitMerge aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  {new Intl.NumberFormat("id-ID").format(report.engagement.mergedReportCount)} laporan serupa digabung
+                </span>
+              </dd>
+            </div>
+          </dl>
+        )}
+
         {/* Blok Informasi Menggunakan Primary/Soft (#E3EEF8) sesuai Style Guide */}
         {report.officialNote && (
           <div className="rounded-lg bg-primary-soft p-3.5 text-xs text-text border border-primary/20">
@@ -140,6 +183,7 @@ export function ReportCard({
             canSupport={report.canSupport}
             isAuthenticated={report.isAuthenticated}
             returnTo={`/reports/${report.id}`}
+            showCount={!report.engagement}
             size="sm"
             buttonClassName="hover:scale-105 active:scale-95 transition-transform"
           />
@@ -179,19 +223,20 @@ export function ReportCard({
         </div>
 
         {/* Secondary Actions Row (Conditional) */}
-        {(report.status === "selesai" || report.status === "ditutup") && (
+        {((hasRating && report.status === "selesai") || (canReopen && onReopen)) && (
           <div className="flex flex-col sm:flex-row gap-2">
-            {report.status === "selesai" && (
-              <Button
-                type="button"
-                variant="accentSoft"
-                size="sm"
-                onClick={() => onRate?.(report.id)}
-                className="gap-1.5 text-accent font-semibold w-full sm:w-auto justify-center"
+            {hasRating && report.status === "selesai" && report.rating && formattedRating && (
+              <div
+                role="img"
+                aria-label={`Rating rata-rata ${formattedRating} dari 5 berdasarkan ${report.rating.reviewCount} penilaian`}
+                className="inline-flex min-h-9 items-center justify-center gap-1.5 text-sm font-medium text-text-muted"
               >
-                <Star className="h-3.5 w-3.5" />
-                <span>Beri penilaian</span>
-              </Button>
+                <Star aria-hidden="true" className="h-4 w-4 fill-current text-accent" />
+                <span className="tabular-nums text-text">{formattedRating}</span>
+                <span>
+                  · {new Intl.NumberFormat("id-ID").format(report.rating.reviewCount)} penilaian
+                </span>
+              </div>
             )}
 
             {onReopen && (

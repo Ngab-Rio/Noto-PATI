@@ -143,7 +143,7 @@ export function Step2Details({
           </select>
           {selectedCategory && (
             <p className="text-xs text-emerald-600 dark:text-emerald-400">
-              ✓ Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong>
+              Akan diteruskan ke: <strong>{selectedCategory.dinas}</strong>
             </p>
           )}
           {aiFilledFields.has("category") && (

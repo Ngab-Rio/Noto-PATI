@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import { FileText, Layers, MapPin, Plus, TrendingUp } from "lucide-react";
 
 import { ReportCard } from "@/components/shared/report-card";

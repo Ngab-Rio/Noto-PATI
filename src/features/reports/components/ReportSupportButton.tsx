@@ -16,6 +16,7 @@ interface ReportSupportButtonProps {
   canSupport: boolean;
   isAuthenticated: boolean;
   returnTo: string;
+  showCount?: boolean;
   size?: "sm" | "default";
   variant?: "default" | "outline" | "accent";
   className?: string;
@@ -30,6 +31,7 @@ export function ReportSupportButton({
   canSupport,
   isAuthenticated,
   returnTo,
+  showCount = true,
   size = "sm",
   variant,
   className,
@@ -78,6 +80,9 @@ export function ReportSupportButton({
 
       setSupportCount(result.supportCount);
       setHasSupported(result.hasSupported);
+      if (!showCount) {
+        router.refresh();
+      }
     } catch (error) {
       console.error("Failed to submit report support", error);
       setErrorMessage("Dukungan gagal disimpan. Periksa koneksi lalu coba lagi.");
@@ -94,7 +99,7 @@ export function ReportSupportButton({
         size={size}
         onClick={handleSupport}
         disabled={isPending || hasSupported || (isAuthenticated && !canSupport)}
-        aria-label={`${label}. Saat ini ${supportCount} dukungan`}
+        aria-label={showCount ? `${label}. Saat ini ${supportCount} dukungan` : label}
         className={cn(
           "w-full cursor-pointer justify-center gap-1.5 disabled:cursor-not-allowed sm:w-auto",
           buttonClassName,
@@ -102,9 +107,11 @@ export function ReportSupportButton({
       >
         <ThumbsUp className={cn("h-3.5 w-3.5", hasSupported && "fill-current")} />
         <span>{label}</span>
-        <span className="ml-1 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold">
-          {new Intl.NumberFormat("id-ID").format(supportCount)}
-        </span>
+        {showCount && (
+          <span className="ml-1 rounded-full bg-black/10 px-1.5 py-0.5 text-[10px] font-bold">
+            {new Intl.NumberFormat("id-ID").format(supportCount)}
+          </span>
+        )}
       </Button>
       {errorMessage && (
         <p role="alert" className="text-xs text-destructive">

@@ -6,9 +6,24 @@
  * Shows interactive map of report locations
  */
 
-import { useState } from "react";
-import { MapPin } from "lucide-react";
-import { PublicReportsMap } from "@/components/map/PublicReportsMap";
+import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, X } from "lucide-react";
+
+const PublicReportsMap = dynamic(
+  () => import("@/components/map/PublicReportsMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        role="status"
+        className="flex h-full items-center justify-center bg-background text-sm text-text-muted"
+      >
+        Menyiapkan peta laporan...
+      </div>
+    ),
+  },
+);
 
 type ReportStatus = "diterima" | "diverifikasi" | "diproses" | "selesai" | "ditolak";
 
@@ -35,6 +50,31 @@ export function PublicMapSection({
   initialStatuses = [],
 }: PublicMapSectionProps) {
   const [selectedStatuses, setSelectedStatuses] = useState<ReportStatus[]>(initialStatuses);
+  const [shouldLoadMap, setShouldLoadMap] = useState(false);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const section = mapSectionRef.current;
+    if (!section) return;
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoadMap(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoadMap(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
 
   const toggleStatus = (status: ReportStatus) => {
     setSelectedStatuses((prev) =>
@@ -61,7 +101,7 @@ export function PublicMapSection({
             Sebaran Laporan Warga
           </h2>
           <p className="text-sm text-text-muted mt-1 leading-relaxed">
-            Pantau lokasi laporan infrastruktur di 21 kecamatan Kabupaten Pati secara real-time
+            Lihat sebaran laporan infrastruktur di Kabupaten Pati. Laporan yang berdekatan dikelompokkan pada peta.
           </p>
         </div>
       </div>
@@ -144,7 +184,10 @@ export function PublicMapSection({
                 onClick={clearFilters}
                 className="text-xs px-2.5 py-1.5 rounded-lg font-medium text-text-muted hover:text-text hover:bg-surface border border-transparent hover:border-border transition-all"
               >
-                ✕ Reset
+                <span className="inline-flex items-center gap-1.5">
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  Reset filter
+                </span>
               </button>
             </>
           )}
@@ -153,13 +196,23 @@ export function PublicMapSection({
 
       {/* Map Container */}
       <div className="overflow-hidden rounded-2xl border-2 border-border bg-surface shadow-sm">
-        <div style={{ height }}>
-          <PublicReportsMap
-            adminMode={false}
-            filters={{
-              statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
-            }}
-          />
+        <div ref={mapSectionRef} style={{ height }}>
+          {shouldLoadMap ? (
+            <PublicReportsMap
+              adminMode={false}
+              filters={{
+                statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
+              }}
+            />
+          ) : (
+            <div
+              role="status"
+              className="flex h-full flex-col items-center justify-center gap-2 bg-background px-6 text-center text-sm text-text-muted"
+            >
+              <MapPin className="h-5 w-5 text-primary" aria-hidden="true" />
+              <span>Peta dimuat saat bagian ini terlihat.</span>
+            </div>
+          )}
         </div>
       </div>
 

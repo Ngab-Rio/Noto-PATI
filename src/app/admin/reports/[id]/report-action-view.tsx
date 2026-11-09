@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/shared/route-link";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -479,7 +479,7 @@ export function ReportActionView({ report: initialReport }: ReportActionViewProp
                           </div>
                         </a>
                         <p className="text-[11px] text-text-muted mt-1 italic">
-                          📸 Dokumentasi penyelesaian dari admin
+                          Dokumentasi penyelesaian dari admin
                         </p>
                       </div>
                     )}
