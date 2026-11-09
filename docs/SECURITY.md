@@ -48,7 +48,8 @@
 ### 3.3 Row Level Security
 - RLS aktif di semua tabel yang diakses via Supabase client.
 - Detail kebijakan per tabel ada di `authentication.md` bagian 5.
-- Constraint database sebagai lapis kedua: unique `(user_id, report_id)` pada dukungan, foreign key, constraint status valid.
+- Constraint database sebagai lapis kedua: primary key `(report_id, user_id)` pada dukungan; RPC dukungan memverifikasi sesi Warga dan menolak dukungan untuk laporan sendiri. Hitungan publik hanya mengekspos agregat, bukan identitas pendukung.
+- Rating dan komentar hanya dapat dikirim sekali oleh akun Warga terautentikasi pada laporan berstatus `selesai`; constraint unik dan RPC menegakkan aturan ini di database. Tabel ulasan tidak dapat dibaca/ditulis langsung, sedangkan RPC publik hanya mengekspos rating, komentar, waktu, agregat, dan penanda ulasan milik viewer—tanpa identitas pengguna.
 
 ### 3.4 Keamanan Storage (foto)
 - Simpan **path Storage**, bukan hanya URL publik.

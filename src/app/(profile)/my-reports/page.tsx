@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeReportStatus } from "@/config/theme";
+import { getReportSupportSummaries } from "@/lib/reports/support";
 
 const CATEGORY_LABELS: Record<string, string> = {
   jalan: "Jalan Berlubang / Rusak",
@@ -43,6 +44,10 @@ type StoredReport = {
   detail_location: string;
   status: string;
   created_at: string;
+  supportCount: number;
+  hasSupported: boolean;
+  isOwner: boolean;
+  canSupport: boolean;
 };
 
 async function getUserReports(): Promise<StoredReport[]> {
@@ -59,7 +64,21 @@ async function getUserReports(): Promise<StoredReport[]> {
     return [];
   }
 
-  return (data ?? []) as StoredReport[];
+  const reportRows = (data ?? []) as Omit<
+    StoredReport,
+    "supportCount" | "hasSupported" | "isOwner" | "canSupport"
+  >[];
+  const supportSummaries = await getReportSupportSummaries(
+    reportRows.map((report) => report.id),
+  );
+
+  return reportRows.map((report) => {
+    const support = supportSummaries.get(report.id);
+    if (!support) {
+      throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
+    }
+    return { ...report, ...support };
+  });
 }
 
 function formatReportDate(value: string) {
@@ -80,7 +99,11 @@ function toReportItem(report: StoredReport): ReportItemData {
     status: normalizeReportStatus(report.status),
     location: report.detail_location,
     date: formatReportDate(report.created_at),
-    supportCount: 0,
+    supportCount: report.supportCount,
+    hasSupported: report.hasSupported,
+    isOwner: report.isOwner,
+    canSupport: report.canSupport,
+    isAuthenticated: true,
   };
 }
 
@@ -116,7 +139,11 @@ export default async function MyReportsPage() {
         <StatCard icon={<FileText className="h-4 w-4 text-primary" />} value={reports.length} label="Total Laporan" />
         <StatCard icon={<Clock className="h-4 w-4 text-yellow-600" />} value={statusCount("diproses")} label="Diproses" />
         <StatCard icon={<CheckCircle className="h-4 w-4 text-green-600" />} value={statusCount("selesai")} label="Selesai" />
-        <StatCard icon={<TrendingUp className="h-4 w-4 text-blue-600" />} value={0} label="Total Dukungan" />
+        <StatCard
+          icon={<TrendingUp className="h-4 w-4 text-blue-600" />}
+          value={reports.reduce((total, report) => total + report.supportCount, 0)}
+          label="Total Dukungan"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

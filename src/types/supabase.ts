@@ -137,6 +137,49 @@ export interface Database {
           created_at?: string;
         };
       };
+      report_supports: {
+        Row: {
+          report_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          report_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          report_id?: string;
+          user_id?: string;
+          created_at?: string;
+        };
+      };
+      report_reviews: {
+        Row: {
+          id: string;
+          report_id: string;
+          user_id: string;
+          rating: number;
+          comment: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          report_id: string;
+          user_id: string;
+          rating: number;
+          comment: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          report_id?: string;
+          user_id?: string;
+          rating?: number;
+          comment?: string;
+          created_at?: string;
+        };
+      };
       report_merge_logs: {
         Row: {
           id: string;
@@ -288,6 +331,47 @@ export interface Database {
         | "lainnya";
     };
     Functions: {
+      get_report_support_summaries: {
+        Args: {
+          p_report_ids: string[];
+        };
+        Returns: {
+          report_id: string;
+          support_count: number;
+          has_supported: boolean;
+          is_owner: boolean;
+          can_support: boolean;
+        }[];
+      };
+      support_report: {
+        Args: {
+          p_report_id: string;
+        };
+        Returns: {
+          support_count: number;
+          has_supported: boolean;
+        }[];
+      };
+      get_report_review_summary: {
+        Args: {
+          p_report_id: string;
+        };
+        Returns: {
+          review_count: number;
+          average_rating: number;
+          viewer_has_reviewed: boolean;
+          can_review: boolean;
+          reviews: Json;
+        }[];
+      };
+      submit_report_review: {
+        Args: {
+          p_report_id: string;
+          p_rating: number;
+          p_comment: string;
+        };
+        Returns: undefined;
+      };
       admin_transition_report: {
         Args: {
           p_report_id: string;

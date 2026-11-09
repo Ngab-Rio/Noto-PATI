@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import {
   IconMapPin,
   IconCalendar,
-  IconThumbsUp,
   IconBuildings,
   IconGitMerge,
   IconArrowRight,
@@ -21,9 +20,14 @@ import {
 } from "@/lib/reports/signed-urls";
 import { notFound } from "next/navigation";
 import { normalizeReportStatus } from "@/config/theme";
+import { isMissingAuthSessionError } from "@/lib/auth/session";
 import { calculateReportSla, formatRemainingTime, formatDueDate, type SlaState } from "@/domain/sla";
 import { RelatedReportsThread } from "@/features/reports/components/RelatedReportsThread";
 import { VisualEducationCard } from "@/features/care/components/VisualEducationCard";
+import { getReportSupportSummaries } from "@/lib/reports/support";
+import { ReportSupportButton } from "@/features/reports/components/ReportSupportButton";
+import { getReportReviewSummary } from "@/lib/reports/reviews";
+import { ReportReviewSection } from "@/features/reports/reviews/ReportReviewSection";
 
 export const metadata: Metadata = {
   title: "Detail Laporan Infrastruktur · Noto PATI",
@@ -78,6 +82,25 @@ export default async function ReportDetailPage({
   }
   if (historyError) {
     throw new Error(`Gagal memuat riwayat laporan: ${historyError.message}`);
+  }
+
+  const [
+    { data: authData, error: authError },
+    supportSummaries,
+    reviewSummary,
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getReportSupportSummaries([report.id]),
+    report.status === "selesai" ? getReportReviewSummary(report.id) : Promise.resolve(null),
+  ]);
+  if (authError && !isMissingAuthSessionError(authError)) {
+    console.error("Failed to verify viewer for report detail", authError);
+    throw new Error(`Gagal memeriksa sesi pengguna: ${authError.message}`);
+  }
+
+  const reportSupport = supportSummaries.get(report.id);
+  if (!reportSupport) {
+    throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
   }
 
   // Jika laporan ini digabung ke laporan lain, ambil informasi laporan utama
@@ -314,6 +337,15 @@ export default async function ReportDetailPage({
                 </section>
               )}
 
+              {reviewSummary && (
+                <ReportReviewSection
+                  key={report.id}
+                  reportId={report.id}
+                  isAuthenticated={Boolean(authData.user)}
+                  summary={reviewSummary}
+                />
+              )}
+
               {/* Related Reports Thread (Issue #40) - Hanya tampil pada laporan utama */}
               {!report.merged_into_report_id && relatedReportsData.length > 0 && (
                 <RelatedReportsThread
@@ -415,13 +447,20 @@ export default async function ReportDetailPage({
 
               {/* Action Buttons - Stacked */}
               <div className="pt-4 border-t border-border space-y-2">
-                <Button variant="default" size="default" className="w-full gap-2 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-all">
-                  <IconThumbsUp className="h-4 w-4" />
-                  <span>Dukung Laporan Ini</span>
-                  <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-xs font-bold">
-                    42
-                  </span>
-                </Button>
+                {!report.merged_into_report_id && (
+                  <ReportSupportButton
+                    reportId={report.id}
+                    supportCount={reportSupport.supportCount}
+                    hasSupported={reportSupport.hasSupported}
+                    isOwner={reportSupport.isOwner}
+                    canSupport={reportSupport.canSupport}
+                    isAuthenticated={Boolean(authData.user)}
+                    returnTo={`/reports/${report.id}`}
+                    size="default"
+                    variant="default"
+                    buttonClassName="shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 transition-transform"
+                  />
+                )}
                 
                 <Link href={`/map?reportId=${report.id}`} className="block">
                   <Button variant="outline" size="default" className="w-full gap-2 hover:scale-[1.02] active:scale-95 transition-all">

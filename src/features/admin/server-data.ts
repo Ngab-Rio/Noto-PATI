@@ -7,6 +7,7 @@ import { CATEGORY_LABELS } from "@/lib/reports/public";
 import { normalizeReportStatus } from "@/config/theme";
 import type { AdminReportItem } from "./types";
 import { calculateReportSla, formatRemainingTime } from "@/domain/sla";
+import { getReportSupportSummaries } from "@/lib/reports/support";
 
 const CATEGORY_KEYS: Record<string, AdminReportItem["categoryKey"]> = {
   jalan: "road_damage",
@@ -83,6 +84,7 @@ function toReportItem(
   history: HistoryRow[],
   signedUrls: Map<string, string>,
   proofSignedUrls: Map<string, string>,
+  supportCount: number,
 ): AdminReportItem {
   const category = report.category.toLowerCase();
   const status = normalizeReportStatus(report.status);
@@ -123,7 +125,7 @@ function toReportItem(
     },
     reporterName: profile?.full_name ?? "Pengguna anonim",
     reporterPhone: profile?.phone ?? undefined,
-    supportCount: 0,
+    supportCount,
     submittedAt: formatDate(report.created_at),
     submittedAtRaw: report.created_at,
     slaState: sla.state,
@@ -178,6 +180,10 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
   const reportRows = (reports ?? []) as ReportRow[];
   const photoRows = (photos ?? []) as PhotoRow[];
   const historyRows = (history ?? []) as HistoryRow[];
+  const supportSummaries = await getReportSupportSummaries(
+    reportRows.map((report) => report.id),
+    true,
+  );
   const profileIds = [
     ...new Set([
       ...reportRows.map((report) => report.reporter_id),
@@ -219,16 +225,22 @@ export async function getAdminReports(): Promise<AdminReportItem[]> {
     historyByReport.set(entry.report_id, items);
   }
 
-  return reportRows.map((report) =>
-    toReportItem(
+  return reportRows.map((report) => {
+    const support = supportSummaries.get(report.id);
+    if (!support) {
+      throw new Error(`Ringkasan dukungan laporan ${report.id} tidak ditemukan.`);
+    }
+
+    return toReportItem(
       report,
       profileById.get(report.reporter_id ?? ""),
       photosByReport.get(report.id) ?? [],
       historyByReport.get(report.id) ?? [],
       signedUrls,
       proofSignedUrls,
-    ),
-  );
+      support.supportCount,
+    );
+  });
 }
 
 export async function getAdminReport(id: string) {
